@@ -1,0 +1,33 @@
+// SCSS Functions to support theme functionality
+
+/// Convert a pixel value to rem
+/// @param {Number} $px - The pixel value to convert
+/// @return {Number} The converted value in rem
+@function rem($px) {
+  $base-font-size: 16px;
+  @return ($px / $base-font-size) * 1rem;
+}
+
+/// Darken a color by a specific percentage
+/// @param {Color} $color - The color to darken
+/// @param {Number} $percentage - The percentage to darken by
+/// @return {Color} The darkened color
+@function darken-custom($color, $percentage) {
+  @return color.adjust($color, $lightness: -$percentage);
+}
+
+/// Lighten a color by a specific percentage
+/// @param {Color} $color - The color to lighten
+/// @param {Number} $percentage - The percentage to lighten by
+/// @return {Color} The lightened color
+@function lighten-custom($color, $percentage) {
+  @return color.adjust($color, $lightness: $percentage);
+}
+
+/// Generate a transparent version of a color
+/// @param {Color} $color - The base color
+/// @param {Number} $opacity - The opacity level (0-1)
+/// @return {Color} The color with adjusted opacity
+@function transparent-color($color, $opacity) {
+  @return rgba($color, $opacity);
+}

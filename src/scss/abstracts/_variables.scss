@@ -1,0 +1,77 @@
+@use "sass:color";
+
+//----------------------------------------------
+// TYPOGRAPHY
+//----------------------------------------------
+// Font families
+$font-family-base: 'Open Sans', 'Roboto', Arial, sans-serif;
+$font-family-heading: 'Montserrat', 'Open Sans', Arial, sans-serif;
+$font-family-monospace: 'Consolas', 'Monaco', 'Courier New', monospace; // Added missing monospace font variable
+
+// Font sizes
+$font-size-xs: 0.75rem;    // 12px - Adding the missing font size variable
+$font-size-sm: 0.875rem;
+$font-size-base: 1rem;
+$font-size-lg: 1.125rem;
+$font-size-xl: 1.25rem;
+$font-size-xxl: 1.5rem;
+
+// Font weights
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semi-bold: 600;
+$font-weight-bold: 700;
+$font-weight-extra-bold: 800;
+
+//----------------------------------------------
+// SPACING SYSTEM
+//----------------------------------------------
+$spacing-xxxs: 0.125rem; // 2px
+$spacing-xxs: 0.25rem;   // 4px
+$spacing-xs: 0.5rem;     // 8px
+$spacing-sm: 0.75rem;    // 12px
+$spacing-md: 1rem;       // 16px
+$spacing-lg: 1.5rem;     // 24px
+$spacing-xl: 2rem;       // 32px
+$spacing-xxl: 2.5rem;    // 40px
+$spacing-xxxl: 3rem;     // 48px
+
+//----------------------------------------------
+// BORDERS & RADIUS
+//----------------------------------------------
+$border-radius-sm: 4px;
+$border-radius: 8px;
+$border-radius-lg: 12px;
+$border-radius-pill: 9999px;
+
+//----------------------------------------------
+// SHADOWS
+//----------------------------------------------
+$box-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+$box-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.1);
+$box-shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+//----------------------------------------------
+// TRANSITIONS
+//----------------------------------------------
+$transition-base: all 0.2s ease-in-out;
+$transition-fast: all 0.1s ease;
+$transition-slow: all 0.3s ease;
+
+//----------------------------------------------
+// BREAKPOINTS
+//----------------------------------------------
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+
+// Z-index levels for consistent layering
+$z-index-dropdown: 1000;
+$z-index-sticky: 1020;
+$z-index-fixed: 1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal: 1050;
+$z-index-popover: 1060;
+$z-index-tooltip: 1070;

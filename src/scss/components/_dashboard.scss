@@ -1,0 +1,949 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+// Main Dashboard Layout Components - Generalized for all dashboards
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: $spacing-lg;
+  background-color: $color-white;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  transition: $transition-base;
+  @include gpu-accelerate;
+  
+  &:hover {
+    box-shadow: $box-shadow-lg;
+    transform: translateY(-2px);
+  }
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
+}
+
+// Main Dashboard Layout Components
+.dashboard-page {
+  padding-top: 70px; // Keep navbar height padding here for the overall page
+  background-color: $color-light-background;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  // Loading state styling within the dashboard
+  .dashboard-loader-container {
+    min-height: 400px; // Ensure enough space for loading
+    background: transparent;
+    
+    .loading-container {
+      max-width: 450px; // Slightly wider for progress indicators
+    }
+  }
+}
+
+// Page Layout - Common for all dashboards
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-wrapper {
+  flex: 1;
+  padding: $spacing-xl $spacing-md;
+  padding-top: 25px; // Reduced from 90px to 25px to start content right after navbar
+  background-color: $color-light-background;
+  
+  .page-title {
+    font-family: $font-family-heading;
+    font-weight: $font-weight-bold;
+    color: $color-text;
+    margin-bottom: $spacing-xl;
+    
+    @include mobile {
+      font-size: 1.5rem;
+      margin-bottom: $spacing-lg;
+    }
+    
+    @include tablet {
+      font-size: 2rem;
+    }
+  }
+}
+
+// Card Components - Generalized for all dashboards
+.card {
+  border: none;
+  box-shadow: $box-shadow-sm;
+  height: 100%;
+  transition: $transition-base;
+  background-color: $color-white;
+  @include gpu-accelerate;
+  
+  &:hover {
+    box-shadow: $box-shadow-lg;
+    transform: translateY(-2px);
+  }
+  
+  .card-header {
+    background-color: $color-white;
+    border-bottom: 1px solid $color-light-gray;
+    font-weight: $font-weight-bold;
+    font-family: $font-family-heading;
+    padding: $spacing-sm $spacing-md;
+  }
+  
+  .card-body {
+    padding: $spacing-md;
+  }
+}
+
+// Loading Elements - Generalized for all dashboards
+.loading-container {
+  padding: $spacing-xl 0;
+  
+  .loading-spinner {
+    color: $color-primary;
+    width: 3rem;
+    height: 3rem;
+    margin-top: $spacing-lg;
+  }
+  
+  .loading-text {
+    margin-top: $spacing-md;
+    font-size: $font-size-lg;
+    color: $color-text-light;
+  }
+}
+
+// Dashboard Header - Common for all dashboards
+.dashboard-header-container {
+  @include flex-between;
+  margin-bottom: $spacing-lg;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  background-color: transparent; // Changed from $color-white
+  padding: $spacing-md 0; // Remove horizontal padding, keep vertical
+  
+  .dashboard-title-section {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    
+    .dashboard-title {
+      font-family: $font-family-heading;
+      font-weight: $font-weight-bold;
+      font-size: 2.2rem; // Match artists dashboard
+      margin: 0;
+      color: $color-text;
+    }
+    
+    .event-count-badge {
+      background-color: $color-primary;
+      color: $color-text;
+      font-size: 1rem;
+      padding: $spacing-xxs $spacing-xs;
+    }
+  }
+  
+  .dashboard-actions {
+    display: flex;
+    gap: $spacing-sm;
+    
+    .refresh-button {
+      // Update button styling to match artist dashboard
+      background-color: transparent;
+      border-color: $color-primary;
+      color: $color-primary;
+      display: flex;
+      align-items: center;
+      gap: $spacing-xxs;
+      
+      &:hover {
+        background-color: $color-primary;
+        color: $color-white;
+        transform: translateY(-1px);
+        box-shadow: $box-shadow-sm;
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+// Dashboard Header Content
+.dashboard-header {
+  margin-bottom: $spacing-lg;
+  display: inline;
+  position: relative;
+  
+  @include mobile {
+    .search-container {
+      position: static;
+      margin-top: $spacing-md;
+      width: 100%;
+    }
+  }
+}
+
+// Search Container - Generalized for all dashboards
+.search-container {
+  margin-bottom: $spacing-lg;
+  position: relative;
+  width: 100%;
+  
+  .search-box {
+    position: relative;
+    width: 350px;
+    
+    @include mobile {
+      width: 100%;
+    }
+    
+    .search-icon-container,
+    .search-icon {
+      background-color: $color-white;
+      border-right: none;
+      color: $color-text-light;
+      border-top-left-radius: $border-radius;
+      border-bottom-left-radius: $border-radius;
+      border-color: $color-light-gray;
+    }
+    
+    .search-input {
+      border-left: none;
+      border-color: $color-light-gray;
+      box-shadow: none;
+      padding-right: 40px;
+      background-color: $color-white;
+      
+      &:focus {
+        box-shadow: none;
+        border-color: $color-primary;
+        
+        + .search-icon-container,
+        + .search-icon {
+          border-color: $color-primary;
+          color: $color-primary;
+        }
+      }
+      
+      &::placeholder {
+        font-size: $font-size-sm;
+        color: color.adjust($color-text-light, $lightness: 20%);
+      }
+    }
+    
+    .search-clear-button,
+    .clear-search {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $color-text-light;
+      padding: 0 $spacing-sm;
+      background: transparent;
+      border: none;
+      z-index: 5;
+      
+      &:hover {
+        color: $color-danger;
+      }
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  text-align: center;
+  padding: $spacing-xl;
+  background-color: $color-white;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow-sm;
+  margin-bottom: $spacing-lg;
+  
+  .empty-state-icon {
+    color: $color-light-gray;
+    margin-bottom: $spacing-md;
+    font-size: 2rem;
+  }
+  
+  h4 {
+    margin-bottom: $spacing-sm;
+    font-weight: $font-weight-bold;
+  }
+  
+  p {
+    margin-bottom: $spacing-md;
+    color: $color-text-light;
+  }
+}
+
+// Skeleton Loading
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.skeleton-card {
+  @include card-base;
+  padding: $spacing-md;
+  
+  .skeleton-header {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+    
+    .skeleton-title {
+      height: 24px;
+      width: 200px;
+      background: linear-gradient(90deg, $color-light-gray, #f0f0f0, $color-light-gray);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: $border-radius-sm;
+    }
+    
+    .skeleton-button {
+      height: 36px;
+      width: 120px;
+      background: linear-gradient(90deg, $color-light-gray, #f0f0f0, $color-light-gray);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: $border-radius;
+    }
+  }
+  
+  .skeleton-items {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    
+    .skeleton-item {
+      height: 40px;
+      background: linear-gradient(90deg, $color-light-gray, #f0f0f0, $color-light-gray);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: $border-radius-sm;
+    }
+  }
+}
+
+// Stats Container - Generalized for all dashboards
+.stats-container,
+.role-stats-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: $spacing-md;
+  background-color: $color-white;
+  border-radius: $border-radius;
+  padding: $spacing-md;
+  box-shadow: $box-shadow-sm;
+  border: 1px solid $color-light-gray;
+  
+  .stats-header,
+  .role-stats-header {
+    margin-bottom: $spacing-xs;
+    
+    .stats-title,
+    .role-stats-title {
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semi-bold;
+      color: $color-text-light;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
+    }
+  }
+  
+  .stats-content,
+  .role-badges-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    
+    .stats-badge,
+    .role-badge-item {
+      font-size: 0.85rem;
+      padding: $spacing-xxs $spacing-xs;
+      background-color: rgba($color-primary, 0.1);
+      color: $color-text;
+      border: 1px solid rgba($color-primary, 0.2);
+      border-radius: $border-radius-pill;
+      
+      .badge-count {
+        background-color: rgba($color-white, 0.6);
+        padding: 0 $spacing-xxs;
+        border-radius: $border-radius-pill;
+        margin-left: $spacing-xxs;
+        font-weight: $font-weight-bold;
+      }
+      
+      &.bg-danger {
+        border-color: rgba($color-danger, 0.3);
+        background-color: rgba($color-danger, 0.1);
+        color: color.adjust($color-danger, $lightness: -10%);
+      }
+      
+      &.bg-warning {
+        border-color: rgba($color-warning, 0.3);
+        background-color: rgba($color-warning, 0.1);
+        color: color.adjust($color-warning, $lightness: -25%);
+      }
+      
+      &.bg-success {
+        border-color: rgba($color-success, 0.3);
+        background-color: rgba($color-success, 0.1);
+        color: color.adjust($color-success, $lightness: -10%);
+      }
+    }
+  }
+}
+
+// Alerts - Generalized for all dashboards
+.dashboard-alert {
+  margin-bottom: $spacing-md;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow-sm;
+}
+
+// Events Container - Specific to unassigned events dashboard
+.events-container {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  
+  // Hide filtered calendars 
+  .filtered-out {
+    display: none;
+  }
+  
+  // Empty state
+  .empty-state {
+    padding: $spacing-xl;
+    text-align: center;
+    background-color: $color-white;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow-sm;
+    
+    .empty-state-icon {
+      color: $color-light-gray;
+      margin-bottom: $spacing-md;
+    }
+    
+    .empty-state-message {
+      color: $color-gray;
+      font-size: 1.1rem;
+    }
+  }
+}
+
+// Event Calendar Card - Specific to unassigned events dashboard
+.event-calendar-card {
+  box-shadow: $box-shadow-sm;
+  border-radius: $border-radius;
+  background-color: $color-white;
+  overflow: hidden;
+  transition: $transition-base;
+  border: 1px solid $color-light-gray;
+  @include gpu-accelerate;
+  
+  &:hover {
+    box-shadow: $box-shadow-lg;
+    transform: translateY(-1px);
+  }
+  
+  .calendar-header {
+    @include flex-between;
+    padding: $spacing-md;
+    background: linear-gradient(to right, rgba($color-primary, 0.05), rgba($color-primary, 0.01));
+    border-left: 3px solid $color-primary;
+    cursor: pointer;
+    
+    .header-content {
+      width: 100%;
+      @include flex-between;
+      
+      .title-with-icon {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        
+        .calendar-title {
+          margin-bottom: 0;
+          font-weight: $font-weight-bold;
+          color: $color-text;
+          font-family: $font-family-heading;
+        }
+        
+        .dropdown-toggle-icon {
+          color: $color-text-light;
+          display: flex;
+          align-items: center;
+          width: 18px;
+          height: 18px;
+          justify-content: center;
+          background-color: transparent;
+          border-radius: 50%;
+          transition: $transition-base;
+          margin-right: $spacing-lg; // Added to match artist dashboard spacing
+          
+          &:hover {
+            background-color: rgba($color-primary, 0.1);
+            color: $color-text;
+          }
+        }
+        
+        // Add role badges styling for the event calendar headers
+        .calendar-role-badges {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: $spacing-xs;
+          margin-left: 0; // Changed from $spacing-md to reduce double spacing
+          
+          // Hide on mobile
+          @include mobile {
+            display: none !important;
+          }
+          
+          .enhanced-badge {
+            margin: $spacing-xxs;
+          }
+          
+          // Capsule styling for badges
+          .capsule-badge {
+            border-radius: 50px;
+            padding: $spacing-xxs $spacing-sm;
+            white-space: nowrap;
+            
+            .badge-count {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              margin-left: $spacing-xxs;
+              background-color: rgba(255, 255, 255, 0.5);
+              border-radius: 50%;
+              min-width: 18px;
+              height: 18px;
+              padding: 0 4px;
+              font-size: 0.75rem;
+              font-weight: $font-weight-bold;
+            }
+          }
+        }
+      }
+      
+      .events-count {
+        font-size: $font-size-sm;
+        color: $color-text-light;
+        background-color: rgba($color-white, 0.8);
+        padding: $spacing-xxs $spacing-xs;
+        border-radius: $border-radius-pill;
+        
+        .count-number {
+          font-weight: $font-weight-bold;
+          color: $color-text;
+        }
+        
+        .count-label {
+          color: $color-text-light;
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+  
+  .calendar-content {
+    border-top: 1px solid $color-light-gray;
+    
+    // Update table styling to match artist dashboard
+    .events-table {
+      margin-bottom: 0;
+      width: 100%;
+      
+      thead th {
+        padding: $spacing-sm $spacing-md;
+        background-color: rgba($color-primary, 0.1);
+        color: $color-text;
+        font-weight: $font-weight-bold;
+        border: none;
+        font-family: $font-family-heading;
+        text-transform: uppercase;
+        font-size: $font-size-sm;
+        letter-spacing: 0.5px;
+      }
+      
+      tbody td {
+        vertical-align: middle;
+        padding: $spacing-sm $spacing-md;
+        border-bottom: 1px solid $color-light-gray;
+      }
+      
+      .event-row {
+        transition: $transition-fast;
+        
+        &:last-child td {
+          border-bottom: none;
+        }
+        
+        &:hover {
+          background-color: rgba($color-primary, 0.03);
+        }
+      }
+      
+      .event-roles .role-badge {
+        margin-right: 4px;
+        margin-bottom: 4px;
+        font-weight: $font-weight-normal;
+        display: inline-block;
+        background-color: rgba($color-primary, 0.1);
+        border: 1px solid rgba($color-primary, 0.2);
+        color: $color-text;
+        padding: 0.15rem $spacing-sm;
+        font-size: 0.85rem;
+        border-radius: $border-radius-pill;
+      }
+      
+      .event-details {
+        .event-title {
+          font-weight: $font-weight-semi-bold;
+        }
+        
+        .event-location {
+          font-size: 0.85rem;
+          color: $color-gray;
+          margin-top: 2px;
+        }
+      }
+      
+      .event-time .date-time {
+        .date {
+          font-weight: $font-weight-medium;
+        }
+        
+        .time {
+          font-size: 0.85rem;
+          color: $color-gray;
+        }
+      }
+      
+      .event-actions .open-calendar-button {
+        // Update button styling to match artist dashboard
+        background-color: transparent;
+        border-color: $color-primary;
+        color: $color-primary;
+        
+        &:hover {
+          background-color: $color-primary;
+          color: $color-white;
+          transform: translateY(-1px);
+          box-shadow: $box-shadow-sm;
+        }
+        
+        &:active {
+          transform: translateY(0);
+        }
+        
+        .button-icon {
+          margin-right: $spacing-xs;
+        }
+      }
+    }
+    
+    // Mobile styles for event cards - cleaner white design
+    .event-cards-container {
+      padding: $spacing-sm;
+      
+      .event-mobile-card {
+        margin-bottom: $spacing-md;
+        background-color: $color-white;
+        border-radius: $border-radius;
+        border: 1px solid $color-light-gray;
+        overflow: hidden;
+        transition: $transition-base;
+        animation: fadeIn 0.3s ease-in-out;
+        box-shadow: $box-shadow-sm;
+        
+        &:hover {
+          box-shadow: $box-shadow;
+          transform: translateY(-2px);
+        }
+        
+        .event-mobile-header {
+          padding: $spacing-sm $spacing-md;
+          background-color: rgba($color-primary, 0.02);
+          border-bottom: 1px solid $color-light-gray;
+          
+          .event-mobile-title {
+            font-weight: $font-weight-bold;
+            color: $color-text;
+            font-size: 1rem;
+            font-family: $font-family-heading;
+          }
+        }
+        
+        .event-mobile-content {
+          padding: $spacing-sm $spacing-md $spacing-md;
+          
+          .event-mobile-roles {
+            margin-bottom: $spacing-sm;
+            display: flex;
+            flex-wrap: wrap;
+            gap: $spacing-xxs;
+            
+            .role-badge {
+              margin-bottom: $spacing-xxs;
+              background-color: rgba($color-primary, 0.1);
+              border: 1px solid rgba($color-primary, 0.2);
+              color: $color-text;
+              padding: 0.15rem $spacing-sm;
+              font-size: 0.85rem;
+              border-radius: $border-radius-pill;
+            }
+          }
+          
+          .event-mobile-details {
+            margin-bottom: $spacing-md;
+            
+            .event-mobile-location,
+            .event-mobile-datetime {
+              display: flex;
+              align-items: center;
+              color: $color-text-light;
+              font-size: 0.9rem;
+              margin-bottom: $spacing-xs;
+              
+              i {
+                margin-right: $spacing-xs;
+                opacity: 0.7;
+              }
+              
+              .mobile-time {
+                font-weight: $font-weight-medium;
+              }
+            }
+          }
+          
+          .event-mobile-actions {
+            .open-calendar-button {
+              // Update button styling to match artist dashboard
+              background-color: transparent;
+              border-color: $color-primary;
+              color: $color-primary;
+              
+              &:hover {
+                background-color: $color-primary;
+                color: $color-white;
+                transform: translateY(-1px);
+                box-shadow: $box-shadow-sm;
+              }
+              
+              &:active {
+                transform: translateY(0);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Media queries for responsive layouts
+@media (max-width: $breakpoint-md) {
+  .dashboard-header-container {
+    flex-direction: column;
+    align-items: flex-start;
+    
+    .dashboard-actions {
+      width: 100%;
+      
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+  
+  .search-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: $spacing-md;
+    
+    .search-box {
+      width: 100%;
+    }
+  }
+  
+  .stats-container,
+  .role-stats-container {
+    margin: 0 (-$spacing-sm) $spacing-md (-$spacing-sm);
+    border-radius: 0;
+  }
+  
+  .event-calendar-card .calendar-header {
+    .header-content .title-with-icon .calendar-title {
+      font-size: 1rem;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  // Mobile-specific event card styling
+  .events-container {
+    margin-left: -$spacing-sm;
+    margin-right: -$spacing-sm;
+    
+    .event-calendar-card {
+      border-radius: 0;
+      margin-bottom: $spacing-md;
+      
+      .calendar-header {
+        .header-content {
+          .title-with-icon .calendar-title {
+            font-size: 0.95rem;
+          }
+          
+          .events-count {
+            font-size: 0.8rem;
+            padding: $spacing-xxs;
+            
+            .count-label {
+              opacity: 0.7;
+              font-size: 0.7rem;
+            }
+          }
+        }
+      }
+      
+      .event-mobile-card {
+        background-color: $color-white;
+        border-radius: $border-radius-sm;
+        margin-bottom: $spacing-sm;
+        box-shadow: $box-shadow-sm;
+        border: none;
+        border-left: 3px solid $color-primary;
+      }
+    }
+  }
+}
+
+// Mobile optimizations
+@include mobile {
+  .dashboard-header-container {
+    flex-direction: column;
+    align-items: flex-start;
+    
+    .dashboard-title-section {
+      width: 100%;
+      margin-bottom: $spacing-sm;
+    }
+    
+    .dashboard-actions {
+      width: 100%;
+      flex-wrap: wrap;
+      
+      .btn {
+        margin-bottom: $spacing-xs;
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Animation keyframes
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// Standardized header styling for all dashboards
+.transparent-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-lg;
+  padding: $spacing-md 0;
+  width: 100%;
+  background-color: transparent;
+  border-radius: $border-radius;
+  min-height: 80px;
+  
+  .dashboard-main-title {
+    font-family: $font-family-heading;
+    font-weight: $font-weight-bold;
+    font-size: 2.2rem;
+    margin: 0;
+    color: $color-text;
+    flex: 0 0 auto;
+    line-height: 1.2;
+  }
+  
+  .header-search-box {
+    margin-left: auto;
+    flex: 0 0 350px;
+    display: flex;
+    align-items: center;
+    
+    .search-container {
+      margin-bottom: 0;
+      width: 100%;
+    }
+    
+    .search-box {
+      width: 100%;
+    }
+  }
+  
+  // Ensure mobile consistency across all dashboards
+  @include mobile {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: $spacing-md 0;
+    min-height: auto;
+    
+    .dashboard-main-title {
+      font-size: 1.8rem;
+      margin-bottom: $spacing-sm;
+      width: 100%;
+    }
+    
+    .header-search-box {
+      width: 100%;
+      flex: 0 0 auto;
+      margin-left: 0;
+    }
+  }
+}
+
+// Standardized loading container for all dashboards
+.dashboard-loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px; // Increased from 300px for better visual impact
+  width: 100%;
+  padding: $spacing-xl 0;
+  background: transparent;
+  
+  .loading-container {
+    margin: 0 auto;
+    max-width: 450px; // Increased from 400px for better text wrapping
+    text-align: center;
+  }
+}

@@ -1,0 +1,111 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+// Clean up by removing duplicate navbar styles and focus on navbar-main
+.navbar-main {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid $color-light-gray;
+  padding: 0.8125rem 0; // Increased from 0.5rem (added 5px to top and bottom)
+  
+  .container {
+    display: flex !important;
+    align-items: center !important;
+  }
+  
+  .navbar-brand {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-right: 1.5rem !important;
+    padding: 0 !important;
+  }
+  
+  .navbar-logo {
+    width: auto;
+    max-height: 45px; // Slightly increased to match taller navbar
+    object-fit: contain;
+  }
+  
+  .navbar-toggler {
+    border: none;
+    
+    &:focus {
+      box-shadow: none;
+      outline: none;
+    }
+  }
+  
+  .navbar-collapse {
+    display: flex;
+    align-items: center !important;
+    
+    @include mobile {
+      padding-top: 1rem;
+      flex-direction: column;
+      align-items: flex-start !important;
+    }
+  }
+  
+  .nav-link {
+    color: $color-text-light !important;
+    font-weight: $font-weight-medium;
+    padding: 0.5rem 1rem;
+    margin: 0 0.25rem;
+    border-radius: $border-radius;
+    
+    &:hover {
+      color: $color-primary !important;
+      background-color: rgba($color-primary, 0.05);
+    }
+    
+    &.active {
+      color: $color-primary !important;
+      background-color: rgba($color-primary, 0.1);
+      font-weight: $font-weight-bold;
+    }
+  }
+  
+  .logout-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: transparent;
+    border: 1px solid $color-danger;
+    border-radius: $border-radius;
+    color: $color-danger;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: $color-danger;
+      color: $color-white;
+    }
+  }
+  
+  // Mobile adjustments
+  @include mobile {
+    .navbar-collapse {
+      padding-top: 1rem;
+      
+      .logout-button {
+        margin-top: 1rem;
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    
+    .nav-link {
+      margin: 0.25rem 0;
+    }
+  }
+}
+
+// Update for dashboard page to account for fixed navbar
+.dashboard-page {
+  padding-top: 70px; // Increased from 60px to account for taller navbar
+}
+
+// Ensure content wrapper has enough top padding 
+.content-wrapper {
+  padding-top: 80px; // Increased from 70px to account for taller navbar
+}

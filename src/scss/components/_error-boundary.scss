@@ -1,0 +1,90 @@
+@use '../abstracts' as *;
+
+.error-boundary-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: $spacing-lg;
+  background-color: $color-light-background;
+  
+  .error-boundary-content {
+    max-width: 600px;
+    background-color: $color-white;
+    padding: $spacing-xl;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow-lg;
+    text-align: center;
+    
+    .error-icon {
+      margin-bottom: $spacing-lg;
+    }
+    
+    h1 {
+      font-weight: $font-weight-bold;
+      font-family: $font-family-heading;
+      margin-bottom: $spacing-md;
+      color: $color-text;
+    }
+    
+    p {
+      color: $color-text-light;
+      margin-bottom: $spacing-lg;
+    }
+    
+    .error-actions {
+      margin-bottom: $spacing-lg;
+    }
+    
+    .error-details {
+      background-color: $color-light-background;
+      padding: $spacing-md;
+      text-align: left;
+      border-radius: $border-radius;
+      margin-top: $spacing-lg;
+      
+      summary {
+        font-weight: $font-weight-semi-bold;
+        cursor: pointer;
+        margin-bottom: $spacing-sm;
+      }
+      
+      pre {
+        background-color: #f8f8f8;
+        padding: $spacing-sm;
+        overflow-x: auto;
+        font-size: $font-size-sm;
+        border-radius: $border-radius-sm;
+        border: 1px solid $color-light-gray;
+      }
+    }
+  }
+}
+
+// Dark mode styles
+body.dark-mode {
+  .error-boundary-container {
+    background-color: #121212;
+    
+    .error-boundary-content {
+      background-color: #1e1e1e;
+      
+      h1 {
+        color: #e0e0e0;
+      }
+      
+      p {
+        color: #a0a0a0;
+      }
+      
+      .error-details {
+        background-color: #2a2a2a;
+        
+        pre {
+          background-color: #333;
+          border-color: #444;
+        }
+      }
+    }
+  }
+}

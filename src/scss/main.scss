@@ -1,0 +1,32 @@
+@use './abstracts' as *;
+@use './utilities';
+
+// Import base styles
+@use './base/reset';
+@use './base/typography';
+@use './base/global'; // Global dashboard styles
+
+// Import layout
+@use './layout/navbar';
+@use './layout/footer';
+
+// Import components
+@use './components/buttons';
+@use './components/forms';
+@use './components/tables';
+@use './components/cards';
+@use './components/badges'; // New badges component
+@use './components/dashboard';
+@use './components/artist';
+@use './components/modal';
+@use './components/spinner';
+@use './components/alerts'; // New alerts component
+@use './components/error-boundary';
+@use './components/mobile-interactions'; // Add mobile interaction styles
+@use './components/history'; // Add the new history styles
+
+// Import themes
+@use './themes/dark-mode';
+
+// Import vendor CSS directly (moved after all @use statements)
+@import 'bootstrap-icons/font/bootstrap-icons.css';

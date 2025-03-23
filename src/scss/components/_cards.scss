@@ -1,0 +1,142 @@
+@use '../abstracts' as *;
+
+.card {
+  @include card;
+  margin-bottom: $spacing-xl;
+  
+  .table {
+    margin-bottom: 0;
+    
+    td {
+      padding: $spacing-sm;
+      border: none;
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+  }
+  
+  &-header {
+    @include flex-between;
+    background-color: $color-primary;
+    color: $color-text;
+    padding: 0.75rem 1rem;
+    flex-wrap: nowrap;
+    
+    h5 {
+      margin: 0;
+    }
+    
+    .badge {
+      background-color: $color-white;
+      color: $color-text;
+      margin-left: auto;
+    }
+  }
+
+  // Enhanced card styling
+  &.enhanced-card {
+    border: none;
+    box-shadow: $box-shadow-sm;
+    border-radius: $border-radius;
+    overflow: hidden;
+    transition: $transition-base;
+    @include gpu-accelerate;
+    
+    &:hover {
+      box-shadow: $box-shadow-lg;
+      transform: translateY(-2px);
+    }
+    
+    .card-header-enhanced {
+      @include flex-between;
+      padding: $spacing-md;
+      background-color: $color-white;
+      border-bottom: 1px solid $color-light-gray;
+      
+      .card-header-content {
+        .card-header-titles {
+          .card-title-enhanced {
+            margin-bottom: 0;
+            font-weight: $font-weight-bold;
+            color: $color-text;
+            font-family: $font-family-heading;
+          }
+          
+          .card-subtitle-enhanced {
+            font-size: $font-size-sm;
+            color: $color-text-light;
+            margin-top: $spacing-xxs;
+          }
+        }
+      }
+      
+      .card-header-actions {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+      }
+    }
+    
+    .card-body-enhanced {
+      padding: $spacing-md;
+    }
+    
+    .card-footer-enhanced {
+      padding: $spacing-md;
+      background-color: $color-light-background;
+      border-top: 1px solid $color-light-gray;
+    }
+  }
+}
+
+.calendar-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: $font-weight-bold;
+  text-align: left;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 10px;
+}
+
+.calendar-row {
+  td {
+    font-weight: $font-weight-bold;
+    padding: 25px;
+    font-size: 26px;
+    text-align: center;
+    background-color: #f9f9f9;
+  }
+}
+
+.daily-progression {
+  .day-entry:last-child {
+    margin-bottom: 0 !important;
+  }
+  
+  .card {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+@include respond-to(sm) {
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: row;
+    
+    button {
+      width: auto;
+    }
+  }
+}

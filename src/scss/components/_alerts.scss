@@ -1,0 +1,93 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+.alert {
+  // Basic alert styling
+  border-radius: $border-radius;
+  border: none;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  
+  // Enhanced alert styling
+  &.enhanced-alert {
+    display: flex;
+    align-items: flex-start;
+    box-shadow: $box-shadow-sm;
+    border-left: 4px solid transparent;
+    
+    &.alert-primary {
+      background-color: rgba($literal-color-primary, 0.1);
+      border-left-color: $color-primary;
+      color: color.adjust($literal-color-primary, $lightness: -30%);
+    }
+    
+    &.alert-info {
+      background-color: rgba($literal-color-info, 0.1);
+      border-left-color: $color-info;
+      color: color.adjust($literal-color-info, $lightness: -30%);
+    }
+    
+    &.alert-success {
+      background-color: rgba($literal-color-success, 0.1);
+      border-left-color: $color-success;
+      color: color.adjust($literal-color-success, $lightness: -25%);
+    }
+    
+    &.alert-warning {
+      background-color: rgba($literal-color-warning, 0.1);
+      border-left-color: $color-warning;
+      color: color.adjust($literal-color-warning, $lightness: -30%);
+    }
+    
+    &.alert-danger {
+      background-color: rgba($literal-color-danger, 0.1);
+      border-left-color: $color-danger;
+      color: color.adjust($literal-color-danger, $lightness: -15%);
+    }
+    
+    .alert-icon {
+      margin-right: $spacing-sm;
+      display: flex;
+      align-items: center;
+      color: inherit;
+    }
+    
+    .alert-content {
+      flex: 1;
+    }
+    
+    .btn-close {
+      padding: $spacing-xs;
+      margin: (-$spacing-xs) (-$spacing-xs) (-$spacing-xs) auto;
+      opacity: 0.5;
+      
+      &:focus {
+        box-shadow: none;
+        opacity: 0.8;
+      }
+    }
+  }
+  
+  // Error message container (from ErrorMessage component)
+  &.error-message-container {
+    display: flex;
+    align-items: center;
+    box-shadow: $box-shadow-sm;
+    margin-bottom: $spacing-md;
+    
+    .error-message-text {
+      flex: 1;
+    }
+    
+    .retry-button {
+      margin-left: auto;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      
+      &:hover {
+        transform: translateY(-1px);
+      }
+    }
+  }
+}

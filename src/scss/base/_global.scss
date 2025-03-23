@@ -1,0 +1,275 @@
+@use '../abstracts' as *;
+
+// Global Dashboard Components
+.dashboard-page {
+  padding-top: 75px; // Accounts for fixed navbar
+  background-color: $color-light-background;
+  min-height: 100vh;
+  padding-bottom: $spacing-xl;
+  
+  .container {
+    max-width: 1200px;
+  }
+}
+
+// Common Dashboard Elements
+.dashboard-title {
+  font-family: $font-family-heading;
+  font-weight: $font-weight-bold;
+  font-size: 1.75rem;
+  margin-bottom: $spacing-md;
+  color: $color-text;
+  
+  @include tablet {
+    font-size: 2rem;
+  }
+}
+
+.dashboard-card {
+  background-color: $color-white;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow-sm;
+  border: 1px solid $color-light-gray;
+  overflow: hidden;
+  margin-bottom: $spacing-md;
+  transition: $transition-base;
+  
+  &:hover {
+    box-shadow: $box-shadow;
+    transform: translateY(-1px);
+  }
+  
+  .card-header {
+    padding: $spacing-md;
+    border-bottom: 1px solid $color-light-gray;
+    background-color: $color-white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .card-title {
+      margin-bottom: 0;
+      font-weight: $font-weight-bold;
+      font-family: $font-family-heading;
+      color: $color-text;
+    }
+  }
+  
+  .card-body {
+    padding: $spacing-md;
+  }
+}
+
+// General Item List
+.item-list {
+  .list-header {
+    display: flex;
+    padding: $spacing-xs $spacing-md;
+    border-bottom: 1px solid $color-light-gray;
+    background-color: rgba($color-primary, 0.05);
+    
+    .list-header-item {
+      font-weight: $font-weight-bold;
+      font-size: $font-size-sm;
+      color: $color-text;
+    }
+  }
+  
+  .list-item {
+    display: flex;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: 1px solid $color-light-gray;
+    transition: $transition-base;
+    
+    &:hover {
+      background-color: rgba($color-primary, 0.02);
+    }
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+// Badge styles
+.dashboard-badge {
+  display: inline-block;
+  padding: $spacing-xxs $spacing-xs;
+  border-radius: $border-radius-pill;
+  font-size: 0.85rem;
+  font-weight: $font-weight-normal;
+  background-color: rgba($color-primary, 0.1);
+  color: $color-text;
+  border: 1px solid rgba($color-primary, 0.2);
+  margin-right: $spacing-xxs;
+  margin-bottom: $spacing-xxs;
+  
+  &.badge-warning {
+    background-color: rgba($color-warning, 0.1);
+    border-color: rgba($color-warning, 0.2);
+  }
+  
+  &.badge-danger {
+    background-color: rgba($color-danger, 0.1);
+    border-color: rgba($color-danger, 0.2);
+  }
+  
+  &.badge-success {
+    background-color: rgba($color-success, 0.1);
+    border-color: rgba($color-success, 0.2);
+  }
+}
+
+// Global role badge styling (shared by all dashboards)
+.role-badge {
+  display: inline-block;
+  padding: 0.15rem $spacing-sm;
+  border-radius: $border-radius-pill;
+  font-size: 0.85rem;
+  font-weight: $font-weight-normal;
+  background-color: rgba($color-primary, 0.1) !important;
+  border: 1px solid rgba($color-primary, 0.2);
+  color: $color-text !important;
+  margin-right: 4px;
+  margin-bottom: 4px;
+  
+  &.bg-warning {
+    background-color: rgba($color-warning, 0.1) !important;
+    border-color: rgba($color-warning, 0.2);
+  }
+  
+  &.bg-danger {
+    background-color: rgba($color-danger, 0.1) !important;
+    border-color: rgba($color-danger, 0.2);
+  }
+  
+  &.bg-success {
+    background-color: rgba($color-success, 0.1) !important;
+    border-color: rgba($color-success, 0.2);
+  }
+}
+
+// Improved search container that's consistent across dashboards
+.search-container {
+  margin-bottom: $spacing-lg;
+  position: relative;
+  width: 100%;
+  
+  .search-box {
+    position: relative;
+    width: 350px;
+    border-radius: $border-radius; // Added consistent border radius
+    overflow: hidden; // Prevent content from overflowing the rounded corners
+    
+    @include mobile {
+      width: 100%;
+    }
+    
+    .search-icon-container,
+    .search-icon {
+      background-color: transparent;
+      border-right: none;
+      color: $color-text-light;
+      border-radius: $border-radius; // Consistent radius
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    
+    .search-input {
+      border-left: none;
+      box-shadow: none;
+      padding-right: 40px;
+      background-color: $color-white;
+      border-radius: $border-radius; // Consistent radius
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      
+      &:focus {
+        box-shadow: none;
+        border-color: $color-primary;
+        
+        + .search-icon-container,
+        + .search-icon {
+          border-color: $color-primary;
+          color: $color-primary;
+        }
+      }
+      
+      &::placeholder {
+        font-size: $font-size-sm;
+      }
+    }
+    
+    .search-clear-button,
+    .clear-search {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $color-text-light;
+      padding: 0 $spacing-sm;
+      background: transparent;
+      border: none;
+      z-index: 5;
+      border-radius: 0 $border-radius $border-radius 0; // Match the right side radius
+      
+      &:hover {
+        color: $color-danger;
+      }
+    }
+  }
+}
+
+// Common filter components
+.filter-section {
+  margin-bottom: $spacing-md;
+  
+  .filter-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semi-bold;
+    margin-bottom: $spacing-xs;
+  }
+  
+  .filter-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+  }
+}
+
+// Mobile optimizations
+@include mobile {
+  .dashboard-card {
+    border-radius: $border-radius-sm;
+    
+    .card-header {
+      padding: $spacing-sm;
+      
+      .card-title {
+        font-size: 1rem;
+      }
+    }
+    
+    .card-body {
+      padding: $spacing-sm;
+    }
+  }
+  
+  .item-list {
+    .list-header {
+      padding: $spacing-xs;
+    }
+    
+    .list-item {
+      padding: $spacing-xs;
+      flex-direction: column;
+      
+      &:not(:last-child) {
+        border-bottom: 1px solid $color-light-gray;
+      }
+    }
+  }
+}

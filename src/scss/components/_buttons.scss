@@ -1,0 +1,171 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+.btn {
+  border-radius: $border-radius;
+  font-weight: $font-weight-bold;
+  transition: all 0.3s ease;
+  
+  &:focus {
+    @include focus-outline; // Add a standardized focus outline
+  }
+  
+  &-delete {
+    background-color: $color-danger;
+    color: $color-white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: $border-radius;
+    font-weight: $font-weight-bold;
+    
+    &:hover {
+      color: $color-white;
+      background-color: color.adjust($color-danger, $lightness: -10%);
+    }
+    
+    &:focus {
+      @include focus-outline;
+      outline-color: color.adjust($color-danger, $lightness: 20%);
+    }
+    
+    &-mobile {
+      min-width: 70px;
+      height: 32px;
+      padding: 0 $spacing-md !important;
+      font-size: 0.85rem !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      background-color: $color-danger !important;
+      border-color: $color-danger !important;
+      color: $color-white !important;
+      margin-left: auto !important;
+      margin-right: 0 !important;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+  }
+  
+  &-add {
+    background-color: $color-primary;
+    color: $color-text;
+    border: none;
+    font-weight: $font-weight-bold;
+    
+    &:hover {
+      color: $color-white;
+      background-color: color.adjust($color-primary, $lightness: -10%);
+    }
+    
+    &-mobile {
+      padding: $spacing-xs $spacing-md;
+      font-size: 0.85rem;
+      height: 32px;
+      min-width: 90px;
+      margin-left: auto;
+      margin-right: 0;
+      background-color: $color-success;
+      border-color: $color-success;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+  }
+  
+  // Enhanced button styling
+  &-enhanced {
+    @include gpu-accelerate;
+    position: relative;
+    overflow: hidden;
+    
+    &:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transform: translateX(-100%);
+    }
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: $box-shadow-sm;
+      
+      &:before {
+        transform: translateX(100%);
+        transition: transform 0.8s ease;
+      }
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    .btn-spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: $spacing-xs;
+    }
+    
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      margin-right: $spacing-xs;
+      transition: transform 0.2s ease;
+    }
+    
+    &:hover .btn-icon {
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Make sure these styles are present for the btn-enhanced class
+
+.btn-enhanced {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: $transition-base;
+  position: relative;
+  
+  .btn-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba($color-text, 0.2);
+    border-radius: 50%;
+    border-top-color: $color-text;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+  }
+  
+  .btn-icon {
+    margin-right: 0.5rem;
+  }
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.dashboard-header {
+  .btn-secondary {
+    background-color: $color-primary;
+    border-color: $color-primary;
+    color: $color-text;
+    
+    &:hover {
+      background-color: color.adjust($color-primary, $lightness: -10%);
+      border-color: color.adjust($color-primary, $lightness: -10%);
+      color: $color-text;
+    }
+  }
+}

@@ -1,0 +1,212 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+// Loading container
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  width: 100%;
+  padding: $spacing-lg;
+  text-align: center;
+  margin: 0 auto;
+  max-width: 350px;
+}
+
+// Loading spinner
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba($color-primary, 0.2);
+  border-radius: 50%;
+  border-top-color: $color-primary;
+  animation: spin 1s linear infinite;
+  margin-bottom: $spacing-md;
+}
+
+// Loading text
+.loading-text {
+  color: $color-text;
+  font-weight: $font-weight-medium;
+  font-size: $font-size-lg;
+  margin-top: $spacing-sm;
+  font-family: $font-family-heading;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+// Progress indicator
+.polling-info {
+  width: 100%;
+  max-width: 300px;
+  margin-top: $spacing-md;
+  
+  .progress {
+    height: 8px;
+    border-radius: $border-radius-pill;
+    background-color: rgba($color-primary, 0.1);
+    overflow: hidden;
+    
+    .progress-bar {
+      background-color: $color-primary;
+      transition: width 0.5s ease;
+    }
+  }
+  
+  .text-muted {
+    font-size: $font-size-sm;
+    text-align: center;
+    display: block;
+    margin-top: $spacing-xs;
+  }
+}
+
+// Loading overlay
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba($color-white, 0.95);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  .loading-container {
+    margin: 0 auto;
+  }
+}
+
+// Dashboard loader container styling
+.dashboard-loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  width: 100%;
+  padding: $spacing-xl 0;
+  background: transparent; // Ensure transparent background
+  
+  .loading-container {
+    margin: 0 auto;
+    max-width: 400px;
+    text-align: center;
+  }
+}
+
+// Mobile loading styles
+.mobile-loading-container {
+  .mobile-loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: $spacing-lg;
+    
+    .loading-text {
+      margin-left: $spacing-sm;
+      margin-top: 0; // Override top margin when in mobile spinner
+    }
+  }
+}
+
+// Error container
+.error-container {
+  max-width: 800px;
+  margin: $spacing-xl auto;
+  padding: $spacing-lg;
+  background-color: $color-white;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  animation: slideUp 0.3s ease-out;
+  
+  h1 {
+    color: $color-danger;
+    margin-bottom: $spacing-md;
+  }
+  
+  details {
+    margin: $spacing-lg 0;
+    padding: $spacing-md;
+    background-color: $color-light-background;
+    border-radius: $border-radius;
+    
+    summary {
+      font-weight: $font-weight-bold;
+      cursor: pointer;
+      margin-bottom: $spacing-sm;
+    }
+    
+    pre {
+      overflow-x: auto;
+      background-color: $color-white;
+      padding: $spacing-sm;
+      border-radius: $border-radius-sm;
+      border: 1px solid $color-light-gray;
+      max-height: 400px;
+      @include smooth-scroll;
+    }
+  }
+  
+  button {
+    background-color: $color-primary;
+    color: $color-text;
+    border: none;
+    padding: $spacing-sm $spacing-lg;
+    border-radius: $border-radius;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: $transition-base;
+    
+    &:hover {
+      background-color: color.adjust($color-primary, $lightness: -5%);
+      transform: translateY(-1px);
+    }
+    
+    &:focus {
+      @include focus-outline;
+    }
+  }
+}
+
+// Content wrapper with centered spinner 
+.content-wrapper.d-flex.justify-content-center {
+  .loading-container {
+    margin: 0 auto;
+    text-align: center;
+    max-width: 450px; // Slightly wider for progress indicators
+  }
+}
+
+// Animations
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// Added from forms.scss
+@keyframes float {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-30px) rotate(3deg);
+  }
+}

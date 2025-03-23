@@ -1,0 +1,34 @@
+@use "sass:color";
+
+// Base colors - literal values for use in calculations
+$literal-color-primary: #e9c417; // Main brand yellow
+$literal-color-secondary: #6c757d;
+$literal-color-success: #28a745;
+$literal-color-danger: #dc3545;
+$literal-color-warning: #ffc107;
+$literal-color-info: #17a2b8;
+$literal-color-gray: #6c757d;
+
+// Theme-specific colors that will be used directly in components
+$color-primary: $literal-color-primary;
+$color-primary-dark: color.adjust($literal-color-primary, $lightness: -10%);
+$color-primary-light: color.adjust($literal-color-primary, $lightness: 30%);
+$color-secondary: $literal-color-secondary;
+$color-success: $literal-color-success;
+$color-danger: $literal-color-danger;
+$color-warning: $literal-color-warning;
+$color-info: $literal-color-info;
+$color-gray: $literal-color-gray; // Add missing variable
+
+// Text colors
+$color-text: #1c170b; // Deep brand text color
+$color-text-light: #4a4a4a;
+$color-text-muted: #888;
+
+// Background colors
+$color-background: #f9f9f9; // Slightly lighter
+$color-light-background: #f8f9fa; // Add missing variable
+$color-bg-light: #f8f9fa;
+$color-bg-dark: #333;
+$color-white: #ffffff;
+$color-light-gray: #dee2e6;

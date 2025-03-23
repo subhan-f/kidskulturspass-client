@@ -1,0 +1,103 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+.badge {
+  // Basic badge styling
+  font-weight: $font-weight-medium;
+  
+  // Enhanced badge with count
+  &.enhanced-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-xxs $spacing-xs;
+    font-weight: $font-weight-normal;
+    transition: $transition-base;
+    
+    // Capsule badge enhancement
+    &.capsule-badge {
+      border-radius: 50px;
+      padding: $spacing-xxs $spacing-sm;
+      font-size: 0.85rem;
+    }
+
+    // Style overrides for various variants
+    &.bg-primary {
+      background-color: rgba($literal-color-primary, 0.1) !important;
+      color: $color-text !important;
+      border: 1px solid rgba($literal-color-primary, 0.2);
+    }
+    
+    &.bg-secondary {
+      background-color: rgba($literal-color-gray, 0.1) !important;
+      color: $color-text !important;
+      border: 1px solid rgba($literal-color-gray, 0.2);
+    }
+    
+    &.bg-success {
+      background-color: rgba($literal-color-success, 0.1) !important;
+      color: color.adjust($literal-color-success, $lightness: -25%) !important;
+      border: 1px solid rgba($literal-color-success, 0.2);
+    }
+    
+    &.bg-danger {
+      background-color: rgba($literal-color-danger, 0.1) !important;
+      color: color.adjust($literal-color-danger, $lightness: -15%) !important;
+      border: 1px solid rgba($literal-color-danger, 0.2);
+    }
+    
+    &.bg-warning {
+      background-color: rgba($literal-color-warning, 0.1) !important;
+      color: color.adjust($literal-color-warning, $lightness: -25%) !important;
+      border: 1px solid rgba($literal-color-warning, 0.2);
+    }
+    
+    // Count indicator styling
+    .badge-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: $spacing-xxs;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      font-size: 0.75rem;
+      font-weight: $font-weight-bold;
+    }
+    
+    // Hover effect
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+  
+  // Role badge specific styling
+  &.role-badge {
+    display: inline-block;
+    padding: 0.15rem $spacing-sm;
+    border-radius: $border-radius-pill;
+    font-size: 0.85rem;
+    font-weight: $font-weight-normal;
+    background-color: rgba($literal-color-primary, 0.1) !important;
+    border: 1px solid rgba($literal-color-primary, 0.2);
+    color: $color-text !important;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    
+    &.bg-warning {
+      background-color: rgba($literal-color-warning, 0.1) !important;
+      border-color: rgba($literal-color-warning, 0.2);
+    }
+    
+    &.bg-danger {
+      background-color: rgba($literal-color-danger, 0.1) !important;
+      border-color: rgba($literal-color-danger, 0.2);
+    }
+    
+    &.bg-success {
+      background-color: rgba($literal-color-success, 0.1) !important;
+      border-color: rgba($literal-color-success, 0.2);
+    }
+  }
+}

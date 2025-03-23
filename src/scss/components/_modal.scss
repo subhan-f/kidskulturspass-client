@@ -1,0 +1,515 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+// Modern Modal Styles
+
+.artist-modal {
+  .modal-content {
+    border-radius: $border-radius-lg;
+    border: none;
+    overflow: hidden;
+    box-shadow: $box-shadow-xl;
+    @include gpu-accelerate; // Add GPU acceleration
+  }
+  
+  .modal-header {
+    background-color: rgba($color-primary, 0.05);
+    padding: $spacing-md;
+    border-bottom: 1px solid rgba($color-primary, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .modal-header-content {
+      display: flex;
+      align-items: center;
+    }
+    
+    .modal-title-content {
+      display: flex;
+      flex-direction: column;
+      
+      .modal-title-text {
+        font-family: $font-family-heading;
+        font-weight: $font-weight-bold;
+        font-size: $font-size-lg;
+        color: $color-text;
+      }
+      
+      .modal-subtitle {
+        font-size: $font-size-sm;
+        color: $color-text-light;
+        margin-top: 2px;
+      }
+    }
+    
+    .icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba($color-primary, 0.1);
+      color: $color-primary;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: $spacing-sm;
+    }
+    
+    .modal-close-button {
+      color: $color-text-light;
+      padding: $spacing-xxs;
+      margin: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: $transition-base;
+      position: absolute;
+      top: $spacing-sm;
+      right: $spacing-sm;
+      
+      &:hover {
+        background-color: rgba($color-danger, 0.1);
+        color: $color-danger;
+        transform: rotate(90deg);
+      }
+      
+      &:focus {
+        box-shadow: 0 0 0 0.25rem rgba($color-primary, 0.25);
+      }
+    }
+  }
+  
+  .modal-body {
+    padding: $spacing-lg;
+    
+    @include mobile {
+      padding: $spacing-md;
+    }
+    
+    .form-group-modern {
+      margin-bottom: $spacing-lg;
+      
+      label {
+        font-weight: $font-weight-medium;
+        margin-bottom: $spacing-xs;
+        font-size: $font-size-sm;
+        color: $color-text;
+      }
+      
+      .form-control-modern {
+        border-radius: $border-radius;
+        border: 1px solid $color-light-gray;
+        padding: $spacing-sm;
+        transition: all 0.2s ease;
+        
+        &:focus {
+          border-color: $color-primary;
+          box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.25);
+          outline: none;
+        }
+      }
+      
+      .helper-text {
+        margin-top: $spacing-xxs;
+        font-size: $font-size-sm * 0.9;
+        color: $color-text-light;
+      }
+    }
+  }
+  
+  .modal-footer {
+    padding: $spacing-md;
+    border-top: 1px solid $color-light-gray;
+    gap: $spacing-sm;
+    
+    button {
+      min-width: 120px;
+      padding: $spacing-xs $spacing-md;
+      
+      @include mobile {
+        flex: 1;
+      }
+    }
+    
+    .btn-cancel {
+      border-color: $color-light-gray;
+      color: $color-text-light;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: $color-light-gray;
+        color: $color-text;
+      }
+    }
+    
+    .save-artist-btn {
+      background-color: $color-primary;
+      border-color: $color-primary;
+      color: $color-text;
+      transition: all 0.2s ease;
+      @include gpu-accelerate; // Add GPU acceleration
+      
+      &:hover {
+        background-color: color.adjust($color-primary, $lightness: -5%);
+        transform: translateY(-1px);
+      }
+      
+      &:active {
+        transform: translateY(0);
+        background-color: color.adjust($color-primary, $lightness: -10%);
+      }
+    }
+  }
+}
+
+// Enhanced modal styles for improved-modal
+.improved-modal {
+  .modal-content {
+    border-radius: $border-radius-lg;
+    box-shadow: $box-shadow-xl;
+    animation: modalFadeIn 0.3s ease-out;
+  }
+  
+  .modal-header {
+    background: linear-gradient(to right, rgba($color-primary, 0.1), rgba($color-primary, 0.02));
+    border-left: 4px solid $color-primary;
+  }
+  
+  .form-control-modern {
+    &:focus {
+      transform: translateY(-1px);
+    }
+  }
+  
+  .save-artist-btn {
+    position: relative;
+    overflow: hidden;
+    
+    &:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transform: translateX(-100%);
+    }
+    
+    &:hover:before {
+      transform: translateX(100%);
+      transition: transform 0.8s ease;
+    }
+  }
+}
+
+// Fullscreen Artist Modal
+.fullscreen-artist-modal {
+  margin: 0 !important;
+  max-width: 100% !important;
+  
+  .modal-content {
+    border: none;
+    border-radius: 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, rgba($color-primary, 0.02) 0%, rgba($color-primary, 0.05) 100%);
+  }
+}
+
+.fullscreen-modal-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba($color-primary, 0.02);
+  overflow-y: auto;
+  @include smooth-scroll;
+}
+
+.fullscreen-modal-container {
+  flex: 1;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: $spacing-xl $spacing-md;
+  
+  @include mobile {
+    padding: $spacing-lg $spacing-sm;
+  }
+}
+
+.fullscreen-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xl;
+  
+  .modal-header-content {
+    display: flex;
+    align-items: center;
+    
+    .icon-wrapper {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background-color: rgba($color-primary, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: $spacing-md;
+      color: $color-primary;
+    }
+    
+    .modal-title-content {
+      .fullscreen-modal-title {
+        font-family: $font-family-heading;
+        font-weight: $font-weight-bold;
+        font-size: $font-size-xxl * 1.5;
+        margin: 0;
+        color: $color-text;
+      }
+      
+      .modal-subtitle {
+        font-size: $font-size-lg;
+        color: $color-text-light;
+      }
+    }
+  }
+  
+  .close-modal-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: $color-text-light;
+    transition: $transition-base;
+    
+    &:hover {
+      background-color: rgba($color-danger, 0.1);
+      color: $color-danger;
+      transform: rotate(90deg);
+    }
+  }
+  
+  @include mobile {
+    flex-direction: column;
+    align-items: flex-start;
+    
+    .modal-header-content {
+      margin-bottom: $spacing-md;
+      
+      .icon-wrapper {
+        width: 48px;
+        height: 48px;
+      }
+      
+      .modal-title-content {
+        .fullscreen-modal-title {
+          font-size: $font-size-xl;
+        }
+      }
+    }
+    
+    .close-modal-button {
+      position: absolute;
+      top: $spacing-md;
+      right: $spacing-md;
+    }
+  }
+}
+
+.fullscreen-modal-body {
+  background-color: $color-white;
+  border-radius: $border-radius-lg;
+  padding: $spacing-xl;
+  box-shadow: $box-shadow;
+  
+  .form-control-modern, .form-select {
+    height: 54px;
+    padding: $spacing-md;
+    font-size: $font-size-lg;
+    border-radius: $border-radius;
+    border: 2px solid $color-light-gray;
+    transition: $transition-base;
+    
+    &:focus {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 0.25rem rgba($color-primary, 0.15);
+    }
+    
+    &::placeholder {
+      color: rgba($color-text-light, 0.5);
+    }
+  }
+  
+  .form-label {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    margin-bottom: $spacing-sm;
+  }
+  
+  .helper-text {
+    margin-top: $spacing-xs;
+    font-size: $font-size-sm;
+    color: $color-text-light;
+  }
+  
+  @include mobile {
+    padding: $spacing-lg $spacing-md;
+    
+    .form-control-modern, .form-select {
+      height: 48px;
+      font-size: $font-size-base;
+    }
+    
+    .form-label {
+      font-size: $font-size-base;
+    }
+  }
+}
+
+.fullscreen-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: $spacing-xl;
+  gap: $spacing-md;
+  
+  .btn {
+    min-width: 180px;
+    
+    &.btn-cancel {
+      background-color: transparent;
+    }
+    
+    &.save-artist-btn {
+      background-color: $color-primary;
+      border-color: $color-primary;
+      color: $color-text;
+      
+      &:hover {
+        background-color: color.adjust($color-primary, $lightness: -5%);
+        transform: translateY(-2px);
+        box-shadow: $box-shadow;
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+  
+  @include mobile {
+    flex-direction: column-reverse;
+    gap: $spacing-sm;
+    
+    .btn {
+      width: 100%;
+      margin: 0;
+    }
+  }
+}
+
+// Artist Popup Modal (smaller version of the fullscreen modal)
+.artist-popup-modal {
+  .modal-content {
+    border: none;
+    border-radius: $border-radius-lg;
+    box-shadow: $box-shadow-lg;
+    animation: modalFadeIn 0.3s ease-out;
+  }
+  
+  .modal-dialog {
+    max-width: 650px;
+  }
+  
+  .popup-modal-header {
+    background: linear-gradient(to right, rgba($color-primary, 0.1), rgba($color-primary, 0.02));
+    border-bottom: 1px solid rgba($color-primary, 0.1);
+    padding: $spacing-md;
+    
+    .modal-title {
+      font-family: $font-family-heading;
+      font-weight: $font-weight-bold;
+      font-size: $font-size-lg;
+      color: $color-text;
+    }
+    
+    .icon-wrapper {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: rgba($color-primary, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $color-primary;
+    }
+    
+    .close {
+      color: $color-text-light;
+      transition: $transition-base;
+      
+      &:hover {
+        color: $color-danger;
+        transform: rotate(90deg);
+      }
+    }
+  }
+  
+  .popup-modal-body {
+    padding: $spacing-lg;
+    
+    .form-control, .form-select {
+      padding: $spacing-sm;
+      border-radius: $border-radius;
+      border: 1px solid $color-light-gray;
+      transition: $transition-base;
+      
+      &:focus {
+        border-color: $color-primary;
+        box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.15);
+      }
+    }
+    
+    .form-label {
+      font-weight: $font-weight-medium;
+      margin-bottom: $spacing-xs;
+    }
+  }
+  
+  @include mobile {
+    .modal-dialog {
+      margin: $spacing-xs;
+    }
+    
+    .popup-modal-body {
+      padding: $spacing-md;
+    }
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@include mobile {
+  .modal-dialog {
+    margin: $spacing-sm;
+  }
+  
+  .artist-modal .modal-body {
+    padding: $spacing-md;
+  }
+}

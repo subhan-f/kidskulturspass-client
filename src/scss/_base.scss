@@ -1,0 +1,95 @@
+@use './abstracts' as *;
+@use "sass:color";
+
+// Base styles
+body {
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  line-height: 1.6;
+  color: $color-text;
+  background-color: $color-background;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family-heading;
+  font-weight: $font-weight-bold;
+  margin-bottom: $spacing-md;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: $font-size-xxl * 1.5;
+}
+
+h2 {
+  font-size: $font-size-xxl;
+}
+
+h3 {
+  font-size: $font-size-xl;
+}
+
+h4 {
+  font-size: $font-size-lg;
+}
+
+p {
+  margin-bottom: $spacing-md;
+}
+
+a {
+  color: $color-primary;
+  text-decoration: none;
+  transition: $transition-base;
+  
+  &:hover {
+    color: color.adjust($literal-color-primary, $lightness: -10%);
+    text-decoration: none;
+  }
+}
+
+.container {
+  width: 100%;
+  padding-right: $spacing-md;
+  padding-left: $spacing-md;
+  margin-right: auto;
+  margin-left: auto;
+  max-width: 1200px;
+}
+
+// Focus styles for accessibility
+:focus {
+  outline: 2px solid rgba($literal-color-primary, 0.5);
+  outline-offset: 2px;
+}
+
+// Selection styles
+::selection {
+  background-color: rgba($literal-color-primary, 0.2);
+  color: $color-text;
+}
+
+// Improved button base styles
+.btn {
+  font-weight: $font-weight-medium;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius;
+  transition: $transition-base;
+  
+  &:focus {
+    box-shadow: 0 0 0 0.2rem rgba($literal-color-primary, 0.25);
+  }
+  
+  &-primary {
+    background-color: $color-primary;
+    border-color: $color-primary;
+    color: $color-text;
+    
+    &:hover {
+      background-color: color.adjust($literal-color-primary, $lightness: -5%);
+      border-color: color.adjust($literal-color-primary, $lightness: -5%);
+    }
+  }
+}

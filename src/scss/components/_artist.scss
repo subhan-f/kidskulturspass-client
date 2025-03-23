@@ -1,0 +1,1862 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+// Artist component styles
+
+// Calendar card styles
+.card {
+  margin-bottom: $spacing-lg;
+  box-shadow: $box-shadow;
+  border: none;
+  border-radius: $border-radius;
+  overflow: hidden;
+  transition: $transition-base;
+  
+  &:hover {
+    box-shadow: $box-shadow-lg;
+  }
+  
+  .card-header {
+    @include flex-between;
+    padding: $spacing-sm $spacing-md;
+    background-color: $color-white;
+    border-bottom: 1px solid $color-light-gray;
+    
+    .calendar-title {
+      margin-bottom: 0;
+      font-weight: $font-weight-bold;
+      color: $color-text;
+      font-family: $font-family-heading;
+      
+      @include mobile {
+        font-size: 1.1rem;
+      }
+    }
+  }
+  
+  .card-body {
+    padding: 0;
+  }
+}
+
+.action-col {
+  text-align: right;
+}
+
+.artist-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+  
+  thead th {
+    padding: $spacing-sm $spacing-md;
+    background-color: $color-primary;
+    color: $color-text;
+    font-weight: $font-weight-bold;
+    border: none;
+    font-family: $font-family-heading;
+    text-transform: uppercase;
+    font-size: $font-size-sm;
+    letter-spacing: 0.5px;
+  }
+  
+  tbody td {
+    vertical-align: middle;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: 1px solid $color-light-gray;
+  }
+  
+  tbody tr {
+    transition: $transition-fast;
+    
+    &:hover {
+      background-color: rgba($color-primary, 0.05);
+    }
+    
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+  
+  .btn-delete {
+    padding: $spacing-xxs $spacing-xs;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-sm;
+    transition: $transition-base;
+    
+    &:hover {
+      transform: translateY(-1px);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
+  
+  .name-column {
+    width: 25%;
+  }
+  
+  .role-column {
+    width: 25%;
+  }
+  
+  .email-column {
+    width: 40%;
+  }
+  
+  .action-column {
+    width: 10%;
+    text-align: right;
+  }
+}
+
+// Mobile artist row styles
+.mobile-artist-row {
+  @include flex-between;
+  padding: $spacing-xs $spacing-xxs;
+  width: 100%;
+  
+  .artist-content {
+    flex: 1;
+    margin-right: $spacing-sm;
+    overflow: hidden;
+    
+    .artist-title {
+      font-weight: $font-weight-bold;
+      margin-bottom: $spacing-xxs;
+      font-size: $font-size-sm;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .artist-email {
+      font-size: $font-size-sm;
+      color: $color-text-light;
+      word-break: break-all;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+  
+  .btn-delete-mobile {
+    margin-left: $spacing-xs;
+    padding: $spacing-xxs $spacing-xs;
+    align-self: center;
+    flex-shrink: 0;
+    font-size: $font-size-sm;
+    height: 32px; // Fixed height
+    min-width: 70px; // Minimum width
+    border-radius: $border-radius-sm;
+  }
+}
+
+// Add button styles
+.btn-add-mobile {
+  white-space: nowrap;
+  background-color: $color-success;
+  color: $color-white;
+  border: none;
+  font-weight: $font-weight-medium;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius;
+  transition: $transition-base;
+  height: 38px; // Fixed height for alignment
+  
+  &:hover {
+    background-color: color.adjust($color-success, $lightness: -5%);
+    transform: translateY(-1px);
+    box-shadow: $box-shadow-sm;
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  @include mobile {
+    padding: $spacing-xxs $spacing-sm;
+    font-size: $font-size-sm;
+    height: 34px;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// Enhanced table responsiveness
+.table-responsive {
+  @include mobile {
+    border: 0;
+    
+    table {
+      margin-bottom: 0;
+    }
+    
+    td {
+      padding: $spacing-xs;
+    }
+  }
+}
+
+// Artist modal responsive improvements
+.modal {
+  .modal-header {
+    background-color: $color-primary-light;
+    border-bottom: 1px solid $color-light-gray;
+    
+    .modal-title {
+      font-family: $font-family-heading;
+      font-weight: $font-weight-bold;
+      color: $color-text;
+    }
+  }
+  
+  .modal-body {
+    padding: $spacing-md;
+  }
+  
+  .modal-footer {
+    border-top: 1px solid $color-light-gray;
+    padding: $spacing-sm $spacing-md;
+  }
+  
+  .form-group {
+    margin-bottom: $spacing-md;
+  }
+  
+  .form-label {
+    font-weight: $font-weight-medium;
+  }
+  
+  .form-control {
+    border-radius: $border-radius-sm;
+    border: 1px solid $color-light-gray;
+    padding: $spacing-xs $spacing-sm;
+    transition: $transition-base;
+    
+    &:focus {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.25);
+    }
+  }
+  
+  @include mobile {
+    .modal-dialog {
+      margin: $spacing-xs;
+      max-width: calc(100% - #{$spacing-xs * 2});
+    }
+    
+    .form-group {
+      margin-bottom: $spacing-sm;
+    }
+    
+    .modal-body {
+      padding: $spacing-sm;
+    }
+  }
+}
+
+// Artist Dashboard - Modern Mobile-First Design
+
+.artist-dashboard {
+  padding-top: 25px; // Reduced from 75px to start right after navbar with 25px padding
+  background-color: $color-light-background;
+  min-height: 100vh;
+  
+  .page-title {
+    font-family: $font-family-heading;
+    font-weight: $font-weight-bold;
+    font-size: 1.75rem;
+    margin-bottom: $spacing-md;
+    color: $color-text;
+    text-align: left; // Explicitly set to left-aligned
+    
+    @include tablet {
+      font-size: 2rem;
+    }
+  }
+  
+  .dashboard-header {
+    margin-bottom: $spacing-lg;
+    position: relative; // For positioning search container
+    
+    .search-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: auto;
+      
+      @include mobile {
+        position: static;
+        margin-top: $spacing-md;
+        width: 100%;
+      }
+    }
+  }
+  
+  // Modern Search Box
+  .search-box {
+    position: relative;
+    width: 100%; // Full width by default
+    border-radius: $border-radius; // Apply consistent border radius to entire box
+    overflow: hidden; // Ensure content doesn't overflow rounded corners
+    
+    @include mobile {
+      width: 100%; // Full width on mobile to match card width
+    }
+    
+    .search-icon {
+      background-color: transparent;
+      border-right: none;
+      color: $color-text-light;
+      border-radius: $border-radius; // Use same border radius on all sides
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    
+    .search-input {
+      border-left: none;
+      padding-left: 0;
+      box-shadow: none;
+      border-radius: $border-radius; // Use same border radius on all sides
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      
+      &:focus {
+        box-shadow: none;
+        border-color: $color-primary;
+        
+        + .search-icon {
+          border-color: $color-primary;
+          color: $color-primary;
+        }
+      }
+      
+      &::placeholder {
+        font-size: $font-size-sm;
+      }
+    }
+    
+    .clear-search {
+      border: none;
+      background: transparent;
+      font-size: 1.2rem;
+      padding: 0 $spacing-sm;
+      color: $color-text-light;
+      border-radius: 0 $border-radius $border-radius 0; // Ensure right side has matching radius
+      
+      &:hover {
+        color: $color-danger;
+      }
+    }
+  }
+  
+  // New simplified header
+  .dashboard-simple-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-lg;
+    padding: 0 0 $spacing-md 0;
+    width: 100%;
+    
+    .dashboard-main-title {
+      font-family: $font-family-heading;
+      font-weight: $font-weight-bold;
+      font-size: 2.2rem; // Increased font size
+      margin: 0;
+      color: $color-text;
+      flex: 0 0 auto; // Prevent title from growing or shrinking
+    }
+    
+    .header-search-box {
+      margin-left: auto; // This pushes the search to the right
+      width: 350px;
+      
+      .search-container {
+        margin-bottom: 0;
+      }
+      
+      .search-box {
+        width: 100%;
+      }
+    }
+    
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .dashboard-main-title {
+        font-size: 1.8rem;
+        margin-bottom: $spacing-sm;
+        width: 100%;
+      }
+      
+      .header-search-box {
+        width: 100%;
+        margin-left: 0;
+      }
+    }
+  }
+
+  // Remove bottom margin from search box since it's now in header
+  .search-container {
+    margin-bottom: 0;
+  }
+  
+  // New simplified header with right-aligned search
+  .dashboard-simple-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-lg;
+    padding: 0 0 $spacing-md 0;
+    width: 100%;
+    
+    .dashboard-main-title {
+      font-family: $font-family-heading;
+      font-weight: $font-weight-bold;
+      display: inline;
+      font-size: 2.2rem;
+      margin: 0;
+      color: $color-text;
+      flex: 0 0 auto; // Prevent title from shrinking
+    }
+    
+    .header-search-box {
+      margin: 0;
+      margin-left: auto; // This will push the search to the right
+      width: 350px;
+      
+      .search-container {
+        margin-bottom: 0; // Override default margin
+      }
+      
+      .search-box {
+        width: 100%;
+      }
+      
+      @include mobile {
+        margin-top: $spacing-md;
+        width: 100%;
+      }
+    }
+    
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      
+      .dashboard-main-title {
+        font-size: 1.8rem;
+        margin-bottom: $spacing-sm;
+      }
+    }
+  }
+  
+  // Remove bottom margin from search box since it's now in header
+  .search-container {
+    margin-bottom: 0;
+  }
+  
+  // Artists Container with responsive grid
+  .artists-container {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md; // Reduced from $spacing-lg for tighter layout
+    
+    // Hide filtered calendars 
+    .filtered-out {
+      display: none;
+    }
+    
+    // Modern Card Design
+    .artist-calendar-card {
+      background-color: $color-white;
+      border-radius: $border-radius-lg;
+      box-shadow: $box-shadow;
+      overflow: hidden;
+      transition: $transition-base;
+      border: none;
+      margin-bottom: $spacing-md;
+      
+      &:hover {
+        box-shadow: $box-shadow-lg;
+      }
+      
+      // Card Header
+      .calendar-header {
+        @include flex-between;
+        padding: $spacing-md;
+        border-bottom: 1px solid $color-light-gray;
+        cursor: pointer;
+        transition: $transition-base;
+        align-items: center; // Ensure vertical alignment
+        
+        &:hover {
+          background-color: rgba($color-primary, 0.03);
+        }
+        
+        .header-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          
+          @include tablet {
+            flex-direction: row;
+            align-items: center;
+          }
+          
+          .title-with-icon {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            
+            .calendar-title {
+              margin-bottom: 0;
+              font-weight: $font-weight-bold;
+              color: $color-text;
+              font-family: $font-family-heading;
+              font-size: 1.1rem;
+              margin-right: $spacing-xxs; // Reduced from $spacing-xs to bring dropdown icon closer
+              
+              @include tablet {
+                font-size: 1.2rem;
+              }
+            }
+            
+            // Updated styles for role badges
+            .calendar-role-badges {
+              display: flex;
+              flex-wrap: wrap;
+              align-items: center;
+              gap: $spacing-xs;
+              margin-left: 0; // Changed from margin-left: $spacing-md to match dashboard styling
+              
+              // Hide on mobile (additional CSS in case Bootstrap classes aren't enough)
+              @include mobile {
+                display: none !important;
+              }
+              
+              .enhanced-badge {
+                margin: $spacing-xxs;
+              }
+              
+              // Capsule styling for badges
+              .capsule-badge {
+                border-radius: 50px; // Explicit capsule shape
+                padding: $spacing-xxs $spacing-sm;
+                white-space: nowrap;
+                
+                .badge-count {
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin-left: $spacing-xxs;
+                  background-color: rgba(255, 255, 255, 0.5);
+                  border-radius: 50%;
+                  min-width: 18px;
+                  height: 18px;
+                  padding: 0 4px;
+                  font-size: 0.75rem;
+                  font-weight: $font-weight-bold;
+                }
+              }
+            }
+
+            .dropdown-toggle-icon {
+              width: 18px;
+              height: 18px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: $color-text-light;
+              background-color: transparent;
+              border-radius: 50%;
+              transition: $transition-base;
+              margin-right: $spacing-lg; // Consistent with dashboard styling
+              
+              // Remove the tablet-specific adjustment that doesn't exist in dashboard
+              // @include tablet {
+              //   margin-top: 0;
+              // }
+              
+              &:hover {
+                background-color: rgba($color-primary, 0.1);
+                color: $color-text;
+              }
+            }
+          }
+          
+          .artist-count {
+            color: $color-text-light;
+            font-size: $font-size-sm;
+            
+            @include mobile {
+              font-size: 0.9rem;
+            }
+          }
+        }
+        
+        .header-actions {
+          display: flex;
+          align-items: center;
+          
+          .add-button {
+            background-color: transparent; // Changed from solid to transparent
+            border: 1px solid $color-primary;
+            color: $color-primary; // Changed from $color-text to $color-primary to match border color
+            display: flex;
+            align-items: center;
+            gap: $spacing-xxs;
+            padding: $spacing-xs $spacing-sm;
+            border-radius: $border-radius;
+            transition: $transition-base;
+            font-weight: $font-weight-medium;
+            
+            .icon-plus {
+              transition: transform 0.3s ease;
+            }
+            
+            &:hover {
+              background-color: $color-primary; // Fill on hover
+              color: $color-white; // White text on hover
+              transform: translateY(-1px);
+              box-shadow: $box-shadow-sm;
+              
+              .icon-plus {
+                transform: rotate(90deg);
+              }
+            }
+            
+            &:active {
+              transform: translateY(0);
+            }
+            
+            .btn-text {
+              @include mobile {
+                display: none;
+              }
+            }
+          }
+          
+          .dropdown-toggle-icon {
+            width: 18px; // Changed from 24px to match dashboard
+            height: 18px; // Changed from 24px to match dashboard
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: $color-text-light;
+            background-color: transparent;
+            border-radius: 50%;
+            transition: $transition-base;
+            cursor: pointer;
+            margin-right: $spacing-lg; // Added to match dashboard
+            
+            &:hover {
+              background-color: rgba($color-primary, 0.1);
+              color: $color-text;
+            }
+          }
+        }
+        
+        // Add calendar artist button
+        .add-calendar-artist-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: transparent; // Changed from $color-primary to transparent
+          border-color: $color-primary;
+          color: $color-primary; // Changed from $color-text to $color-primary to match border color
+          transition: $transition-base;
+          margin-left: $spacing-sm;
+          z-index: 5; // Ensure clickable
+          width: 34px;
+          height: 34px;
+          padding: 0;
+          border-radius: $border-radius-sm;
+          
+          &:hover {
+            background-color: $color-primary; // Fill with primary color on hover
+            color: $color-white; // Change icon to white on hover
+            transform: translateY(-1px);
+            box-shadow: $box-shadow-sm;
+          }
+          
+          &:active {
+            transform: translateY(0);
+          }
+        }
+      }
+      
+      // Card Content
+      .calendar-content {
+        padding: $spacing-md 0;
+        
+        .no-results {
+          padding: $spacing-md;
+          text-align: center;
+          color: $color-text-light;
+          font-style: italic;
+        }
+        
+        // Artists List 
+        .artists-list {
+          .artist-list-header {
+            display: flex;
+            padding: $spacing-xs $spacing-md;
+            border-bottom: 2px solid $color-light-gray;
+            font-weight: $font-weight-bold;
+            font-size: $font-size-sm;
+            color: $color-text-light;
+            
+            .artist-column {
+              &.name-column,
+              &.role-column {
+                cursor: pointer;
+                user-select: none;
+                transition: $transition-base;
+                
+                &:hover {
+                  color: color.adjust($color-text-light, $lightness: -20%);
+                }
+                
+                .header-text {
+                  display: inline-block;
+                  padding: $spacing-xxs $spacing-xs;
+                  border-radius: $border-radius-sm;
+                  
+                  &:hover {
+                    background-color: rgba($color-primary, 0.05);
+                  }
+                }
+                
+                .sort-icon {
+                  color: $color-primary;
+                }
+              }
+            }
+          }
+          
+          .artist-items {
+            .artist-item {
+              display: flex;
+              flex-wrap: wrap;
+              padding: $spacing-md $spacing-md;
+              border-bottom: 1px solid rgba($color-light-gray, 0.5);
+              transition: $transition-base;
+              
+              &:last-child {
+                border-bottom: none;
+              }
+              
+              &:hover {
+                background-color: rgba($color-primary, 0.03);
+              }
+              
+              // Mobile artist entry layout - consolidated styles
+              .artist-mobile-container {
+                width: 100%;
+                position: relative;
+                padding: $spacing-xs $spacing-xs $spacing-xs $spacing-md;
+                
+                .artist-mobile-header {
+                  display: flex;
+                  align-items: center;
+                  margin-bottom: $spacing-xs;
+                  padding-right: 40px; // Space for delete button
+                  
+                  .artist-name-mobile {
+                    flex: 1;
+                    
+                    .mobile-label {
+                      display: none;
+                    }
+                    
+                    .mobile-value {
+                      display: flex;
+                      align-items: center;
+                      
+                      .artist-name-text {
+                        font-weight: $font-weight-bold;
+                        font-size: 1rem;
+                        color: $color-text;
+                      }
+                      
+                      .artist-role {
+                        font-size: 0.9rem;
+                        color: $color-text-light;
+                        background: none;
+                        padding: 0;
+                        height: auto;
+                        border-radius: 0;
+                        display: inline;
+                        
+                        &:before {
+                          content: ' - ';
+                          margin: 0 $spacing-xxs;
+                        }
+                      }
+                    }
+                  }
+                }
+                
+                .artist-action-container {
+                  position: absolute;
+                  top: $spacing-xs;
+                  right: $spacing-xs;
+                  margin: 0;
+                  
+                  .delete-btn-mobile {
+                    width: 32px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0;
+                    border-radius: 4px;
+                    background-color: rgba($color-danger, 0.1);
+                    color: $color-danger;
+                    border: none;
+                    
+                    &:hover, &:focus {
+                      background-color: $color-danger;
+                      color: $color-white;
+                    }
+                  }
+                }
+                
+                .artist-mobile-content {
+                  padding: 0;
+                  
+                  .artist-role-mobile {
+                    display: none; // Hide separate role section
+                  }
+                  
+                  .artist-email-mobile {
+                    margin-bottom: 0;
+                    
+                    .mobile-label {
+                      display: none;
+                    }
+                    
+                    .mobile-value {
+                      font-size: $font-size-sm;
+                      color: $color-text-light;
+                    }
+                  }
+                  
+                  &:hover {
+                    background-color: rgba($color-primary, 0.03);
+                  }
+                }
+              }
+            }
+          }
+          
+          // Responsive columns for desktop
+          .artist-column {
+            padding: $spacing-sm;
+            
+            &.name-column {
+              width: 25%;
+              font-weight: $font-weight-medium;
+            }
+            
+            &.role-column {
+              width: 25%;
+              
+              .artist-role {
+                display: inline-block;
+                background-color: rgba($color-primary, 0.1);
+                border-radius: $border-radius-pill;
+                padding: 0.15rem $spacing-sm;
+                font-size: 0.85rem;
+              }
+            }
+            
+            &.email-column {
+              width: 40%;
+              color: $color-text-light;
+              font-size: $font-size-sm;
+              word-break: break-word;
+            }
+            
+            &.action-column {
+              width: 10%;
+              display: flex;
+              justify-content: flex-end;
+              align-items: center;
+              
+              .delete-btn {
+                width: 36px;
+                height: 36px;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: all 0.2s ease;
+                
+                &:hover {
+                  transform: translateY(-1px);
+                  box-shadow: $box-shadow-sm;
+                }
+                
+                &:active {
+                  transform: translateY(0);
+                }
+              }
+            }
+          }
+        }
+        
+        // Calendar-specific artist form
+        .calendar-add-form {
+          background-color: rgba($color-primary, 0.02);
+          border-bottom: 1px solid $color-light-gray;
+          animation: fadeIn 0.3s ease-in-out;
+          
+          .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: $spacing-sm $spacing-md;
+            background-color: rgba($color-primary, 0.05);
+            border-bottom: 1px solid rgba($color-primary, 0.1);
+            
+            h6 {
+              margin: 0;
+              font-weight: $font-weight-bold;
+              color: $color-text;
+              font-size: 0.95rem;
+            }
+            
+            .close-form-btn {
+              padding: 0;
+              color: $color-text-light;
+              margin: -$spacing-xs;
+              width: 32px;
+              height: 32px;
+              
+              &:hover {
+                color: $color-danger;
+              }
+            }
+          }
+          
+          .calendar-artist-form {
+            padding: $spacing-md;
+            
+            .form-group {
+              margin-bottom: $spacing-sm;
+            }
+            
+            .form-control, .form-select {
+              &:focus {
+                border-color: $color-primary;
+                box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.15);
+              }
+            }
+            
+            .form-actions {
+              display: flex;
+              justify-content: flex-end;
+              margin-top: $spacing-md;
+              
+              .btn {
+                min-width: 100px;
+              }
+            }
+          }
+        }
+      }
+      
+      // Improve mobile cards alignment
+      .artist-cards-container {
+        padding: $spacing-sm;
+        
+        .artist-mobile-card {
+          margin-bottom: $spacing-md;
+          background-color: $color-white;
+          border-radius: $border-radius;
+          border: 1px solid $color-light-gray;
+          overflow: hidden;
+          transition: $transition-base;
+          animation: fadeIn 0.3s ease-in-out;
+          box-shadow: $box-shadow-sm;
+          
+          &:hover {
+            box-shadow: $box-shadow;
+            transform: translateY(-2px);
+          }
+          
+          .artist-mobile-header {
+            padding: $spacing-sm $spacing-md;
+            background-color: rgba($color-primary, 0.02);
+            border-bottom: 1px solid $color-light-gray;
+            
+            .artist-mobile-title {
+              font-weight: $font-weight-bold;
+              color: $color-text;
+              font-size: 1rem;
+              font-family: $font-family-heading;
+            }
+          }
+          
+          .artist-mobile-content {
+            padding: $spacing-sm $spacing-md $spacing-md;
+            
+            .artist-mobile-role {
+              margin-bottom: $spacing-sm;
+              display: flex;
+              flex-wrap: wrap;
+              gap: $spacing-xxs;
+              width: 100%; // Ensure full width
+            }
+            
+            .artist-mobile-details {
+              margin-bottom: $spacing-md;
+              
+              .artist-mobile-email {
+                display: flex;
+                align-items: center;
+                color: $color-text-light;
+                font-size: 0.9rem;
+                margin-bottom: $spacing-xs;
+                
+                i {
+                  margin-right: $spacing-xs;
+                  opacity: 0.7;
+                }
+              }
+            }
+            
+            .artist-mobile-actions {
+              button {
+                width: 100%; // Ensure full width
+              }
+            }
+          }
+        }
+      }
+      
+      // Calendar-specific artist form
+      .calendar-add-form {
+        background-color: rgba($color-primary, 0.02);
+        border-bottom: 1px solid $color-light-gray;
+        animation: fadeIn 0.3s ease-in-out;
+        
+        .form-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: $spacing-sm $spacing-md;
+          background-color: rgba($color-primary, 0.05);
+          border-bottom: 1px solid rgba($color-primary, 0.1);
+          
+          h6 {
+            margin: 0;
+            font-weight: $font-weight-bold;
+            color: $color-text;
+            font-size: 0.95rem;
+          }
+          
+          .close-form-btn {
+            padding: 0;
+            color: $color-text-light;
+            margin: -$spacing-xs;
+            width: 32px;
+            height: 32px;
+            
+            &:hover {
+              color: $color-danger;
+            }
+          }
+        }
+        
+        .calendar-artist-form {
+          padding: $spacing-md;
+          
+          .form-group {
+            margin-bottom: $spacing-sm;
+          }
+          
+          .form-control, .form-select {
+            &:focus {
+              border-color: $color-primary;
+              box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.15);
+            }
+          }
+          
+          .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: $spacing-md;
+            
+            .btn {
+              min-width: 100px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Mobile Artist Card
+.mobile-artist-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-sm;
+  border-bottom: 1px solid $color-light-gray;
+  background-color: $color-white;
+  transition: $transition-base;
+  animation: fadeIn 0.3s ease-in-out;
+  
+  &:hover, &:active {
+    background-color: rgba($color-primary, 0.02);
+  }
+  
+  .mobile-artist-content {
+    flex: 1;
+    overflow: hidden;
+    padding-right: $spacing-sm;
+    
+    .mobile-artist-primary {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: $spacing-xs;
+      
+      .mobile-artist-name {
+        font-weight: $font-weight-bold;
+        font-size: 1rem;
+        color: $color-text;
+        margin-bottom: 2px;
+      }
+      
+      .mobile-artist-role {
+        font-size: $font-size-sm;
+        color: $color-primary;
+        background-color: rgba($color-primary, 0.1);
+        padding: 2px 8px;
+        border-radius: $border-radius-pill;
+        display: inline-block;
+      }
+    }
+    
+    .mobile-artist-email {
+      display: flex;
+      align-items: center;
+      font-size: $font-size-sm;
+      color: $color-text-light;
+      word-break: break-all;
+      
+      .email-icon {
+        margin-right: $spacing-xs;
+        opacity: 0.7;
+      }
+      
+      .email-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+  
+  .mobile-artist-actions {
+    .mobile-delete-btn {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      
+      &:hover, &:active {
+        transform: translateY(-1px);
+        box-shadow: $box-shadow-sm;
+        background-color: rgba($color-danger, 0.1);
+      }
+    }
+  }
+}
+
+// Media queries for responsive layout
+@media (max-width: 576px) {
+  .artist-dashboard {
+    .page-title {
+      display: block; // Show the heading on mobile devices
+      font-size: 1.4rem; // Slightly smaller font size
+      text-align: center;
+      margin-bottom: $spacing-md;
+      color: $color-text;
+    }
+    
+    .artists-container {
+      .artist-calendar-card {
+        .calendar-content {
+          .artists-list {
+            // Hide column headers on mobile
+            .artist-list-header {
+              display: none;
+            }
+            
+            .artist-column {
+              &.name-column {
+                width: 50%;
+              }
+              
+              &.role-column {
+                width: 30%;
+              }
+              
+              &.action-column {
+                width: 20%;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Mobile optimizations for artist calendar cards
+@media (max-width: $breakpoint-md) {
+  .artist-calendar-card .calendar-header {
+    padding: $spacing-sm;
+    
+    .header-content {
+      .title-with-icon .calendar-title {
+        font-size: 1.1rem;
+      }
+    }
+    
+    .header-actions .add-button {
+      padding: $spacing-xs $spacing-sm;
+      
+      .btn-text {
+        display: none;
+      }
+      
+      .icon-plus {
+        margin-right: 0;
+      }
+    }
+  }
+  
+  // Better spacing for search bar
+  .dashboard-header {
+    margin-bottom: $spacing-md;
+    
+    .search-box {
+      width: 100%;
+      margin-top: $spacing-sm;
+    }
+  }
+  
+  // Add swipe functionality indicator
+  .mobile-swipe-hint {
+    text-align: center;
+    padding: $spacing-xs;
+    color: $color-text-light;
+    font-size: $font-size-xs; // This will now be defined
+    margin-bottom: $spacing-sm;
+    
+    .hint-icon {
+      margin-right: $spacing-xxs;
+    }
+  }
+}
+
+// Enhance mobile animations
+.artist-item {
+  animation: fadeInSlide 0.3s ease-in-out;
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Animation for adding/removing artists
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Explicitly ensure the delete buttons are right-aligned in the artist-list-header
+.artist-list-header {
+  .action-column {
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+// Skeleton loading styles
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-card {
+  .skeleton-header {
+    cursor: default;
+    
+    &:hover {
+      background-color: initial;
+    }
+  }
+  
+  .skeleton-text {
+    height: 18px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba($color-light-gray, 0.2) 25%, rgba($color-light-gray, 0.5) 50%, rgba($color-light-gray, 0.2) 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    margin-bottom: 10px;
+    width: 80%;
+  }
+  
+  .skeleton-items {
+    padding: $spacing-md;
+    
+    .skeleton-item {
+      padding: $spacing-sm 0;
+      border-bottom: 1px solid rgba($color-light-gray, 0.5);
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      .skeleton-text {
+        height: 16px;
+      }
+    }
+  }
+}
+
+// Swipe to delete functionality
+.swipe-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  
+  .swipe-content {
+    width: 100%;
+    z-index: 2;
+    background-color: $color-white;
+    will-change: transform;
+  }
+  
+  .swipe-action {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    
+    &.delete-action {
+      background-color: $color-danger;
+      color: $color-white;
+      
+      span {
+        font-size: $font-size-sm;
+        margin-top: $spacing-xxs;
+      }
+    }
+  }
+}
+
+// Pull to refresh
+.pull-to-refresh-indicator {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: $spacing-xs;
+  overflow: hidden;
+  color: $color-text-light;
+  
+  .spin {
+    animation: spin 1s infinite linear;
+  }
+  
+  span {
+    font-size: $font-size-sm;
+    margin-top: $spacing-xxs;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Artist Dashboard - Calendar Card Layout
+.artists-dashboard {
+  // ... existing code ...
+  
+  // Artist Calendar Card - Similar to event-calendar-card
+  .artist-calendar-card {
+    box-shadow: $box-shadow-sm;
+    border-radius: $border-radius;
+    background-color: $color-white;
+    overflow: hidden;
+    transition: $transition-base;
+    border: 1px solid $color-light-gray;
+    margin-bottom: $spacing-md;
+    @include gpu-accelerate;
+    
+    &:hover {
+      box-shadow: $box-shadow-lg;
+      transform: translateY(-1px);
+    }
+    
+    .calendar-header {
+      @include flex-between;
+      padding: $spacing-md;
+      background: linear-gradient(to right, rgba($color-primary, 0.05), rgba($color-primary, 0.01));
+      border-left: 3px solid $color-primary;
+      cursor: pointer;
+      
+      .header-content {
+        width: 100%;
+        @include flex-between;
+        
+        .title-with-icon {
+          display: flex;
+          align-items: center;
+          gap: $spacing-xs;
+          
+          .calendar-title {
+            margin-bottom: 0;
+            font-weight: $font-weight-bold;
+            color: $color-text;
+            font-family: $font-family-heading;
+          }
+          
+          .dropdown-toggle-icon {
+            color: $color-text-light;
+            display: flex;
+            align-items: center;
+          }
+        }
+        
+        .artists-count {
+          font-size: $font-size-sm;
+          color: $color-text-light;
+          background-color: rgba($color-white, 0.8);
+          padding: $spacing-xxs $spacing-xs;
+          border-radius: $border-radius-pill;
+          
+          .count-number {
+            font-weight: $font-weight-bold;
+            color: $color-text;
+          }
+          
+          .count-label {
+            color: $color-text-light;
+            font-size: 0.85rem;
+          }
+        }
+      }
+      
+      // Add calendar artist button
+      .add-calendar-artist-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: transparent; // Changed from $color-primary to transparent
+        border-color: $color-primary;
+        color: $color-primary; // Changed from $color-text to $color-primary to match border color
+        transition: $transition-base;
+        margin-left: $spacing-sm;
+        z-index: 5; // Ensure clickable
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-radius: $border-radius-sm;
+        
+        &:hover {
+          background-color: $color-primary; // Fill with primary color on hover
+          color: $color-white; // Change icon to white on hover
+          transform: translateY(-1px);
+          box-shadow: $box-shadow-sm;
+        }
+        
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+    
+    .calendar-content {
+      border-top: 1px solid $color-light-gray;
+      
+      // Artist Table Styling 
+      .artists-table {
+        margin-bottom: 0;
+        width: 100%;
+        
+        thead th {
+          padding: $spacing-sm $spacing-md;
+          background-color: rgba($color-primary, 0.1);
+          color: $color-text;
+          font-weight: $font-weight-bold;
+          border: none;
+          font-family: $font-family-heading;
+          text-transform: uppercase;
+          font-size: $font-size-sm;
+          letter-spacing: 0.5px;
+        }
+        
+        tbody td {
+          vertical-align: middle;
+          padding: $spacing-sm $spacing-md;
+          border-bottom: 1px solid $color-light-gray;
+        }
+        
+        .artist-row {
+          transition: $transition-fast;
+          
+          &:last-child td {
+            border-bottom: none;
+          }
+          
+          &:hover {
+            background-color: rgba($color-primary, 0.03);
+          }
+        }
+        
+        .artist-name {
+          font-weight: $font-weight-semi-bold;
+        }
+        
+        .artist-email {
+          font-size: 0.9rem;
+          color: $color-text-light;
+        }
+        
+        .artist-role .role-badge {
+          display: inline-block;
+          padding: 0.15rem $spacing-sm;
+          font-size: 0.85rem;
+        }
+        
+        .artist-actions .delete-btn {
+          border-color: $color-light-gray;
+          color: $color-danger;
+          
+          &:hover {
+            background-color: $color-danger;
+            color: $color-white;
+            border-color: $color-danger;
+          }
+        }
+      }
+      
+      // Mobile Card Styling
+      .artist-cards-container {
+        padding: $spacing-sm;
+        
+        .artist-mobile-card {
+          margin-bottom: $spacing-md;
+          background-color: $color-white;
+          border-radius: $border-radius;
+          border: 1px solid $color-light-gray;
+          overflow: hidden;
+          transition: $transition-base;
+          animation: fadeIn 0.3s ease-in-out;
+          box-shadow: $box-shadow-sm;
+          
+          &:hover {
+            box-shadow: $box-shadow;
+            transform: translateY(-2px);
+          }
+          
+          .artist-mobile-header {
+            padding: $spacing-sm $spacing-md;
+            background-color: rgba($color-primary, 0.02);
+            border-bottom: 1px solid $color-light-gray;
+            
+            .artist-mobile-title {
+              font-weight: $font-weight-bold;
+              color: $color-text;
+              font-size: 1rem;
+              font-family: $font-family-heading;
+            }
+          }
+          
+          .artist-mobile-content {
+            padding: $spacing-sm $spacing-md $spacing-md;
+            
+            .artist-mobile-role {
+              margin-bottom: $spacing-sm;
+              display: flex;
+              flex-wrap: wrap;
+              gap: $spacing-xxs;
+            }
+            
+            .artist-mobile-details {
+              margin-bottom: $spacing-md;
+              
+              .artist-mobile-email {
+                display: flex;
+                align-items: center;
+                color: $color-text-light;
+                font-size: 0.9rem;
+                margin-bottom: $spacing-xs;
+                
+                i {
+                  margin-right: $spacing-xs;
+                  opacity: 0.7;
+                }
+              }
+            }
+            
+            .artist-mobile-actions {
+              button {
+                width: 100%;
+              }
+            }
+          }
+        }
+      }
+      
+      // Calendar-specific artist form
+      .calendar-add-form {
+        background-color: rgba($color-primary, 0.02);
+        border-bottom: 1px solid $color-light-gray;
+        animation: fadeIn 0.3s ease-in-out;
+        
+        .form-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: $spacing-sm $spacing-md;
+          background-color: rgba($color-primary, 0.05);
+          border-bottom: 1px solid rgba($color-primary, 0.1);
+          
+          h6 {
+            margin: 0;
+            font-weight: $font-weight-bold;
+            color: $color-text;
+            font-size: 0.95rem;
+          }
+          
+          .close-form-btn {
+            padding: 0;
+            color: $color-text-light;
+            margin: -$spacing-xs;
+            width: 32px;
+            height: 32px;
+            
+            &:hover {
+              color: $color-danger;
+            }
+          }
+        }
+        
+        .calendar-artist-form {
+          padding: $spacing-md;
+          
+          .form-group {
+            margin-bottom: $spacing-sm;
+          }
+          
+          .form-control, .form-select {
+            &:focus {
+              border-color: $color-primary;
+              box-shadow: 0 0 0 0.2rem rgba($color-primary, 0.15);
+            }
+          }
+          
+          .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: $spacing-md;
+            
+            .btn {
+              min-width: 100px;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Hide filtered calendars
+  .filtered-out {
+    display: none;
+  }
+}
+
+// Media queries for responsive layouts
+@media (max-width: $breakpoint-md) {
+  .artists-dashboard {
+    .artist-calendar-card .calendar-header {
+      .header-content .title-with-icon .calendar-title {
+        font-size: 1rem;
+      }
+    }
+    
+    .artist-calendar-card {
+      .calendar-add-form {
+        .form-header {
+          padding: $spacing-xs $spacing-sm;
+        }
+        
+        .calendar-artist-form {
+          padding: $spacing-sm;
+          
+          .form-actions {
+            margin-top: $spacing-sm;
+            flex-direction: column;
+            
+            .btn {
+              width: 100%;
+              margin-right: 0 !important;
+              margin-bottom: $spacing-xs;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .artists-dashboard {
+    .artist-calendar-card {
+      border-radius: 0;
+      margin-left: -$spacing-sm;
+      margin-right: -$spacing-sm;
+      
+      .calendar-header {
+        .header-content {
+          .title-with-icon .calendar-title {
+            font-size: 0.95rem;
+          }
+          
+          .artists-count {
+            font-size: 0.8rem;
+            padding: $spacing-xxs;
+            
+            .count-label {
+              opacity: 0.7;
+              font-size: 0.7rem;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Animation for mobile card appearance
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Header container with transparent background
+.transparent-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; // Ensure vertical centering
+  margin-bottom: $spacing-lg;
+  padding: $spacing-md $spacing-lg; // Increased horizontal padding for better spacing
+  width: 100%;
+  background-color: transparent;
+  padding-left: 0%;
+  padding-right: 0%;
+  border-radius: $border-radius;
+  min-height: 80px; // Set minimum height to ensure consistent vertical space
+  
+  .dashboard-main-title {
+    font-family: $font-family-heading;
+    font-weight: $font-weight-bold;
+    font-size: 2.2rem;
+    margin: 0;
+    color: $color-text;
+    flex: 0 0 auto; // Prevent title from growing or shrinking
+    line-height: 1.2; // Improve vertical alignment with text
+  }
+  
+  .header-search-box {
+    margin-left: auto; // Push the search box to the right
+    flex: 0 0 350px; // Fixed width for consistency
+    display: flex; // Add flex to ensure vertical centering
+    align-items: center; // Vertical alignment within the search box
+    
+    .search-container {
+      margin-bottom: 0;
+      width: 100%; // Ensure full width
+    }
+    
+    .search-box {
+      width: 100%;
+    }
+  }
+  
+  // Mobile responsiveness
+  @include mobile {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: $spacing-md 0;
+    min-height: auto; // Remove minimum height on mobile
+    
+    .dashboard-main-title {
+      font-size: 1.8rem;
+      margin-bottom: $spacing-sm;
+      width: 100%;
+    }
+    
+    .header-search-box {
+      width: 100%;
+      flex: 0 0 auto;
+      margin-left: 0; // Reset margin for mobile
+    }
+  }
+}

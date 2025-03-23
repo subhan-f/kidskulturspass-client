@@ -1,0 +1,142 @@
+@use '../abstracts' as *;
+@use "sass:color";
+
+body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+  
+  // Card styles
+  .card, .enhanced-card {
+    background-color: #1e1e1e;
+    
+    .card-header, .card-header-enhanced {
+      background-color: #2a2a2a;
+      border-bottom-color: #333;
+      
+      .card-title-enhanced {
+        color: #e0e0e0;
+      }
+      
+      .card-subtitle-enhanced {
+        color: #a0a0a0;
+      }
+    }
+    
+    .card-body, .card-body-enhanced {
+      background-color: #1e1e1e;
+    }
+    
+    .card-footer-enhanced {
+      background-color: #2a2a2a;
+      border-top-color: #333;
+    }
+  }
+  
+  // Table styles
+  .table, .enhanced-table {
+    color: #e0e0e0;
+    
+    thead th {
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+    }
+    
+    tbody {
+      tr:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+      }
+      
+      td {
+        border-bottom-color: #333;
+      }
+    }
+  }
+  
+  // Navbar styles
+  .navbar {
+    background-color: #1e1e1e;
+    border-bottom-color: #333;
+    
+    .nav-link {
+      color: #a0a0a0;
+      
+      &:hover, &.active {
+        color: $color-primary;
+      }
+    }
+  }
+  
+  // Form styles
+  .form-control {
+    background-color: #2a2a2a;
+    border-color: #333;
+    color: #e0e0e0;
+    
+    &:focus {
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+    }
+    
+    &::placeholder {
+      color: #888;
+    }
+  }
+  
+  // Modal styles
+  .modal-content {
+    background-color: #1e1e1e;
+    
+    .modal-header {
+      border-bottom-color: #333;
+      background-color: #2a2a2a;
+    }
+    
+    .modal-footer {
+      border-top-color: #333;
+      background-color: #2a2a2a;
+    }
+  }
+  
+  // Badges
+  .badge {
+    &.enhanced-badge {
+      &.bg-primary {
+        background-color: rgba($color-primary, 0.2) !important;
+        border-color: rgba($color-primary, 0.4);
+      }
+      
+      &.bg-secondary {
+        background-color: rgba($color-gray, 0.2) !important;
+        border-color: rgba($color-gray, 0.4);
+      }
+    }
+  }
+  
+  // Footer
+  .footer {
+    background-color: #1e1e1e;
+    border-top-color: #333;
+    
+    .text-muted {
+      color: #a0a0a0 !important;
+    }
+  }
+  
+  // Search container
+  .search-container {
+    .search-box {
+      .search-icon-container,
+      .search-icon {
+        background-color: #2a2a2a;
+        border-color: #333;
+        color: #888;
+      }
+      
+      .search-input {
+        background-color: #2a2a2a;
+        border-color: #333;
+        color: #e0e0e0;
+      }
+    }
+  }
+}

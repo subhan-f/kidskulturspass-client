@@ -1,0 +1,267 @@
+@use '../abstracts' as *;
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+  
+  tbody {
+    td {
+      text-align: left;
+      padding: $spacing-md;
+      vertical-align: middle;
+      border-bottom: 1px solid $color-light-gray;
+      
+      small {
+        display: block;
+        line-height: 1.4;
+      }
+      
+      .fw-bold {
+        display: inline-block;
+        width: 80px;
+        margin-right: 10px;
+        color: #666;
+      }
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    tr.table-warning {
+      background-color: #fff3cd;
+      
+      td {
+        color: #856404;
+      }
+    }
+  }
+  
+  thead {
+    th {
+      text-align: left;
+      padding: $spacing-md;
+      background-color: $color-primary;
+      color: $color-text;
+      border-bottom: none;
+      white-space: nowrap;
+      font-weight: $font-weight-bold;
+    }
+  }
+  
+  &-container {
+    margin-top: $spacing-xl;
+    margin-bottom: $spacing-md;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow-sm;
+    background-color: $color-white;
+    overflow: hidden;
+    transition: $transition-base;
+    @include gpu-accelerate;
+    
+    &:hover {
+      box-shadow: $box-shadow;
+    }
+  }
+  
+  &-header {
+    background-color: $color-primary;
+    color: $color-text;
+    
+    h5 {
+      margin: 0;
+    }
+    
+    .badge {
+      background-color: $color-white;
+      color: $color-text;
+    }
+  }
+  
+  &-responsive {
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
+    background-color: $color-white;
+    margin-bottom: 0;
+  }
+  
+  // Enhanced table styling
+  &.enhanced-table {
+    margin-bottom: 0;
+    width: 100%;
+    
+    thead th {
+      padding: $spacing-sm $spacing-md;
+      background-color: rgba($color-primary, 0.1);
+      color: $color-text;
+      font-weight: $font-weight-bold;
+      border: none;
+      font-family: $font-family-heading;
+      text-transform: uppercase;
+      font-size: $font-size-sm;
+      letter-spacing: 0.5px;
+      
+      &.sortable {
+        cursor: pointer;
+        position: relative;
+        padding-right: $spacing-lg;
+        transition: $transition-base;
+        
+        &:hover {
+          background-color: rgba($color-primary, 0.15);
+        }
+        
+        .sort-icon {
+          position: absolute;
+          right: $spacing-md;
+          top: 50%;
+          transform: translateY(-50%);
+          opacity: 0.7;
+        }
+      }
+    }
+    
+    tbody td {
+      vertical-align: middle;
+      padding: $spacing-sm $spacing-md;
+      border-bottom: 1px solid $color-light-gray;
+      transition: $transition-base;
+    }
+    
+    tbody tr {
+      transition: $transition-fast;
+      
+      &:last-child td {
+        border-bottom: none;
+      }
+      
+      &:hover {
+        background-color: rgba($color-primary, 0.03);
+      }
+    }
+  }
+}
+
+// Table column widths
+.d-md-table-cell {
+  &:nth-child(1) {
+    width: 25%;
+    padding-right: $spacing-md;
+  }
+  
+  &:nth-child(2) {
+    width: 25%;
+    padding-right: $spacing-md;
+  }
+  
+  &:nth-child(3) {
+    width: 35%;
+    padding-right: $spacing-md;
+  }
+  
+  &:nth-child(4) {
+    width: 15%;
+    text-align: right;
+    padding-right: $spacing-md;
+  }
+}
+
+.table-name-col {
+  width: 25%;
+}
+
+.table-role-col {
+  width: 25%;
+}
+
+.table-email-col {
+  width: 40%;
+}
+
+.table-delete-col {
+  width: 10%;
+}
+
+// Artist specific table styles
+.artist-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+  
+  thead th {
+    padding: 0.75rem 1rem;
+    background-color: $color-primary;
+    color: $color-text;
+    font-weight: $font-weight-bold;
+    border: none;
+  }
+  
+  .name-column {
+    width: 25%;
+  }
+  
+  .role-column {
+    width: 25%;
+  }
+  
+  .email-column {
+    width: 40%;
+  }
+  
+  .action-column {
+    width: 10%;
+    text-align: right;
+  }
+  
+  tbody td {
+    vertical-align: middle;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid $color-light-gray;
+  }
+  
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .btn-delete {
+    padding: $spacing-xs $spacing-sm;
+    font-size: 0.875rem;
+  }
+}
+
+.action-col {
+  text-align: right;
+}
+
+@include respond-to(md) {
+  .table {
+    thead {
+      display: none;
+    }
+    
+    tbody {
+      tr {
+        border-bottom: 1px solid $color-light-gray;
+      }
+      
+      td {
+        padding: 0.75rem;
+        text-align: left !important;
+        
+        &:last-child {
+          border-bottom: 0;
+          text-align: right !important;
+          padding-bottom: $spacing-md;
+          padding-right: $spacing-md;
+        }
+      }
+    }
+  }
+  
+  .card .table td {
+    padding: $spacing-sm $spacing-md;
+  }
+}
