@@ -137,6 +137,7 @@ const ArtistsDashboard = ({ setAuth }) => {
           (artist.calendar || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
           (artist.role || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
+        console.log(filtered);
         
     return filtered.reduce((acc, artist) => {
       const calendar = artist.calendar || 'Unbekannt';

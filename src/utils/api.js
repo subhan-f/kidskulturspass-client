@@ -6,6 +6,7 @@ import {
   mockCalendars, 
   mockRoleOptions 
 } from './mockData';
+// import apiService from './apiService';
 
 // Create a simulated delay to mimic network requests
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -82,11 +83,16 @@ const mockApi = {
     };
   }
 };
-
+ const artistService = {
+  getArtists:async  () => await api.get('/'),
+  getCalendars: () => api.get('/calendars'),
+  getRoleOptions: () => api.get('/roleOptions'),
+  addArtist: (artist, calendar) => api.post('/artist', { ...artist, calendar }),
+  deleteArtist: (calendar, email) => api.delete('/artist', { data: { calendar, email } })
+};
 // Keep the original axios instance for reference
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -122,7 +128,12 @@ export default {
     }
     
     if (url === '/artists') {
-      return mockApi.getArtists();
+      // return mockApi.getArtists();
+      
+      const data=await artistService.getArtists()
+      console.log(data)
+      return data.data
+
     }
     
     if (url === '/calendars') {

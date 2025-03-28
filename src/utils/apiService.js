@@ -2,7 +2,7 @@ import api, { authApi } from './api';
 
 // Artist-related API calls
 export const artistService = {
-  getArtists: () => api.get('/artists'),
+  getArtists:async  () => await api.get('/'),
   getCalendars: () => api.get('/calendars'),
   getRoleOptions: () => api.get('/roleOptions'),
   addArtist: (artist, calendar) => api.post('/artist', { ...artist, calendar }),
