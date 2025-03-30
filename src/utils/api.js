@@ -84,19 +84,49 @@ const mockApi = {
   }
 };
  const artistService = {
-  getArtists:async  () => await api.get('/'),
-  getCalendars: () => api.get('/calendars'),
-  getRoleOptions: () => api.get('/roleOptions'),
-  addArtist: (artist, calendar) => api.post('/artist', { ...artist, calendar }),
-  deleteArtist: (calendar, email) => api.delete('/artist', { data: { calendar, email } })
+  getArtists:async  () => await apiArtist.get('/'),
+  getCalendars: () => apiArtist.get('/calendars'),
+  getRoleOptions: () => apiArtist.get('/roleOptions'),
+  addArtist:async (artist, calendar) => await apiArtistCreate.post('/', { ...artist, calendar }),
+  deleteArtist: (calendar, email) => apiArtist.delete('/artist', { data: { calendar, email } })
+};
+
+ const eventService = {
+  getUnassignedEvents: async (options = {}) => {
+    const { loading, refresh, longTimeout } = options;
+    return await  apiUnassignedEvents.get('/', { 
+      params: {
+        loading: loading ? true : undefined,
+        refresh: refresh ? true : undefined,
+        longTimeout: longTimeout ? true : undefined
+      }
+    });
+  },
+  getEventHistory: (days) => api.get('/unassignedEventsHistory', {
+    params: { days, analysis: true }
+  }),
+  recordCurrentEvents: () => api.post('/unassignedEventsHistory/record')
 };
 // Keep the original axios instance for reference
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+const apiArtist = axios.create({
+  baseURL: import.meta.env.VITE_API_ARTIST_URL || '/api',
   headers: {
     'Content-Type': 'application/json'
   }
 });
+const apiArtistCreate = axios.create({
+  baseURL: import.meta.env.VITE_API_ARTISTCREATE_URL || '/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+const apiUnassignedEvents = axios.create({
+  baseURL: import.meta.env.VITE_API_UNASSIGNED_URL || '/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
 
 // Export a mock version of the auth API that automatically "authenticates"
 export const authApi = {
@@ -120,7 +150,10 @@ export default {
     console.log(`Mock API GET request to: ${url}`);
     
     if (url.includes('/unassignedEvents')) {
-      return mockApi.getUnassignedEvents(config?.params);
+      // return mockApi.getUnassignedEvents(config?.params);
+      const data=await eventService.getUnassignedEvents();
+      console.log(data.data)
+      return data
     }
     
     if (url.includes('/unassignedEventsHistory')) {
@@ -152,7 +185,7 @@ export default {
     console.log(`Mock API POST request to: ${url}`, data);
     
     if (url === '/artist') {
-      return mockApi.addArtist(data);
+      return await artistService.addArtist(data);
     }
     
     if (url.includes('/unassignedEventsHistory/record')) {

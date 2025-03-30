@@ -15,6 +15,7 @@ function App() {
     console.log('Logout clicked (disabled in demo mode)');
   };
   
+  
   return (
     <Router>
       <Routes>
