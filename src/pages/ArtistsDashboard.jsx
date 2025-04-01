@@ -19,6 +19,7 @@ const ArtistsDashboard = ({ setAuth }) => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArtist, setSelectedArtist] = useState(null);
+  const [selectedRoles,setSelectedRoles]=useState([])
   const [refreshing, setRefreshing] = useState(false);
   const [expandedCalendars, setExpandedCalendars] = useState({});
   
@@ -137,7 +138,6 @@ const ArtistsDashboard = ({ setAuth }) => {
           (artist.calendar || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
           (artist.role || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
-        console.log(filtered);
         
     return filtered.reduce((acc, artist) => {
       const calendar = artist.calendar || 'Unbekannt';
@@ -190,7 +190,6 @@ const ArtistsDashboard = ({ setAuth }) => {
   // Toggle add form for a specific calendar - updated to use the modal
   const toggleAddForm = useCallback((calendar, e) => {
     if (e) e.stopPropagation(); // Prevent calendar expansion toggle
-    
     // Set the selected calendar and show the modal
     setSelectedCalendarForModal(calendar);
     setShowAddModal(true);
@@ -207,10 +206,11 @@ const ArtistsDashboard = ({ setAuth }) => {
       
       const response = await api.post('/artist', artistData);
       
+      setShowAddModal(false); // Close the modal
+      fetchArtists(true); // Refresh the artists list
+      
       if (response.data.status === 'success') {
         toast.success('Künstler erfolgreich hinzugefügt');
-        setShowAddModal(false); // Close the modal
-        fetchArtists(true); // Refresh the artists list
       } else {
         toast.error(response.data.message || 'Fehler beim Hinzufügen des Künstlers');
       }
@@ -232,11 +232,11 @@ const ArtistsDashboard = ({ setAuth }) => {
         }
       });
       
+      fetchArtists(true);
+      setShowDeleteModal(false);
+      setSelectedArtist(null);
       if (response.data.status === 'success') {
-        setShowDeleteModal(false);
         toast.success('Künstler erfolgreich gelöscht');
-        fetchArtists(true);
-        setSelectedArtist(null);
       } else {
         toast.error(response.data.message || 'Fehler beim Löschen des Künstlers');
       }
@@ -350,7 +350,11 @@ const ArtistsDashboard = ({ setAuth }) => {
                       variant="outline-primary"
                       size="sm"
                       className="add-calendar-artist-btn"
-                      onClick={(e) => toggleAddForm(calendar, e)}
+                      onClick={(e) =>{
+                        setSelectedRoles([...new Set(artistsByCalendar[calendar].map(artist => artist.role))]);
+
+                        return  toggleAddForm(calendar, e)
+                      }}
                       title="Künstler hinzufügen"
                     >
                       <PersonPlus size={16} />
@@ -518,10 +522,12 @@ const ArtistsDashboard = ({ setAuth }) => {
 
       {/* Add the full-screen modal component */}
       <AddArtistModal
+        fetchArtists={fetchArtists}
         showModal={showAddModal}
         setShowModal={setShowAddModal}
+        roles={selectedRoles}
+        selectedRoles={selectedRoles}
         selectedCalendar={selectedCalendarForModal}
-        roleOptions={roleOptions}
         handleAddArtist={handleAddArtistFromModal}
       />
 

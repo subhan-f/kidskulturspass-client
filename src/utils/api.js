@@ -6,6 +6,7 @@ import {
   mockCalendars, 
   mockRoleOptions 
 } from './mockData';
+import { DatabaseCheck } from 'react-bootstrap-icons';
 // import apiService from './apiService';
 
 // Create a simulated delay to mimic network requests
@@ -87,8 +88,8 @@ const mockApi = {
   getArtists:async  () => await apiArtist.get('/'),
   getCalendars: () => apiArtist.get('/calendars'),
   getRoleOptions: () => apiArtist.get('/roleOptions'),
-  addArtist:async (artist, calendar) => await apiArtistCreate.post('/', { ...artist, calendar }),
-  deleteArtist: (calendar, email) => apiArtist.delete('/artist', { data: { calendar, email } })
+  addArtist:async (data) =>  await apiArtistCreate.post('/',  data ),
+  deleteArtist: async (data) => await apiArtistDelete.post('/',  data )
 };
 
  const eventService = {
@@ -116,6 +117,12 @@ const apiArtist = axios.create({
 });
 const apiArtistCreate = axios.create({
   baseURL: import.meta.env.VITE_API_ARTISTCREATE_URL || '/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+const apiArtistDelete = axios.create({
+  baseURL: import.meta.env.VITE_API_ARTISTDELETE_URL || '/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -164,7 +171,6 @@ export default {
       // return mockApi.getArtists();
       
       const data=await artistService.getArtists()
-      console.log(data)
       return data.data
 
     }
@@ -182,9 +188,9 @@ export default {
   },
   
   post: async (url, data) => {
-    console.log(`Mock API POST request to: ${url}`, data);
     
     if (url === '/artist') {
+      data.name = data.name.charAt(0).toUpperCase() + data.name.slice(1);
       return await artistService.addArtist(data);
     }
     
@@ -200,7 +206,8 @@ export default {
     console.log(`Mock API DELETE request to: ${url}`, config?.data);
     
     if (url === '/artist') {
-      return mockApi.deleteArtist(config.data);
+      // return mockApi.deleteArtist(config.data);
+      return  await artistService.deleteArtist(config.data);
     }
     
     console.warn(`Unhandled mock DELETE request to: ${url}`);

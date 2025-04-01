@@ -6,6 +6,8 @@ function AddArtistModal({
   showModal, 
   setShowModal, 
   selectedCalendar, 
+  selectedRoles,
+  fetchArtists,
   roleOptions, 
   handleAddArtist 
 }) {
@@ -105,7 +107,7 @@ function AddArtistModal({
               required
             >
               <option value="">Rolle auswählen</option>
-              {Array.isArray(roleOptions) && roleOptions.map(role => (
+              {Array.isArray(selectedRoles) && selectedRoles.map(role => (
                 <option key={role} value={role}>{role}</option>
               ))}
             </Form.Select>
