@@ -451,7 +451,7 @@ function UnassignedEventsDashboard({ setAuth }) {
                                           ))}
                                       </td>
                                       <td className="event-time">
-                                        {event.start?.dateTime ? (
+                                        {event?.start?.dateTime ? (
                                           <div className="date-time">
                                             <div className="date">
                                               {new Date(
@@ -460,6 +460,7 @@ function UnassignedEventsDashboard({ setAuth }) {
                                                 day: "2-digit",
                                                 month: "2-digit",
                                                 year: "numeric",
+                                                timeZone: event.start.timeZone,
                                               })}
                                             </div>
                                             <div className="time">
@@ -468,11 +469,12 @@ function UnassignedEventsDashboard({ setAuth }) {
                                               ).toLocaleTimeString("de-DE", {
                                                 hour: "2-digit",
                                                 minute: "2-digit",
+                                                timeZone: event.start.timeZone,
                                               })}
                                             </div>
                                           </div>
                                         ) : (
-                                          "Datum unbekannt"
+                                          <span>Datum unbekannt</span>
                                         )}
                                       </td>
                                       <td className="event-actions">
@@ -595,7 +597,11 @@ function UnassignedEventsDashboard({ setAuth }) {
                       ) : (
                         <div
                           className="no-events-message"
-                          style={{ textAlign: "center", margin: "50px 0px",color:"grey" }}
+                          style={{
+                            textAlign: "center",
+                            margin: "50px 0px",
+                            color: "grey",
+                          }}
                         >
                           Keine unzugewiesenen Veranstaltungen in diesem
                           Kalender.
