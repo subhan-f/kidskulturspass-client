@@ -12,6 +12,10 @@ import { DatabaseCheck } from 'react-bootstrap-icons';
 // Create a simulated delay to mimic network requests
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+export const getEmails = async ()=> {
+  const data =await axios.get('https://email-server.kidskulturspass.de/api/v1/email');
+  return data
+}
 // Simulate API with mock data
 const mockApi = {
   // Mock the events endpoint

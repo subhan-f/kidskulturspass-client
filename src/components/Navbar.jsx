@@ -55,6 +55,14 @@ function Navbar({ setAuth }) {
             </Nav.Link>
             <Nav.Link 
               as={Link} 
+              to="/emails" 
+              active={location.pathname === '/emails'}
+              onClick={() => setExpanded(false)}
+            >
+              Email-List
+            </Nav.Link>
+            <Nav.Link 
+              as={Link} 
               to="/history" 
               active={location.pathname === '/history'}
               onClick={() => setExpanded(false)}
