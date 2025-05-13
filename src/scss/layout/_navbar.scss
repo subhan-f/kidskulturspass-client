@@ -1,11 +1,20 @@
+
 @use '../abstracts' as *;
 @use "sass:color";
 
-// Clean up by removing duplicate navbar styles and focus on navbar-main
 .navbar-main {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid $color-light-gray;
-  padding: 0.8125rem 0; // Increased from 0.5rem (added 5px to top and bottom)
+  padding: 0.8125rem 0;
+  position: relative;
+  z-index: 1040;
+  // transition: opacity 0.3s ease, visibility 0.3s ease;
+  
+  &.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
   
   .container {
     display: flex !important;
@@ -21,7 +30,7 @@
   
   .navbar-logo {
     width: auto;
-    max-height: 45px; // Slightly increased to match taller navbar
+    max-height: 45px;
     object-fit: contain;
   }
   
@@ -82,7 +91,6 @@
     }
   }
   
-  // Mobile adjustments
   @include mobile {
     .navbar-collapse {
       padding-top: 1rem;
@@ -100,12 +108,20 @@
   }
 }
 
-// Update for dashboard page to account for fixed navbar
 .dashboard-page {
-  padding-top: 70px; // Increased from 60px to account for taller navbar
+  padding-top: 70px;
+  transition: padding-top 0.3s ease;
+  
+  &.navbar-hidden {
+    padding-top: 20px;
+  }
 }
 
-// Ensure content wrapper has enough top padding 
 .content-wrapper {
-  padding-top: 80px; // Increased from 70px to account for taller navbar
+  padding-top: 80px;
+  transition: padding-top 0.3s ease;
+  
+  &.navbar-hidden {
+    padding-top: 20px;
+  }
 }

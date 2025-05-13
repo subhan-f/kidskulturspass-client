@@ -103,11 +103,11 @@ const EmailTable = ({ emails = [] }) => {
         <table className="email-table">
           <thead>
             <tr>
-              <th>To</th>
+              <th>Gesendet an</th>
               <th>Status</th>
-              <th>Subject</th>
-              <th>Sent At</th>
-              <th>Type</th>
+              <th>Betreff</th>
+              <th>Versand am</th>
+              <th>Typ</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -119,7 +119,7 @@ const EmailTable = ({ emails = [] }) => {
                   <span
                     className={`status-badge ${getStatusColor(email.status)}`}
                   >
-                    {email.status}
+                    {email.status =="Sent"?"Gesendet":email.status}
                   </span>
                 </td>
                 <td data-label="Subject">{email.subject}</td>
@@ -194,7 +194,7 @@ const EmailTable = ({ emails = [] }) => {
           onClick={() => paginate(currentPage > 1 ? currentPage - 1 : 1)}
           disabled={currentPage === 1}
         >
-          Previous
+          Vorherige
         </button>
 
         {Array.from({ length: Math.ceil(emails.length / emailsPerPage) }).map(
@@ -219,7 +219,7 @@ const EmailTable = ({ emails = [] }) => {
           }
           disabled={currentPage === Math.ceil(emails.length / emailsPerPage)}
         >
-          Next
+          Nächste
         </button>
       </div>
 
