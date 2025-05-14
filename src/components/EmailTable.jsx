@@ -6,7 +6,7 @@ const EmailTable = ({ emails = [] }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState(null);
-  const emailsPerPage = 5;
+  const emailsPerPage = 15;
 
   const indexOfLastEmail = currentPage * emailsPerPage;
   const indexOfFirstEmail = indexOfLastEmail - emailsPerPage;
