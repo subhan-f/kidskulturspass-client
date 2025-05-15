@@ -59,7 +59,7 @@ function Navbar({ setAuth }) {
               active={location.pathname === '/emails'}
               onClick={() => setExpanded(false)}
             >
-              Email-List
+              Email Versand
             </Nav.Link>
             <Nav.Link 
               as={Link} 

@@ -5,8 +5,9 @@ import UnassignedEventsDashboard from './pages/UnassignedEventsDashboard';
 import HistoryDashboard from './pages/HistoryDashboard';
 import { initDebug } from './utils/debug';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import EmailTable from './components/EmailTable';
+// import EmailTable from './components/EmailTable';
 import EmailDashboard from './pages/EmailDashboard';
+import EmailListDashboard from './pages/EmailDashboard';
 
 // Initialize debug utilities only in development
 initDebug();
@@ -23,7 +24,7 @@ function App() {
       <Routes>
         {/* Direct access to all routes without authentication */}
         <Route path="/" element={<ArtistsDashboard setAuth={handleLogout} />} />
-        <Route path="/emails" element={<EmailDashboard setAuth={handleLogout} />} />
+        <Route path="/emails" element={<EmailListDashboard setAuth={handleLogout} />} />
         <Route path="/unassigned-events" element={<UnassignedEventsDashboard setAuth={handleLogout} />} />
         <Route path="/history" element={<HistoryDashboard setAuth={handleLogout} />} />
         <Route path="*" element={<Navigate to="/" />} />
