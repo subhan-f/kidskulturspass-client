@@ -29,16 +29,16 @@ function EmailListDashboard({ setAuth }) {
   const [currentPages, setCurrentPages] = useState({});
   const [selectedEmail, setSelectedEmail] = useState(null);
 
-  const emailTypes = [
-    "Invitation",
-    "New Deal",
-    "Update Deal",
-    "Cancel Deal",
-    "Reminder",
-    "Follow Up",
+  const calendarTypes = [
+    "Geigen Mitmachkonzert",
+    "Klavier Mitmachkonzert",
+    "Laternenumzug mit Musik",
+    "Nikolaus Besuch",
+    "Puppentheater",
+    "Weihnachts Mitmachkonzert",
   ];
 
-  const emailsPerPage = 15;
+  const emailsPerPage = 7;
 
   const fetchEmails = async (options = {}) => {
     const {
@@ -137,7 +137,7 @@ function EmailListDashboard({ setAuth }) {
     if (emails.length > 0) {
       const initialExpandState = {};
       const initialPagesState = {};
-      emailTypes.forEach((type) => {
+      calendarTypes.forEach((type) => {
         initialExpandState[type] = true;
         initialPagesState[type] = 1;
       });
@@ -305,13 +305,14 @@ function EmailListDashboard({ setAuth }) {
 
   const getStatusCountsByType = useMemo(() => {
     return emails.reduce((acc, email) => {
-      if (!email.type || !email.status) return acc;
+      if (!email.calendar || !email.status) return acc;
 
-      if (!acc[email.type]) {
-        acc[email.type] = {};
+      if (!acc[email.calendar]) {
+        acc[email.calendar] = {};
       }
 
-      acc[email.type][email.status] = (acc[email.type][email.status] || 0) + 1;
+      acc[email.calendar][email.status] =
+        (acc[email.calendar][email.status] || 0) + 1;
       return acc;
     }, {});
   }, [emails]);
@@ -324,11 +325,12 @@ function EmailListDashboard({ setAuth }) {
           .includes(searchTerm.toLowerCase()) ||
         (email.type || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (email.status || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (email.email || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (email.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (email.calendar || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return filtered.reduce((acc, email) => {
-      const type = email.type || "Unbekannt";
+      const type = email.calendar || "Unbekannt";
       if (!acc[type]) {
         acc[type] = [];
       }
@@ -436,7 +438,7 @@ function EmailListDashboard({ setAuth }) {
               <p className="empty-state-message">Keine E-Mails gefunden.</p>
             </div>
           ) : (
-            emailTypes.map((type) => {
+            calendarTypes.map((type) => {
               const hasEmails = filteredEmailsByType[type]?.length > 0;
               const isFilteredOut = searchTerm && !typeHasMatch(type);
               const currentPage = currentPages[type] || 1;
@@ -462,21 +464,7 @@ function EmailListDashboard({ setAuth }) {
                   >
                     <div className="header-content">
                       <div className="title-with-icon">
-                        <h5 className="calendar-title">
-                          {type === "Invitation"
-                            ? "Einladung"
-                            : type === "New Deal"
-                            ? "Neuer Job"
-                            : type === "Cancel Deal"
-                            ? "Job Cancel"
-                            : type === "Update Deal"
-                            ? "Job Update"
-                            : type === "Reminder"
-                            ? "Erinnerung"
-                            : type === "Follow Up"
-                            ? "Nachverfolgung"
-                            : type}
-                        </h5>
+                        <h5 className="calendar-title">{type}</h5>
                         <div className="dropdown-toggle-icon">
                           {expandedTypes[type] ? (
                             <ChevronUp size={14} />
@@ -546,6 +534,7 @@ function EmailListDashboard({ setAuth }) {
                                   <th>Status</th>
                                   <th>Betreff</th>
                                   <th>Datum/Uhrzeit</th>
+                                  <th>Typ</th>
                                   <th>Aktion</th>
                                 </tr>
                               </thead>
@@ -586,6 +575,23 @@ function EmailListDashboard({ setAuth }) {
                                     </td>
                                     <td className="event-time">
                                       {formatDate(email.date)}
+                                    </td>
+                                    <td className="event-time">
+                                      <div className="event-title">
+                                        {email.type === "Invitation"
+                                          ? "Einladung"
+                                          : email.type === "New Deal"
+                                          ? "Neuer Job"
+                                          : email.type === "Cancel Deal"
+                                          ? "Job Cancel"
+                                          : email.type === "Update Deal"
+                                          ? "Job Update"
+                                          : email.type === "Reminder"
+                                          ? "Erinnerung"
+                                          : email.type === "Follow Up"
+                                          ? "Nachverfolgung"
+                                          : email.type}
+                                      </div>
                                     </td>
                                     <td className="event-actions">
                                       <Button
@@ -648,6 +654,9 @@ function EmailListDashboard({ setAuth }) {
                                     <div className="event-mobile-datetime">
                                       <i className="bi bi-calendar-event"></i>{" "}
                                       {formatDate(email.date)}
+                                    </div>
+                                    <div className="event-mobile-type">
+                                      <i className="bi bi-tag"></i> {email.type}
                                     </div>
                                   </div>
 
