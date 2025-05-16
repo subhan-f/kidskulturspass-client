@@ -322,3 +322,97 @@
   color: #6A1B9A;
   border-color: #CE93D8;
 }
+/* Add to your existing CSS */
+.type-badge-container {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  padding-left: 15px;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.type-badge .badge-count {
+  margin-left: 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 0 5px;
+  min-width: 18px;
+  display: inline-block;
+  text-align: center;
+}
+
+/* Soft rainbow colors for each type */
+.type-badge-invitation {
+  background-color: rgba(102, 187, 255, 0.2);
+  color: #0066cc;
+  border: 1px solid rgba(0, 102, 204, 0.3);
+}
+
+.type-badge-new-deal {
+  background-color: rgba(255, 179, 102, 0.2);
+  color: #cc6600;
+  border: 1px solid rgba(204, 102, 0, 0.3);
+}
+
+.type-badge-update-deal {
+  background-color: rgba(153, 204, 102, 0.2);
+  color: #336600;
+  border: 1px solid rgba(51, 102, 0, 0.3);
+}
+
+.type-badge-cancel-deal {
+  background-color: rgba(255, 102, 102, 0.2);
+  color: #cc0000;
+  border: 1px solid rgba(204, 0, 0, 0.3);
+}
+
+.type-badge-reminder {
+  background-color: rgba(204, 153, 255, 0.2);
+  color: #6600cc;
+  border: 1px solid rgba(102, 0, 204, 0.3);
+}
+
+.type-badge-follow-up {
+  background-color: rgba(102, 204, 204, 0.2);
+  color: #006666;
+  border: 1px solid rgba(0, 102, 102, 0.3);
+}
+
+/* Add to your existing CSS */
+.header-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.badges-container {
+  display: flex;
+  flex-grow: 1;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 15px;
+}
+
+.calendar-role-badges {
+  display: flex;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  min-width: 200px;
+}
+
