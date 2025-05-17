@@ -727,6 +727,12 @@ import {
   Envelope,
   ChevronDown,
   ChevronUp,
+  EnvelopeOpen,
+  PlusCircle,
+  ArrowRepeat,
+  XCircle,
+  Bell,
+  ArrowReturnRight,
 } from "react-bootstrap-icons";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBox from "../components/SearchBox";
@@ -750,6 +756,45 @@ function EmailListDashboard({ setAuth }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [currentPages, setCurrentPages] = useState({});
   const [selectedEmail, setSelectedEmail] = useState(null);
+
+  const emailTypes = [
+    {
+      type: "Invitation",
+      label: "Einladung",
+      icon: <EnvelopeOpen size={14} />,
+      class: "type-badge-invitation",
+    },
+    {
+      type: "New Deal",
+      label: "Neuer Job",
+      icon: <PlusCircle size={14} />,
+      class: "type-badge-new-deal",
+    },
+    {
+      type: "Update Deal",
+      label: "Job Update",
+      icon: <ArrowRepeat size={14} />,
+      class: "type-badge-update-deal",
+    },
+    {
+      type: "Cancel Deal",
+      label: "Job Cancel",
+      icon: <XCircle size={14} />,
+      class: "type-badge-cancel-deal",
+    },
+    {
+      type: "Reminder",
+      label: "Erinnerung",
+      icon: <Bell size={14} />,
+      class: "type-badge-reminder",
+    },
+    {
+      type: "Follow Up",
+      label: "Nachverfolgung",
+      icon: <ArrowReturnRight size={14} />,
+      class: "type-badge-follow-up",
+    },
+  ];
 
   const calendarTypes = [
     "Geigen Mitmachkonzert",
@@ -1106,18 +1151,18 @@ function EmailListDashboard({ setAuth }) {
   }, []);
 
   const formatDate = (dateString) => {
-  if (!dateString) return "Datum unbekannt";
+    if (!dateString) return "Datum unbekannt";
 
-  const date = new Date(dateString);
-  return date.toLocaleString("de-DE", {
-    timeZone: "Europe/Berlin", // 👈 Force Berlin timezone
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+    const date = new Date(dateString);
+    return date.toLocaleString("de-DE", {
+      timeZone: "Europe/Berlin",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   if (loading) {
     return (
@@ -1164,6 +1209,60 @@ function EmailListDashboard({ setAuth }) {
             {error}
           </Alert>
         )}
+
+        {/* Glossary/Legend Section - Vertical Layout */}
+        <div className="email-type-glossary-vertical">
+          <h5 className="glossary-title">E-Mail Typen Legende:</h5>
+          <div className="glossary-items-vertical">
+            {/* Invitation */}
+            <div className="glossary-item-vertical">
+              <div className="icon-badge type-badge-invitation">
+                <EnvelopeOpen size={16} />
+              </div>
+              <span className="glossary-label">Einladung</span>
+            </div>
+
+            {/* New Deal */}
+            <div className="glossary-item-vertical">
+              <div className="icon-badge type-badge-new-deal">
+                <PlusCircle size={16} />
+              </div>
+              <span className="glossary-label">Neuer Job</span>
+            </div>
+
+            {/* Update Deal */}
+            <div className="glossary-item-vertical">
+              <div className="icon-badge type-badge-update-deal">
+                <ArrowRepeat size={16} />
+              </div>
+              <span className="glossary-label">Job Update</span>
+            </div>
+
+            {/* Cancel Deal */}
+            <div className="glossary-item-vertical">
+              <div className="icon-badge type-badge-cancel-deal">
+                <XCircle size={16} />
+              </div>
+              <span className="glossary-label">Job Cancel</span>
+            </div>
+
+            {/* Reminder */}
+            <div className="glossary-item-vertical">
+              <div className="icon-badge type-badge-reminder">
+                <Bell size={16} />
+              </div>
+              <span className="glossary-label">Erinnerung</span>
+            </div>
+
+            {/* Follow Up */}
+            <div className="glossary-item-vertical">
+              <div className="icon-badge type-badge-follow-up">
+                <ArrowReturnRight size={16} />
+              </div>
+              <span className="glossary-label">Nachverfolgung</span>
+            </div>
+          </div>
+        </div>
 
         {/* Events Container */}
         <div className="events-container">
@@ -1245,62 +1344,33 @@ function EmailListDashboard({ setAuth }) {
                                 ))}
                             </div>
                           )}
-
-                        {/* Type badges (right side) */}
-                        {getTypeCountsByCalendar[type] &&
-                          Object.entries(getTypeCountsByCalendar[type]).length >
-                            0 && (
-                            <div className="type-badge-container d-none d-md-flex">
-                              {Object.entries(getTypeCountsByCalendar[type])
-                                .sort((a, b) => b[1] - a[1])
-                                .map(([emailType, count]) => {
-                                  let typeClass = "";
-                                  let germanLabel = "";
-
-                                  switch (emailType) {
-                                    case "Invitation":
-                                      typeClass = "type-badge-invitation";
-                                      germanLabel = "Einladung";
-                                      break;
-                                    case "New Deal":
-                                      typeClass = "type-badge-new-deal";
-                                      germanLabel = "Neuer Job";
-                                      break;
-                                    case "Update Deal":
-                                      typeClass = "type-badge-update-deal";
-                                      germanLabel = "Job Update";
-                                      break;
-                                    case "Cancel Deal":
-                                      typeClass = "type-badge-cancel-deal";
-                                      germanLabel = "Job Cancel";
-                                      break;
-                                    case "Reminder":
-                                      typeClass = "type-badge-reminder";
-                                      germanLabel = "Erinnerung";
-                                      break;
-                                    case "Follow Up":
-                                      typeClass = "type-badge-follow-up";
-                                      germanLabel = "Nachverfolgung";
-                                      break;
-                                    default:
-                                      typeClass = "type-badge-invitation";
-                                      germanLabel = emailType;
-                                  }
-
-                                  return (
-                                    <span
-                                      key={emailType}
-                                      className={`type-badge ${typeClass}`}
-                                    >
-                                      {germanLabel}
-                                      <span className="badge-count">
-                                        {count}
-                                      </span>
-                                    </span>
-                                  );
-                                })}
-                            </div>
+                        <div className="type-badge-container d-none d-md-flex">
+                          {emailTypes.map(
+                            ({
+                              type: emailType,
+                              icon,
+                              class: typeClass,
+                              label,
+                            }) => {
+                              const count =
+                                (getTypeCountsByCalendar[type] &&
+                                  getTypeCountsByCalendar[type][emailType]) ||
+                                0;
+                              return (
+                                <div
+                                  key={emailType}
+                                  className={`icon-badge ${typeClass} ${
+                                    count === 0 ? "zero-count" : ""
+                                  }`}
+                                  title={label}
+                                >
+                                  {icon}
+                                  <span className="badge-count">{count}</span>
+                                </div>
+                              );
+                            }
                           )}
+                        </div>
                       </div>
 
                       <span className="events-count">

@@ -415,4 +415,115 @@
   align-items: center;
   min-width: 200px;
 }
+/* Icon Badges */
+/* Icon Badges - Updated Capsule Style */
+.icon-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  border-radius: 16px; /* Creates capsule shape */
+  margin-left: 5px;
+  padding: 0 12px;
+  position: relative;
+  cursor: pointer;
+  gap: 13px; /* Adds 13px gap between icon and count */
+}
 
+.icon-badge .badge-count {
+  position: relative; /* Changed from absolute to relative */
+  top: auto;
+  right: auto;
+  background-color: #fff;
+  color: inherit;
+  border-radius: 10px;
+  padding: 2px 5px;
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 1px currentColor;
+  margin-left: 0; /* Reset any margin */
+}
+/* Type Badge Colors */
+.type-badge-invitation {
+  background-color: rgba(102, 187, 255, 0.2);
+  color: #0066cc;
+  border: 1px solid rgba(0, 102, 204, 0.3);
+}
+
+.type-badge-new-deal {
+  background-color: rgba(255, 179, 102, 0.2);
+  color: #cc6600;
+  border: 1px solid rgba(204, 102, 0, 0.3);
+}
+
+.type-badge-update-deal {
+  background-color: rgba(153, 204, 102, 0.2);
+  color: #336600;
+  border: 1px solid rgba(51, 102, 0, 0.3);
+}
+
+.type-badge-cancel-deal {
+  background-color: rgba(255, 102, 102, 0.2);
+  color: #cc0000;
+  border: 1px solid rgba(204, 0, 0, 0.3);
+}
+
+.type-badge-reminder {
+  background-color: rgba(204, 153, 255, 0.2);
+  color: #6600cc;
+  border: 1px solid rgba(102, 0, 204, 0.3);
+}
+
+.type-badge-follow-up {
+  background-color: rgba(102, 204, 204, 0.2);
+  color: #006666;
+  border: 1px solid rgba(0, 102, 102, 0.3);
+}
+
+.email-type-glossary-vertical {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.glossary-title {
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #333;
+}
+
+.glossary-items-vertical {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.glossary-item-vertical {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+}
+
+.glossary-item-vertical .icon-badge {
+  margin-right: 8px;
+}
+
+.glossary-label {
+  font-size: 14px;
+  color: #555;
+}
+
+.badges-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-grow: 1;
+  margin-left: 15px;
+}
+
+.type-badge-container {
+  display: flex;
+  margin-left: auto;
+}
