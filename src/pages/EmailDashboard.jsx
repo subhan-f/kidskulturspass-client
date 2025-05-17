@@ -1106,17 +1106,18 @@ function EmailListDashboard({ setAuth }) {
   }, []);
 
   const formatDate = (dateString) => {
-    if (!dateString) return "Datum unbekannt";
+  if (!dateString) return "Datum unbekannt";
 
-    const date = new Date(dateString);
-    return date.toLocaleString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const date = new Date(dateString);
+  return date.toLocaleString("de-DE", {
+    timeZone: "Europe/Berlin", // 👈 Force Berlin timezone
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
   if (loading) {
     return (
