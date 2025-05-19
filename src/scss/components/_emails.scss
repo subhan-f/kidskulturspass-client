@@ -527,3 +527,152 @@
   display: flex;
   margin-left: auto;
 }
+
+/* Tooltip styles for glossary items */
+/* Tooltip styles for glossary items */
+.glossary-item-vertical {
+  position: relative;
+  cursor: pointer;
+}
+
+.glossary-item-vertical:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 100%;
+  margin-bottom: 5px;
+  width: 250px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  z-index: 1000;
+  text-align: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  background-color: #fff; /* Default fallback background */
+  color: #000;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+/* Specific tooltip styles with fully opaque backgrounds */
+.invitation-glossaryitem:hover::after {
+  background-color: #66bbff;
+  color: white;
+  border: 1px solid #0066cc;
+}
+
+.new-deal-glossaryitem:hover::after {
+  background-color: #ffb366;
+  color: white;
+  border: 1px solid #cc6600;
+}
+
+.update-deal-glossaryitem:hover::after {
+  background-color: #99cc66;
+  color: white;
+  border: 1px solid #336600;
+}
+
+.cancel-deal-glossaryitem:hover::after {
+  background-color: #ff6666;
+  color: white;
+  border: 1px solid #cc0000;
+}
+
+.reminder-glossaryitem:hover::after {
+  background-color: #cc99ff;
+  color: white;
+  border: 1px solid #6600cc;
+}
+
+.follow-up-glossaryitem:hover::after {
+  background-color: #66cccc;
+  color: white;
+  border: 1px solid #006666;
+}
+
+/* Adjust positioning for first and last tooltip */
+.glossary-items-vertical > .glossary-item-vertical:first-child:hover::after,
+.glossary-items-vertical > .glossary-item-vertical:first-child {
+  left: 0;
+  transform: translateX(0);
+}
+
+.glossary-items-vertical > .glossary-item-vertical:last-child:hover::after,
+.glossary-items-vertical > .glossary-item-vertical:last-child {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+
+/* Tooltip styles for icon-title badges */
+/* Tooltip styles for icon-title badges */
+.icon-title {
+  position: relative;
+  cursor: pointer;
+}
+
+.icon-title:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100%; /* Changed from bottom: 270% */
+  margin-top: 5px; /* Changed from margin-bottom */
+  width: 250px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  z-index: 1000;
+  text-align: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+/* Specific tooltip styles matching glossary items */
+.type-badge-invitation:hover::after {
+  background-color: #66bbff;
+  color: white;
+  border: 1px solid #0066cc;
+}
+
+.type-badge-new-deal:hover::after {
+  background-color: #ffb366;
+  color: white;
+  border: 1px solid #cc6600;
+}
+
+.type-badge-update-deal:hover::after {
+  background-color: #99cc66;
+  color: white;
+  border: 1px solid #336600;
+}
+
+.type-badge-cancel-deal:hover::after {
+  background-color: #ff6666;
+  color: white;
+  border: 1px solid #cc0000;
+}
+
+.type-badge-reminder:hover::after {
+  background-color: #cc99ff;
+  color: white;
+  border: 1px solid #6600cc;
+}
+
+.type-badge-follow-up:hover::after {
+  background-color: #66cccc;
+  color: white;
+  border: 1px solid #006666;
+}

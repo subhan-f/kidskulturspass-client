@@ -757,44 +757,57 @@ function EmailListDashboard({ setAuth }) {
   const [currentPages, setCurrentPages] = useState({});
   const [selectedEmail, setSelectedEmail] = useState(null);
 
-  const emailTypes = [
-    {
-      type: "Invitation",
-      label: "Einladung",
-      icon: <EnvelopeOpen size={14} />,
-      class: "type-badge-invitation",
-    },
-    {
-      type: "New Deal",
-      label: "Neuer Job",
-      icon: <PlusCircle size={14} />,
-      class: "type-badge-new-deal",
-    },
-    {
-      type: "Update Deal",
-      label: "Job Update",
-      icon: <ArrowRepeat size={14} />,
-      class: "type-badge-update-deal",
-    },
-    {
-      type: "Cancel Deal",
-      label: "Job Cancel",
-      icon: <XCircle size={14} />,
-      class: "type-badge-cancel-deal",
-    },
-    {
-      type: "Reminder",
-      label: "Erinnerung",
-      icon: <Bell size={14} />,
-      class: "type-badge-reminder",
-    },
-    {
-      type: "Follow Up",
-      label: "Nachverfolgung",
-      icon: <ArrowReturnRight size={14} />,
-      class: "type-badge-follow-up",
-    },
-  ];
+
+  
+const emailTypes = [
+  {
+    type: "Invitation",
+    label: "Einladung",
+    icon: <EnvelopeOpen size={14} />,
+    class: "type-badge-invitation",
+    title:
+      "Einladung zum Google-Kalender – enthält Zugriff auf alle zugewiesenen Termine.",
+  },
+  {
+    type: "New Deal",
+    label: "Neuer Job",
+    icon: <PlusCircle size={14} />,
+    class: "type-badge-new-deal",
+    title:
+      "Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen.",
+  },
+  {
+    type: "Update Deal",
+    label: "Job Update",
+    icon: <ArrowRepeat size={14} />,
+    class: "type-badge-update-deal",
+    title:
+      "Aktualisierte Informationen zu einem bestehenden Job – z. B. Änderungen bei Uhrzeit oder Ort.",
+  },
+  {
+    type: "Cancel Deal",
+    label: "Job Cancel",
+    icon: <XCircle size={14} />,
+    class: "type-badge-cancel-deal",
+    title: "Benachrichtigung, dass ein Job abgesagt wurde.",
+  },
+  {
+    type: "Reminder",
+    label: "Erinnerung",
+    icon: <Bell size={14} />,
+    class: "type-badge-reminder",
+    title:
+      "Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet.",
+  },
+  {
+    type: "Follow Up",
+    label: "Nachverfolgung",
+    icon: <ArrowReturnRight size={14} />,
+    class: "type-badge-follow-up",
+    title:
+      "Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen.",
+  },
+];
 
   const calendarTypes = [
     "Geigen Mitmachkonzert",
@@ -1211,11 +1224,15 @@ function EmailListDashboard({ setAuth }) {
         )}
 
         {/* Glossary/Legend Section - Vertical Layout */}
+        {/* Glossary/Legend Section - Vertical Layout */}
         <div className="email-type-glossary-vertical">
           <h5 className="glossary-title">E-Mail Typen Legende:</h5>
           <div className="glossary-items-vertical">
             {/* Invitation */}
-            <div className="glossary-item-vertical">
+            <div
+              className="glossary-item-vertical invitation-glossaryitem"
+              title="Einladung zum Google-Kalender – enthält Zugriff auf alle zugewiesenen Termine."
+            >
               <div className="icon-badge type-badge-invitation">
                 <EnvelopeOpen size={16} />
               </div>
@@ -1223,7 +1240,10 @@ function EmailListDashboard({ setAuth }) {
             </div>
 
             {/* New Deal */}
-            <div className="glossary-item-vertical">
+            <div
+              className="glossary-item-vertical new-deal-glossaryitem"
+              title="Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen."
+            >
               <div className="icon-badge type-badge-new-deal">
                 <PlusCircle size={16} />
               </div>
@@ -1231,7 +1251,10 @@ function EmailListDashboard({ setAuth }) {
             </div>
 
             {/* Update Deal */}
-            <div className="glossary-item-vertical">
+            <div
+              className="glossary-item-vertical update-deal-glossaryitem"
+              title="Aktualisierte Informationen zu einem bestehenden Job im – z. B. Änderungen bei Uhrzeit oder Ort."
+            >
               <div className="icon-badge type-badge-update-deal">
                 <ArrowRepeat size={16} />
               </div>
@@ -1239,7 +1262,10 @@ function EmailListDashboard({ setAuth }) {
             </div>
 
             {/* Cancel Deal */}
-            <div className="glossary-item-vertical">
+            <div
+              className="glossary-item-vertical cancel-deal-glossaryitem"
+              title="Benachrichtigung, dass ein Job abgesagt wurde."
+            >
               <div className="icon-badge type-badge-cancel-deal">
                 <XCircle size={16} />
               </div>
@@ -1247,7 +1273,10 @@ function EmailListDashboard({ setAuth }) {
             </div>
 
             {/* Reminder */}
-            <div className="glossary-item-vertical">
+            <div
+              className="glossary-item-vertical reminder-glossaryitem"
+              title="Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet."
+            >
               <div className="icon-badge type-badge-reminder">
                 <Bell size={16} />
               </div>
@@ -1255,7 +1284,10 @@ function EmailListDashboard({ setAuth }) {
             </div>
 
             {/* Follow Up */}
-            <div className="glossary-item-vertical">
+            <div
+              className="glossary-item-vertical follow-up-glossaryitem"
+              title="Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen."
+            >
               <div className="icon-badge type-badge-follow-up">
                 <ArrowReturnRight size={16} />
               </div>
@@ -1351,6 +1383,7 @@ function EmailListDashboard({ setAuth }) {
                               icon,
                               class: typeClass,
                               label,
+                              title, // Make sure title is passed in your emailTypes array
                             }) => {
                               const count =
                                 (getTypeCountsByCalendar[type] &&
@@ -1359,10 +1392,10 @@ function EmailListDashboard({ setAuth }) {
                               return (
                                 <div
                                   key={emailType}
-                                  className={`icon-badge ${typeClass} ${
+                                  className={`icon-badge icon-title ${typeClass} ${
                                     count === 0 ? "zero-count" : ""
                                   }`}
-                                  title={label}
+                                  title={title} // Add title attribute here
                                 >
                                   {icon}
                                   <span className="badge-count">{count}</span>
