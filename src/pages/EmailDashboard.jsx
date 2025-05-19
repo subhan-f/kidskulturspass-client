@@ -732,6 +732,7 @@ import {
   ArrowRepeat,
   XCircle,
   Bell,
+  CameraVideo,
   ArrowReturnRight,
 } from "react-bootstrap-icons";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -757,57 +758,63 @@ function EmailListDashboard({ setAuth }) {
   const [currentPages, setCurrentPages] = useState({});
   const [selectedEmail, setSelectedEmail] = useState(null);
 
-
-  
-const emailTypes = [
-  {
-    type: "Invitation",
-    label: "Einladung",
-    icon: <EnvelopeOpen size={14} />,
-    class: "type-badge-invitation",
-    title:
-      "Einladung zum Google-Kalender – enthält Zugriff auf alle zugewiesenen Termine.",
-  },
-  {
-    type: "New Deal",
-    label: "Neuer Job",
-    icon: <PlusCircle size={14} />,
-    class: "type-badge-new-deal",
-    title:
-      "Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen.",
-  },
-  {
-    type: "Update Deal",
-    label: "Job Update",
-    icon: <ArrowRepeat size={14} />,
-    class: "type-badge-update-deal",
-    title:
-      "Aktualisierte Informationen zu einem bestehenden Job – z. B. Änderungen bei Uhrzeit oder Ort.",
-  },
-  {
-    type: "Cancel Deal",
-    label: "Job Cancel",
-    icon: <XCircle size={14} />,
-    class: "type-badge-cancel-deal",
-    title: "Benachrichtigung, dass ein Job abgesagt wurde.",
-  },
-  {
-    type: "Reminder",
-    label: "Erinnerung",
-    icon: <Bell size={14} />,
-    class: "type-badge-reminder",
-    title:
-      "Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet.",
-  },
-  {
-    type: "Follow Up",
-    label: "Nachverfolgung",
-    icon: <ArrowReturnRight size={14} />,
-    class: "type-badge-follow-up",
-    title:
-      "Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen.",
-  },
-];
+  const emailTypes = [
+    {
+      type: "Invitation",
+      label: "Einladung",
+      icon: <EnvelopeOpen size={14} />,
+      class: "type-badge-invitation",
+      title:
+        "Einladung zum Google-Kalender – enthält Zugriff auf alle zugewiesenen Termine.",
+    },
+    {
+      type: "New Deal",
+      label: "Neuer Job",
+      icon: <PlusCircle size={14} />,
+      class: "type-badge-new-deal",
+      title:
+        "Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen.",
+    },
+    {
+      type: "Update Deal",
+      label: "Job Update",
+      icon: <ArrowRepeat size={14} />,
+      class: "type-badge-update-deal",
+      title:
+        "Aktualisierte Informationen zu einem bestehenden Job – z. B. Änderungen bei Uhrzeit oder Ort.",
+    },
+    {
+      type: "Cancel Deal",
+      label: "Job Cancel",
+      icon: <XCircle size={14} />,
+      class: "type-badge-cancel-deal",
+      title: "Benachrichtigung, dass ein Job abgesagt wurde.",
+    },
+    {
+      type: "Reminder Photos Videos",
+      label: "Fotos/Videos Erinnerung",
+      icon: <CameraVideo size={14} />,
+      class: "type-badge-reminder-photos-videos",
+      title:
+        "Erinnerung an Künstler, Fotos oder Videos von ihrem Auftritt hochzuladen.",
+    },
+    {
+      type: "Reminder",
+      label: "Erinnerung",
+      icon: <Bell size={14} />,
+      class: "type-badge-reminder",
+      title:
+        "Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet.",
+    },
+    {
+      type: "Follow Up",
+      label: "Nachverfolgung",
+      icon: <ArrowReturnRight size={14} />,
+      class: "type-badge-follow-up",
+      title:
+        "Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen.",
+    },
+  ];
 
   const calendarTypes = [
     "Geigen Mitmachkonzert",
@@ -1238,7 +1245,16 @@ const emailTypes = [
               </div>
               <span className="glossary-label">Einladung</span>
             </div>
-
+            {/* Reminder Photos Videos */}
+            <div
+              className="glossary-item-vertical reminder-photos-videos-glossaryitem"
+              title="Erinnerung an Künstler, Fotos oder Videos von ihrem Auftritt hochzuladen."
+            >
+              <div className="icon-badge type-badge-reminder-photos-videos">
+                <CameraVideo size={16} />
+              </div>
+              <span className="glossary-label">Fotos/Videos Erinnerung</span>
+            </div>
             {/* New Deal */}
             <div
               className="glossary-item-vertical new-deal-glossaryitem"
@@ -1474,7 +1490,24 @@ const emailTypes = [
                                       </div>
                                     </td>
                                     <td className="event-time">
-                                      {formatDate(email.date)}
+                                      <div className="event-title">
+                                        {email.type === "Invitation"
+                                          ? "Einladung"
+                                          : email.type === "New Deal"
+                                          ? "Neuer Job"
+                                          : email.type === "Cancel Deal"
+                                          ? "Job Cancel"
+                                          : email.type === "Update Deal"
+                                          ? "Job Update"
+                                          : email.type === "Reminder"
+                                          ? "Erinnerung"
+                                          : email.type === "Follow Up"
+                                          ? "Nachverfolgung"
+                                          : email.type ===
+                                            "Reminder Photos Videos"
+                                          ? "Fotos/Videos Erinnerung"
+                                          : email.type}
+                                      </div>
                                     </td>
                                     <td className="event-time">
                                       <div className="event-title">

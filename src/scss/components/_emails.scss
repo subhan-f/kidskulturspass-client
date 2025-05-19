@@ -588,7 +588,10 @@
   color: white;
   border: 1px solid #6600cc;
 }
-
+.reminder-photos-videos-glossaryitem:hover::after {
+  background-color: #8e44ad;
+  color: white;
+}
 .follow-up-glossaryitem:hover::after {
   background-color: #66cccc;
   color: white;
@@ -676,3 +679,25 @@
   color: white;
   border: 1px solid #006666;
 }
+/* New badge style */
+.type-badge-reminder-photos-videos:hover::after {
+  background-color: #8e44ad;
+  color: white;
+}
+.type-badge-reminder-photos-videos {
+  background-color: #8e44ad;
+  color: white;
+}
+.type-badge-reminder-photos-videos.zero-count {
+  background-color: #d2b4de;
+  color: #5b2c6f;
+}
+.reminder-photos-videos-glossaryitem:hover::after {
+  background-color: #8e44ad;
+  color: white;
+}
+/* Glossary item style */
+// .reminder-photos-videos-glossaryitem {
+//   background-color: rgba(142, 68, 173, 0.1);
+//   border-left: 3px solid #8e44ad;
+// }
