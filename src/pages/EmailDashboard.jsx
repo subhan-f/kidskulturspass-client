@@ -56,7 +56,7 @@ function EmailListDashboard({ setAuth }) {
     },
     {
       type: "Update Deal",
-      label: "Job Update",
+      label: "Update",
       icon: <ArrowRepeat size={14} />,
       class: "type-badge-update-deal",
       title:
@@ -64,7 +64,7 @@ function EmailListDashboard({ setAuth }) {
     },
     {
       type: "Cancel Deal",
-      label: "Job Cancel",
+      label: "Absage",
       icon: <XCircle size={14} />,
       class: "type-badge-cancel-deal",
       title: "Benachrichtigung, dass ein Job abgesagt wurde",
@@ -87,7 +87,7 @@ function EmailListDashboard({ setAuth }) {
     },
     {
       type: "Reminder",
-      label: "Erinnerung",
+      label: "Event-Erinnerung",
       icon: <Bell size={14} />,
       class: "type-badge-reminder",
       title:
@@ -95,7 +95,7 @@ function EmailListDashboard({ setAuth }) {
     },
     {
       type: "Follow Up",
-      label: "Nachverfolgung",
+      label: "Job noch offen",
       icon: <ArrowReturnRight size={14} />,
       class: "type-badge-follow-up",
       title:
@@ -573,7 +573,7 @@ function EmailListDashboard({ setAuth }) {
               <div className="icon-badge type-badge-update-deal">
                 <ArrowRepeat size={16} />
               </div>
-              <span className="glossary-label">Job Update</span>
+              <span className="glossary-label">Update</span>
             </div>
 
             {/* Cancel Deal */}
@@ -584,7 +584,7 @@ function EmailListDashboard({ setAuth }) {
               <div className="icon-badge type-badge-cancel-deal">
                 <XCircle size={16} />
               </div>
-              <span className="glossary-label">Job Cancel</span>
+              <span className="glossary-label">Absage</span>
             </div>
 
             {/* Reminder */}
@@ -595,7 +595,7 @@ function EmailListDashboard({ setAuth }) {
               <div className="icon-badge type-badge-reminder">
                 <Bell size={16} />
               </div>
-              <span className="glossary-label">Erinnerung</span>
+              <span className="glossary-label">Event-Erinnerung</span>
             </div>
 
             {/* Follow Up */}
@@ -606,7 +606,7 @@ function EmailListDashboard({ setAuth }) {
               <div className="icon-badge type-badge-follow-up">
                 <ArrowReturnRight size={16} />
               </div>
-              <span className="glossary-label">Nachverfolgung</span>
+              <span className="glossary-label"> Job noch offen</span>
             </div>
           </div>
         </div>
@@ -662,34 +662,7 @@ function EmailListDashboard({ setAuth }) {
                         {getStatusCountsByType[type] &&
                           Object.entries(getStatusCountsByType[type]).length >
                             0 && (
-                            <div className="calendar-role-badges d-none d-md-flex">
-                              {Object.entries(getStatusCountsByType[type])
-                                .sort((a, b) => b[1] - a[1])
-                                .map(([status, count]) => (
-                                  <Badge
-                                    key={status}
-                                    bg={
-                                      status === "Sent"
-                                        ? "success"
-                                        : status === "Failed"
-                                        ? "danger"
-                                        : status === "Pending"
-                                        ? "warning"
-                                        : "secondary"
-                                    }
-                                    className="enhanced-badge capsule-badge"
-                                  >
-                                    {status === "Sent"
-                                      ? "Gesendet"
-                                      : status === "Failed"
-                                      ? "Fehlgeschlagen"
-                                      : status === "Pending"
-                                      ? "Ausstehend"
-                                      : status}{" "}
-                                    <span className="badge-count">{count}</span>
-                                  </Badge>
-                                ))}
-                            </div>
+                            <></>
                           )}
                         <div className="type-badge-container d-none d-md-flex">
                           {emailTypes.map(
@@ -761,28 +734,6 @@ function EmailListDashboard({ setAuth }) {
                                         {email.email}
                                       </div>
                                     </td>
-                                    <td className="event-roles">
-                                      <Badge
-                                        bg={
-                                          email.status === "Sent"
-                                            ? "success"
-                                            : email.status === "Failed"
-                                            ? "danger"
-                                            : email.status === "Pending"
-                                            ? "warning"
-                                            : "secondary"
-                                        }
-                                        className="role-badge"
-                                      >
-                                        {email.status === "Sent"
-                                          ? "Gesendet"
-                                          : email.status === "Failed"
-                                          ? "Fehlgeschlagen"
-                                          : email.status === "Pending"
-                                          ? "Ausstehend"
-                                          : email.status}
-                                      </Badge>
-                                    </td>
                                     <td className="event-time">
                                       <div className="event-title">
                                         {email.subject}
@@ -800,13 +751,13 @@ function EmailListDashboard({ setAuth }) {
                                           : email.type === "New Deal"
                                           ? "Neuer Job"
                                           : email.type === "Cancel Deal"
-                                          ? "Job Cancel"
+                                          ? "Absage"
                                           : email.type === "Update Deal"
-                                          ? "Job Update"
+                                          ? "Update"
                                           : email.type === "Reminder"
-                                          ? "Erinnerung"
+                                          ? "Event-Erinnerung"
                                           : email.type === "Follow Up"
-                                          ? "Nachverfolgung"
+                                          ? "Job noch offen"
                                           : email.type === "Performance Email"
                                           ? "Performance-Bericht"
                                           : email.type}
@@ -839,26 +790,6 @@ function EmailListDashboard({ setAuth }) {
                                   <div className="event-mobile-title">
                                     {email.subject}
                                   </div>
-                                  <Badge
-                                    bg={
-                                      email.status === "Sent"
-                                        ? "success"
-                                        : email.status === "Failed"
-                                        ? "danger"
-                                        : email.status === "Pending"
-                                        ? "warning"
-                                        : "secondary"
-                                    }
-                                    className="role-badge"
-                                  >
-                                    {email.status === "Sent"
-                                      ? "Gesendet"
-                                      : email.status === "Failed"
-                                      ? "Fehlgeschlagen"
-                                      : email.status === "Pending"
-                                      ? "Ausstehend"
-                                      : email.status}
-                                  </Badge>
                                 </div>
 
                                 <div className="event-mobile-content">
