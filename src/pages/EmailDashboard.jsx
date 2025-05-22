@@ -99,7 +99,7 @@ function EmailListDashboard({ setAuth }) {
       icon: <ArrowReturnRight size={14} />,
       class: "type-badge-follow-up",
       tooltip:
-        "Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen.",
+        "Tägliche E-Mail um 15 Uhr – Hinweis für Künstler, dass noch offene Jobs verfügbar sind und eine Eintragung im Kalender möglich ist.",
     },
   ];
 
@@ -608,7 +608,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Follow Up */}
             <div
               className="glossary-item-vertical follow-up-glossaryitem"
-              data-tooltip="Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen."
+              data-tooltip="Tägliche E-Mail um 15 Uhr – Hinweis für Künstler, dass noch offene Jobs verfügbar sind und eine Eintragung im Kalender möglich ist."
             >
               <div className="icon-badge type-badge-follow-up">
                 <ArrowReturnRight size={16} />
