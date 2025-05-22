@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button, Table, Alert, Badge } from "react-bootstrap";
 import {
-  Star,
+  Telephone,
   ArrowClockwise,
   Envelope,
   ChevronDown,
@@ -72,9 +72,9 @@ function EmailListDashboard({ setAuth }) {
     {
       type: "Performance Email",
       label: "Performance-Bericht",
-      icon: <Star size={14} />,
+      icon: <Telephone size={14} />,
       class: "type-badge-performance",
-      tooltip: "E-Mail mit Performance-Statistiken und Feedback für Künstler.",
+      tooltip: "Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf.",
     },
     ,
     {
@@ -83,7 +83,7 @@ function EmailListDashboard({ setAuth }) {
       icon: <CameraVideo size={14} />,
       class: "type-badge-reminder-photos-videos",
       tooltip:
-        "Erinnerung an Künstler, Fotos oder Videos von ihrem Auftritt hochzuladen.",
+        "Erinnerung an den Künstler, ca. 30 Minuten vor dem Auftritt vor Ort zu sein – für Fotos und kurze Videos zur Dokumentation",
     },
     {
       type: "Reminder",
@@ -544,7 +544,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Reminder Photos Videos */}
             <div
               className="glossary-item-vertical reminder-photos-videos-glossaryitem"
-              data-tooltip="Erinnerung an Künstler, Fotos oder Videos von ihrem Auftritt hochzuladen."
+              data-tooltip="Erinnerung an den Künstler, ca. 30 Minuten vor dem Auftritt vor Ort zu sein – für Fotos und kurze Videos zur Dokumentation"
             >
               <div className="icon-badge type-badge-reminder-photos-videos">
                 <CameraVideo size={16} />
@@ -554,10 +554,10 @@ function EmailListDashboard({ setAuth }) {
 
             <div
               className="glossary-item-vertical performance-glossaryitem"
-              data-tooltip="E-Mail mit Performance-Statistiken und Feedback für Künstler."
+              data-tooltip="Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf."
             >
               <div className="icon-badge type-badge-performance">
-                <Star size={16} />
+                <Telephone size={16} />
               </div>
               <span className="glossary-label">Performance-Bericht</span>
             </div>
@@ -728,6 +728,28 @@ function EmailListDashboard({ setAuth }) {
                                         {email.email}
                                       </div>
                                     </td>
+                                     <td className="event-roles">
+                                      <Badge
+                                        bg={
+                                          email.status === "Sent"
+                                            ? "success"
+                                            : email.status === "Failed"
+                                            ? "danger"
+                                            : email.status === "Pending"
+                                            ? "warning"
+                                            : "secondary"
+                                        }
+                                        className="role-badge"
+                                      >
+                                        {email.status === "Sent"
+                                          ? "Gesendet"
+                                          : email.status === "Failed"
+                                          ? "Fehlgeschlagen"
+                                          : email.status === "Pending"
+                                          ? "Ausstehend"
+                                          : email.status}
+                                      </Badge>
+                                    </td>
                                     <td className="event-time">
                                       <div className="event-title">
                                         {email.subject}
@@ -784,6 +806,26 @@ function EmailListDashboard({ setAuth }) {
                                   <div className="event-mobile-title">
                                     {email.subject}
                                   </div>
+                                  <Badge
+                                    bg={
+                                      email.status === "Sent"
+                                        ? "success"
+                                        : email.status === "Failed"
+                                        ? "danger"
+                                        : email.status === "Pending"
+                                        ? "warning"
+                                        : "secondary"
+                                    }
+                                    className="role-badge"
+                                  >
+                                    {email.status === "Sent"
+                                      ? "Gesendet"
+                                      : email.status === "Failed"
+                                      ? "Fehlgeschlagen"
+                                      : email.status === "Pending"
+                                      ? "Ausstehend"
+                                      : email.status}
+                                  </Badge>
                                 </div>
 
                                 <div className="event-mobile-content">
