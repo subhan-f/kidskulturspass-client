@@ -43,7 +43,7 @@ function EmailListDashboard({ setAuth }) {
       label: "Einladung",
       icon: <EnvelopeOpen size={14} />,
       class: "type-badge-invitation",
-      title:
+      tooltip:
         "Einladung zum Google-Kalender – enthält Zugriff auf alle zugewiesenen Termine.",
     },
     {
@@ -51,7 +51,7 @@ function EmailListDashboard({ setAuth }) {
       label: "Neuer Job",
       icon: <PlusCircle size={14} />,
       class: "type-badge-new-deal",
-      title:
+      tooltip:
         "Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen.",
     },
     {
@@ -59,7 +59,7 @@ function EmailListDashboard({ setAuth }) {
       label: "Update",
       icon: <ArrowRepeat size={14} />,
       class: "type-badge-update-deal",
-      title:
+      tooltip:
         "Aktualisierte Informationen zu einem bestehenden Job im – z. B. Änderungen bei Uhrzeit oder Ort.",
     },
     {
@@ -67,14 +67,14 @@ function EmailListDashboard({ setAuth }) {
       label: "Absage",
       icon: <XCircle size={14} />,
       class: "type-badge-cancel-deal",
-      title: "Benachrichtigung, dass ein Job abgesagt wurde",
+      tooltip: "Benachrichtigung, dass ein Job abgesagt wurde",
     },
     {
       type: "Performance Email",
       label: "Performance-Bericht",
       icon: <Star size={14} />,
       class: "type-badge-performance",
-      title: "E-Mail mit Performance-Statistiken und Feedback für Künstler.",
+      tooltip: "E-Mail mit Performance-Statistiken und Feedback für Künstler.",
     },
     ,
     {
@@ -82,7 +82,7 @@ function EmailListDashboard({ setAuth }) {
       label: "Fotos/Videos Erinnerung",
       icon: <CameraVideo size={14} />,
       class: "type-badge-reminder-photos-videos",
-      title:
+      tooltip:
         "Erinnerung an Künstler, Fotos oder Videos von ihrem Auftritt hochzuladen.",
     },
     {
@@ -90,7 +90,7 @@ function EmailListDashboard({ setAuth }) {
       label: "Event-Erinnerung",
       icon: <Bell size={14} />,
       class: "type-badge-reminder",
-      title:
+      tooltip:
         "Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet.",
     },
     {
@@ -98,7 +98,7 @@ function EmailListDashboard({ setAuth }) {
       label: "Job noch offen",
       icon: <ArrowReturnRight size={14} />,
       class: "type-badge-follow-up",
-      title:
+      tooltip:
         "Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen.",
     },
   ];
@@ -115,52 +115,59 @@ function EmailListDashboard({ setAuth }) {
   const emailsPerPage = 7;
 
   const fetchEmails = async (options = {}) => {
-    const {
-      showLoading = true,
-      isPolling = false,
-      forceRefresh = false,
-    } = options;
+  const {
+    showLoading = true,
+    isPolling = false,
+    forceRefresh = false,
+  } = options;
 
-    if (showLoading && !isPolling) {
-      setLoading(true);
-      setLoadingMessage("E-Mails werden geladen...");
-    }
+  if (showLoading && !isPolling) {
+    setLoading(true);
+    setLoadingMessage("E-Mails werden geladen...");
+  }
 
-    try {
-      console.log("Fetching emails with options:", options);
+  try {
+    console.log("Fetching emails with options:", options);
 
-      const response = await getEmails();
+    const response = await getEmails();
 
-      console.log("Response received:", response.data);
+    console.log("Response received:", response.data);
 
-      if (response.data.status === "loading") {
-        if (!polling) {
-          setPolling(true);
-          setPollingAttempts(1);
+    if (response.data.status === "loading") {
+      if (!polling) {
+        setPolling(true);
+        setPollingAttempts(1);
 
-          if (showLoading) {
-            setLoading(true);
-            setLoadingMessage(
-              "Daten werden vom E-Mail-Service geladen. Dies kann einen Moment dauern..."
-            );
-          }
-
-          setTimeout(() => pollForEmails(), 2000);
+        if (showLoading) {
+          setLoading(true);
+          setLoadingMessage(
+            "Daten werden vom E-Mail-Service geladen. Dies kann einen Moment dauern..."
+          );
         }
-      } else {
-        setPolling(false);
-        setEmails(response.data || []);
-        setWarning(response.data.warning || null);
-        setError(null);
-        setLoading(false);
+
+        setTimeout(() => pollForEmails(), 2000);
       }
-    } catch (err) {
-      console.error("Error fetching emails:", err);
-      setError("Fehler beim Laden der E-Mails");
+    } else {
       setPolling(false);
+
+      // ✅ Sort by date (newest first)
+      const sortedEmails = [...(response.data || [])].sort((a, b) => {
+        return new Date(b.date) - new Date(a.date); // descending
+      });
+
+      setEmails(sortedEmails);
+      setWarning(response.data.warning || null);
+      setError(null);
       setLoading(false);
     }
-  };
+  } catch (err) {
+    console.error("Error fetching emails:", err);
+    setError("Fehler beim Laden der E-Mails");
+    setPolling(false);
+    setLoading(false);
+  }
+};
+
 
   const pollForEmails = async () => {
     setPollingAttempts((prev) => prev + 1);
@@ -527,7 +534,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Invitation */}
             <div
               className="glossary-item-vertical invitation-glossaryitem"
-              title="Einladung zum Google-Kalender – enthält Zugriff auf alle zugewiesenen Termine."
+              data-tooltip="Einladung zum Google-Kalender – enthält Zugriff auf alle zugewiesenen Termine."
             >
               <div className="icon-badge type-badge-invitation">
                 <EnvelopeOpen size={16} />
@@ -537,7 +544,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Reminder Photos Videos */}
             <div
               className="glossary-item-vertical reminder-photos-videos-glossaryitem"
-              title="Erinnerung an Künstler, Fotos oder Videos von ihrem Auftritt hochzuladen."
+              data-tooltip="Erinnerung an Künstler, Fotos oder Videos von ihrem Auftritt hochzuladen."
             >
               <div className="icon-badge type-badge-reminder-photos-videos">
                 <CameraVideo size={16} />
@@ -547,7 +554,7 @@ function EmailListDashboard({ setAuth }) {
 
             <div
               className="glossary-item-vertical performance-glossaryitem"
-              title="E-Mail mit Performance-Statistiken und Feedback für Künstler."
+              data-tooltip="E-Mail mit Performance-Statistiken und Feedback für Künstler."
             >
               <div className="icon-badge type-badge-performance">
                 <Star size={16} />
@@ -557,7 +564,7 @@ function EmailListDashboard({ setAuth }) {
             {/* New Deal */}
             <div
               className="glossary-item-vertical new-deal-glossaryitem"
-              title="Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen."
+              data-tooltip="Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen."
             >
               <div className="icon-badge type-badge-new-deal">
                 <PlusCircle size={16} />
@@ -568,7 +575,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Update Deal */}
             <div
               className="glossary-item-vertical update-deal-glossaryitem"
-              title="Aktualisierte Informationen zu einem bestehenden Job im – z. B. Änderungen bei Uhrzeit oder Ort."
+              data-tooltip="Aktualisierte Informationen zu einem bestehenden Job im – z. B. Änderungen bei Uhrzeit oder Ort."
             >
               <div className="icon-badge type-badge-update-deal">
                 <ArrowRepeat size={16} />
@@ -579,7 +586,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Cancel Deal */}
             <div
               className="glossary-item-vertical cancel-deal-glossaryitem"
-              title="Benachrichtigung, dass ein Job abgesagt wurde."
+              data-tooltip="Benachrichtigung, dass ein Job abgesagt wurde."
             >
               <div className="icon-badge type-badge-cancel-deal">
                 <XCircle size={16} />
@@ -590,7 +597,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Reminder */}
             <div
               className="glossary-item-vertical reminder-glossaryitem"
-              title="Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet."
+              data-tooltip="Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet."
             >
               <div className="icon-badge type-badge-reminder">
                 <Bell size={16} />
@@ -601,7 +608,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Follow Up */}
             <div
               className="glossary-item-vertical follow-up-glossaryitem"
-              title="Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen."
+              data-tooltip="Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen."
             >
               <div className="icon-badge type-badge-follow-up">
                 <ArrowReturnRight size={16} />
@@ -665,32 +672,19 @@ function EmailListDashboard({ setAuth }) {
                             <></>
                           )}
                         <div className="type-badge-container d-none d-md-flex">
-                          {emailTypes.map(
-                            ({
-                              type: emailType,
-                              icon,
-                              class: typeClass,
-                              label,
-                              title, // Make sure title is passed in your emailTypes array
-                            }) => {
-                              const count =
-                                (getTypeCountsByCalendar[type] &&
-                                  getTypeCountsByCalendar[type][emailType]) ||
-                                0;
-                              return (
-                                <div
-                                  key={emailType}
-                                  className={`icon-badge icon-title ${typeClass} ${
-                                    count === 0 ? "zero-count" : ""
-                                  }`}
-                                  title={title} // Add title attribute here
-                                >
-                                  {icon}
-                                  <span className="badge-count">{count}</span>
-                                </div>
-                              );
-                            }
-                          )}
+                            {emailTypes.map(({ type: emailType, icon, class: typeClass, label, tooltip }) => {
+                    const count = (getTypeCountsByCalendar[type] && getTypeCountsByCalendar[type][emailType]) || 0;
+                    return (
+                      <div
+                        key={emailType}
+                        className={`icon-badge icon-title ${typeClass} ${count === 0 ? "zero-count" : ""}`}
+                        data-tooltip={tooltip}
+                      >
+                        {icon}
+                        <span className="badge-count">{count}</span>
+                      </div>
+                    );
+                  })}
                         </div>
                       </div>
 

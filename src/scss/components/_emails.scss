@@ -785,3 +785,93 @@
   color: #ffffff;
   border: 1px solid #f39c12;
 }
+.glossary-item-vertical {
+  position: relative;
+  cursor: pointer;
+}
+
+.glossary-item-vertical:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 100%;
+  margin-bottom: 5px;
+  width: 250px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  z-index: 1000;
+  text-align: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* Specific tooltip background colors */
+.invitation-glossaryitem:hover::after {
+  background-color: #66bbff;
+  color: white;
+  border: 1px solid #0066cc;
+}
+
+.new-deal-glossaryitem:hover::after {
+  background-color: #ffb366;
+  color: white;
+  border: 1px solid #cc6600;
+}
+
+/* ... (keep all your other specific tooltip styles) */
+
+/* Icon Badge Tooltips */
+.icon-title {
+  position: relative;
+  cursor: pointer;
+}
+
+.icon-title:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100%;
+  margin-top: 5px;
+  width: 250px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  z-index: 1000;
+  text-align: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+/* Specific icon badge tooltip colors */
+.type-badge-invitation:hover::after {
+  background-color: #66bbff;
+  color: white;
+  border: 1px solid #0066cc;
+}
+
+.type-badge-new-deal:hover::after {
+  background-color: #ffb366;
+  color: white;
+  border: 1px solid #cc6600;
+}
+
+/* ... (keep all your other icon badge tooltip styles) */
+
+/* Adjust positioning for first and last glossary tooltip */
+.glossary-items-vertical > .glossary-item-vertical:first-child:hover::after {
+  left: 0;
+  transform: translateX(0);
+}
+
+.glossary-items-vertical > .glossary-item-vertical:last-child:hover::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
