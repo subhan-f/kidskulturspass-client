@@ -54,6 +54,14 @@ function EmailListDashboard({ setAuth }) {
       tooltip:
         "Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen.",
     },
+     {
+      type: "Follow Up",
+      label: "Job noch offen",
+      icon: <ArrowReturnRight size={14} />,
+      class: "type-badge-follow-up",
+      tooltip:
+        "Tägliche E-Mail um 15 Uhr – Hinweis für Künstler, dass noch offene Jobs verfügbar sind und eine Eintragung im Kalender möglich ist.",
+    },
     {
       type: "Update Deal",
       label: "Update",
@@ -70,37 +78,29 @@ function EmailListDashboard({ setAuth }) {
       tooltip: "Benachrichtigung, dass ein Job abgesagt wurde",
     },
     {
+      type: "Reminder",
+      label: "Event-Erinnerung",
+      icon: <Bell size={14} />,
+      class: "type-badge-reminder",
+      tooltip:
+        "Erinnerung an Künstler für bereits zugesagten Job – wird ein Tag  vor Eventbeginn um 12:00 Uhr versendet.",
+    },
+    {
       type: "Performance Email",
       label: "Performance-Bericht",
       icon: <Telephone size={14} />,
       class: "type-badge-performance",
       tooltip: "Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf.",
     },
-    ,
     {
       type: "Reminder Photos Videos",
       label: "Fotos/Videos Erinnerung",
       icon: <CameraVideo size={14} />,
       class: "type-badge-reminder-photos-videos",
       tooltip:
-        "Erinnerung an den Künstler, ca. 30 Minuten vor dem Auftritt vor Ort zu sein – für Fotos und kurze Videos zur Dokumentation",
+        "Erinnerung an den Künstler, 30 Minuten vor dem Auftritt vor Ort – Fotos und kurze Videos seines Auftritts zu machen.",
     },
-    {
-      type: "Reminder",
-      label: "Event-Erinnerung",
-      icon: <Bell size={14} />,
-      class: "type-badge-reminder",
-      tooltip:
-        "Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet.",
-    },
-    {
-      type: "Follow Up",
-      label: "Job noch offen",
-      icon: <ArrowReturnRight size={14} />,
-      class: "type-badge-follow-up",
-      tooltip:
-        "Tägliche E-Mail um 15 Uhr – Hinweis für Künstler, dass noch offene Jobs verfügbar sind und eine Eintragung im Kalender möglich ist.",
-    },
+   
   ];
 
   const calendarTypes = [
@@ -541,27 +541,7 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Einladung</span>
             </div>
-            {/* Reminder Photos Videos */}
-            <div
-              className="glossary-item-vertical reminder-photos-videos-glossaryitem"
-              data-tooltip="Erinnerung an den Künstler, ca. 30 Minuten vor dem Auftritt vor Ort zu sein – für Fotos und kurze Videos zur Dokumentation"
-            >
-              <div className="icon-badge type-badge-reminder-photos-videos">
-                <CameraVideo size={16} />
-              </div>
-              <span className="glossary-label">Fotos/Videos Erinnerung</span>
-            </div>
-
-            <div
-              className="glossary-item-vertical performance-glossaryitem"
-              data-tooltip="Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf."
-            >
-              <div className="icon-badge type-badge-performance">
-                <Telephone size={16} />
-              </div>
-              <span className="glossary-label">Performance-Bericht</span>
-            </div>
-            {/* New Deal */}
+             {/* New Deal */}
             <div
               className="glossary-item-vertical new-deal-glossaryitem"
               data-tooltip="Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen."
@@ -571,8 +551,17 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Neuer Job</span>
             </div>
-
-            {/* Update Deal */}
+             {/* Follow Up */}
+            <div
+              className="glossary-item-vertical follow-up-glossaryitem"
+              data-tooltip="Tägliche E-Mail um 15 Uhr – Hinweis für Künstler, dass noch offene Jobs verfügbar sind und eine Eintragung im Kalender möglich ist."
+            >
+              <div className="icon-badge type-badge-follow-up">
+                <ArrowReturnRight size={16} />
+              </div>
+              <span className="glossary-label"> Job noch offen</span>
+            </div>
+              {/* Update Deal */}
             <div
               className="glossary-item-vertical update-deal-glossaryitem"
               data-tooltip="Aktualisierte Informationen zu einem bestehenden Job im – z. B. Änderungen bei Uhrzeit oder Ort."
@@ -582,7 +571,6 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Update</span>
             </div>
-
             {/* Cancel Deal */}
             <div
               className="glossary-item-vertical cancel-deal-glossaryitem"
@@ -593,28 +581,38 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Absage</span>
             </div>
-
             {/* Reminder */}
             <div
               className="glossary-item-vertical reminder-glossaryitem"
-              data-tooltip="Erinnerung an Künstler für bereits zugesagte Jobs – wird kurz vor dem Termin versendet."
+              data-tooltip="Erinnerung an Künstler für bereits zugesagten Job – wird ein Tag  vor Eventbeginn um 12:00 Uhr versendet."
             >
               <div className="icon-badge type-badge-reminder">
                 <Bell size={16} />
               </div>
               <span className="glossary-label">Event-Erinnerung</span>
             </div>
-
-            {/* Follow Up */}
+            {/* Performance Email */}
             <div
-              className="glossary-item-vertical follow-up-glossaryitem"
-              data-tooltip="Tägliche E-Mail um 15 Uhr – Hinweis für Künstler, dass noch offene Jobs verfügbar sind und eine Eintragung im Kalender möglich ist."
+              className="glossary-item-vertical performance-glossaryitem"
+              data-tooltip="Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf."
             >
-              <div className="icon-badge type-badge-follow-up">
-                <ArrowReturnRight size={16} />
+              <div className="icon-badge type-badge-performance">
+                <Telephone size={16} />
               </div>
-              <span className="glossary-label"> Job noch offen</span>
+              <span className="glossary-label">Performance-Bericht</span>
             </div>
+            {/* Reminder Photos Videos */}
+            <div
+              className="glossary-item-vertical reminder-photos-videos-glossaryitem"
+              data-tooltip="Erinnerung an den Künstler, 30 Minuten vor dem Auftritt vor Ort – Fotos und kurze Videos seines Auftritts zu machen."
+            >
+              <div className="icon-badge type-badge-reminder-photos-videos">
+                <CameraVideo size={16} />
+              </div>
+              <span className="glossary-label">Fotos/Videos Erinnerung</span>
+            </div>
+
+            
           </div>
         </div>
 
