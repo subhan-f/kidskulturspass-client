@@ -86,13 +86,6 @@ function EmailListDashboard({ setAuth }) {
         "Erinnerung an Künstler für bereits zugesagten Job – wird ein Tag  vor Eventbeginn um 12:00 Uhr versendet.",
     },
     {
-      type: "Performance Email",
-      label: "Performance-Bericht",
-      icon: <Telephone size={14} />,
-      class: "type-badge-performance",
-      tooltip: "Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf.",
-    },
-    {
       type: "Reminder Photos Videos",
       label: "Fotos/Videos Erinnerung",
       icon: <CameraVideo size={14} />,
@@ -100,6 +93,14 @@ function EmailListDashboard({ setAuth }) {
       tooltip:
         "Erinnerung an den Künstler, 30 Minuten vor dem Auftritt vor Ort – Fotos und kurze Videos seines Auftritts zu machen.",
     },
+    {
+      type: "Performance Email",
+      label: "Performance-Bericht",
+      icon: <Telephone size={14} />,
+      class: "type-badge-performance",
+      tooltip: "Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf.",
+    },
+    
    
   ];
 
@@ -591,6 +592,16 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Event-Erinnerung</span>
             </div>
+             {/* Reminder Photos Videos */}
+            <div
+              className="glossary-item-vertical reminder-photos-videos-glossaryitem"
+              data-tooltip="Erinnerung an den Künstler, 30 Minuten vor dem Auftritt vor Ort – Fotos und kurze Videos seines Auftritts zu machen."
+            >
+              <div className="icon-badge type-badge-reminder-photos-videos">
+                <CameraVideo size={16} />
+              </div>
+              <span className="glossary-label">Fotos/Videos Erinnerung</span>
+            </div>
             {/* Performance Email */}
             <div
               className="glossary-item-vertical performance-glossaryitem"
@@ -601,16 +612,7 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Performance-Bericht</span>
             </div>
-            {/* Reminder Photos Videos */}
-            <div
-              className="glossary-item-vertical reminder-photos-videos-glossaryitem"
-              data-tooltip="Erinnerung an den Künstler, 30 Minuten vor dem Auftritt vor Ort – Fotos und kurze Videos seines Auftritts zu machen."
-            >
-              <div className="icon-badge type-badge-reminder-photos-videos">
-                <CameraVideo size={16} />
-              </div>
-              <span className="glossary-label">Fotos/Videos Erinnerung</span>
-            </div>
+           
 
             
           </div>
