@@ -60,14 +60,14 @@ function EmailListDashboard({ setAuth }) {
       icon: <ArrowRepeat size={14} />,
       class: "type-badge-update-deal",
       title:
-        "Aktualisierte Informationen zu einem bestehenden Job – z. B. Änderungen bei Uhrzeit oder Ort.",
+        "Aktualisierte Informationen zu einem bestehenden Job im – z. B. Änderungen bei Uhrzeit oder Ort.",
     },
     {
       type: "Cancel Deal",
       label: "Job Cancel",
       icon: <XCircle size={14} />,
       class: "type-badge-cancel-deal",
-      title: "Benachrichtigung, dass ein Job abgesagt wurde.",
+      title: "Benachrichtigung, dass ein Job abgesagt wurde",
     },
     {
       type: "Performance Email",
@@ -99,7 +99,7 @@ function EmailListDashboard({ setAuth }) {
       icon: <ArrowReturnRight size={14} />,
       class: "type-badge-follow-up",
       title:
-        "Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen.",
+        "Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen.",
     },
   ];
 
@@ -458,9 +458,11 @@ function EmailListDashboard({ setAuth }) {
   }, []);
 
   const formatDate = (dateString) => {
+    console.log("Formatting date:", dateString);
     if (!dateString) return "Datum unbekannt";
 
     const date = new Date(dateString);
+    console.log("Parsed date:", date);
     return date.toLocaleString("de-DE", {
       timeZone: "Europe/Berlin",
       day: "2-digit",
@@ -599,7 +601,7 @@ function EmailListDashboard({ setAuth }) {
             {/* Follow Up */}
             <div
               className="glossary-item-vertical follow-up-glossaryitem"
-              title="Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen."
+              title="Hinweis, dass ein Job noch offen ist – Künstler werden eingeladen, sich jetzt einzutragen."
             >
               <div className="icon-badge type-badge-follow-up">
                 <ArrowReturnRight size={16} />
