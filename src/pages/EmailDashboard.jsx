@@ -36,6 +36,7 @@ function EmailListDashboard({ setAuth }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [currentPages, setCurrentPages] = useState({});
   const [selectedEmail, setSelectedEmail] = useState(null);
+  const [emailsPerPageConfig, setEmailsPerPageConfig] = useState({});
 
   const emailTypes = [
     {
@@ -100,8 +101,6 @@ function EmailListDashboard({ setAuth }) {
       class: "type-badge-performance",
       tooltip: "Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf.",
     },
-    
-   
   ];
 
   const calendarTypes = [
@@ -115,60 +114,75 @@ function EmailListDashboard({ setAuth }) {
 
   const emailsPerPage = 7;
 
+  const getEmailsPerPage = (type) => {
+    return emailsPerPageConfig[type] || emailsPerPage;
+  };
+
+  const handleEmailsPerPageChange = (type, value) => {
+    setEmailsPerPageConfig(prev => ({
+      ...prev,
+      [type]: parseInt(value) || emailsPerPage
+    }));
+    // Reset to first page when changing items per page
+    setCurrentPages(prev => ({
+      ...prev,
+      [type]: 1
+    }));
+  };
+
   const fetchEmails = async (options = {}) => {
-  const {
-    showLoading = true,
-    isPolling = false,
-    forceRefresh = false,
-  } = options;
+    const {
+      showLoading = true,
+      isPolling = false,
+      forceRefresh = false,
+    } = options;
 
-  if (showLoading && !isPolling) {
-    setLoading(true);
-    setLoadingMessage("E-Mails werden geladen...");
-  }
+    if (showLoading && !isPolling) {
+      setLoading(true);
+      setLoadingMessage("E-Mails werden geladen...");
+    }
 
-  try {
-    console.log("Fetching emails with options:", options);
+    try {
+      console.log("Fetching emails with options:", options);
 
-    const response = await getEmails();
+      const response = await getEmails();
 
-    console.log("Response received:", response.data);
+      console.log("Response received:", response.data);
 
-    if (response.data.status === "loading") {
-      if (!polling) {
-        setPolling(true);
-        setPollingAttempts(1);
+      if (response.data.status === "loading") {
+        if (!polling) {
+          setPolling(true);
+          setPollingAttempts(1);
 
-        if (showLoading) {
-          setLoading(true);
-          setLoadingMessage(
-            "Daten werden vom E-Mail-Service geladen. Dies kann einen Moment dauern..."
-          );
+          if (showLoading) {
+            setLoading(true);
+            setLoadingMessage(
+              "Daten werden vom E-Mail-Service geladen. Dies kann einen Moment dauern..."
+            );
+          }
+
+          setTimeout(() => pollForEmails(), 2000);
         }
+      } else {
+        setPolling(false);
 
-        setTimeout(() => pollForEmails(), 2000);
+        // ✅ Sort by date (newest first)
+        const sortedEmails = [...(response.data || [])].sort((a, b) => {
+          return new Date(b.date) - new Date(a.date); // descending
+        });
+
+        setEmails(sortedEmails);
+        setWarning(response.data.warning || null);
+        setError(null);
+        setLoading(false);
       }
-    } else {
+    } catch (err) {
+      console.error("Error fetching emails:", err);
+      setError("Fehler beim Laden der E-Mails");
       setPolling(false);
-
-      // ✅ Sort by date (newest first)
-      const sortedEmails = [...(response.data || [])].sort((a, b) => {
-        return new Date(b.date) - new Date(a.date); // descending
-      });
-
-      setEmails(sortedEmails);
-      setWarning(response.data.warning || null);
-      setError(null);
       setLoading(false);
     }
-  } catch (err) {
-    console.error("Error fetching emails:", err);
-    setError("Fehler beim Laden der E-Mails");
-    setPolling(false);
-    setLoading(false);
-  }
-};
-
+  };
 
   const pollForEmails = async () => {
     setPollingAttempts((prev) => prev + 1);
@@ -236,7 +250,8 @@ function EmailListDashboard({ setAuth }) {
   };
 
   const renderPaginationButtons = (type, filteredEmails) => {
-    const totalPages = Math.ceil(filteredEmails.length / emailsPerPage);
+    const perPage = getEmailsPerPage(type);
+    const totalPages = Math.ceil(filteredEmails.length / perPage);
     const currentPage = currentPages[type] || 1;
 
     if (totalPages <= 1) return null;
@@ -528,7 +543,6 @@ function EmailListDashboard({ setAuth }) {
         )}
 
         {/* Glossary/Legend Section - Vertical Layout */}
-        {/* Glossary/Legend Section - Vertical Layout */}
         <div className="email-type-glossary-vertical">
           <h5 className="glossary-title">E-Mail Typen Legende:</h5>
           <div className="glossary-items-vertical">
@@ -612,9 +626,6 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Performance-Bericht</span>
             </div>
-           
-
-            
           </div>
         </div>
 
@@ -632,8 +643,9 @@ function EmailListDashboard({ setAuth }) {
               const hasEmails = filteredEmailsByType[type]?.length > 0;
               const isFilteredOut = searchTerm && !typeHasMatch(type);
               const currentPage = currentPages[type] || 1;
-              const indexOfLastEmail = currentPage * emailsPerPage;
-              const indexOfFirstEmail = indexOfLastEmail - emailsPerPage;
+              const perPage = getEmailsPerPage(type);
+              const indexOfLastEmail = currentPage * perPage;
+              const indexOfFirstEmail = indexOfLastEmail - perPage;
               const currentEmails = hasEmails
                 ? filteredEmailsByType[type].slice(
                     indexOfFirstEmail,
@@ -865,15 +877,41 @@ function EmailListDashboard({ setAuth }) {
                           </div>
 
                           {/* Pagination */}
-                          {filteredEmailsByType[type].length >
-                            emailsPerPage && (
-                            <div className="pagination">
-                              {renderPaginationButtons(
-                                type,
-                                filteredEmailsByType[type]
-                              )}
+                          <div className="pagination-controls">
+                            <div className="per-page-selector">
+                              <span>E-Mails pro Seite:</span>
+                              <select
+                                value={getEmailsPerPage(type)}
+                                onChange={(e) => handleEmailsPerPageChange(type, e.target.value)}
+                                className="per-page-select"
+                              >
+                                <option value="5">5</option>
+                                <option value="7">7</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="40">40</option>
+                                <option value="50">50</option>
+                                <option value="60">60</option>
+                                <option value="70">70</option>
+                                <option value="80">80</option>
+                                <option value="90">90</option>
+                                <option value="100">100</option>
+                                <option value="125">125</option>
+                                <option value="150">150</option>
+                              </select>
                             </div>
-                          )}
+                            
+                            {filteredEmailsByType[type].length > getEmailsPerPage(type) && (
+                              <div className="pagination">
+                                {renderPaginationButtons(
+                                  type,
+                                  filteredEmailsByType[type]
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </>
                       ) : (
                         <div
