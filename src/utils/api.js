@@ -16,6 +16,12 @@ export const getEmails = async ()=> {
   const data =await axios.get('https://email-server.kidskulturspass.de/api/v1/email');
   return data
 }
+export const getEmailById = async (id)=> {
+  console.log('Fetching email with ID:', id);
+  const data =await axios.get('https://email-server.kidskulturspass.de/api/v1/email/'+id);
+  console.log(data);
+  return data
+}
 // Simulate API with mock data
 const mockApi = {
   // Mock the events endpoint

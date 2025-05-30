@@ -61,14 +61,6 @@ function Navbar({ setAuth }) {
             >
               Email Versand
             </Nav.Link>
-            <Nav.Link 
-              as={Link} 
-              to="/history" 
-              active={location.pathname === '/history'}
-              onClick={() => setExpanded(false)}
-            >
-              Verlauf
-            </Nav.Link>
           </Nav>
           
           <button 

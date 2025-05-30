@@ -20,6 +20,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import api, { getEmails } from "../utils/api";
 import DashboardLoader from "../components/DashboardLoader";
 import EmailModal from "../components/EmailModel";
+import { Link } from "react-router-dom";
 
 function EmailListDashboard({ setAuth }) {
   const [emails, setEmails] = useState([]);
@@ -55,7 +56,7 @@ function EmailListDashboard({ setAuth }) {
       tooltip:
         "Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen.",
     },
-     {
+    {
       type: "Follow Up",
       label: "Job noch offen",
       icon: <ArrowReturnRight size={14} />,
@@ -99,7 +100,8 @@ function EmailListDashboard({ setAuth }) {
       label: "Performance-Bericht",
       icon: <Telephone size={14} />,
       class: "type-badge-performance",
-      tooltip: "Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf.",
+      tooltip:
+        "Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf.",
     },
   ];
 
@@ -119,14 +121,14 @@ function EmailListDashboard({ setAuth }) {
   };
 
   const handleEmailsPerPageChange = (type, value) => {
-    setEmailsPerPageConfig(prev => ({
+    setEmailsPerPageConfig((prev) => ({
       ...prev,
-      [type]: parseInt(value) || emailsPerPage
+      [type]: parseInt(value) || emailsPerPage,
     }));
     // Reset to first page when changing items per page
-    setCurrentPages(prev => ({
+    setCurrentPages((prev) => ({
       ...prev,
-      [type]: 1
+      [type]: 1,
     }));
   };
 
@@ -556,7 +558,7 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Einladung</span>
             </div>
-             {/* New Deal */}
+            {/* New Deal */}
             <div
               className="glossary-item-vertical new-deal-glossaryitem"
               data-tooltip="Info über einen neu verfügbaren Job – mit der Möglichkeit, sich direkt im Google Kalender einzutragen."
@@ -566,7 +568,7 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Neuer Job</span>
             </div>
-             {/* Follow Up */}
+            {/* Follow Up */}
             <div
               className="glossary-item-vertical follow-up-glossaryitem"
               data-tooltip="Tägliche E-Mail um 15 Uhr – Hinweis für Künstler, dass noch offene Jobs verfügbar sind und eine Eintragung im Kalender möglich ist."
@@ -576,7 +578,7 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label"> Job noch offen</span>
             </div>
-              {/* Update Deal */}
+            {/* Update Deal */}
             <div
               className="glossary-item-vertical update-deal-glossaryitem"
               data-tooltip="Aktualisierte Informationen zu einem bestehenden Job im – z. B. Änderungen bei Uhrzeit oder Ort."
@@ -606,7 +608,7 @@ function EmailListDashboard({ setAuth }) {
               </div>
               <span className="glossary-label">Event-Erinnerung</span>
             </div>
-             {/* Reminder Photos Videos */}
+            {/* Reminder Photos Videos */}
             <div
               className="glossary-item-vertical reminder-photos-videos-glossaryitem"
               data-tooltip="Erinnerung an den Künstler, 30 Minuten vor dem Auftritt vor Ort – Fotos und kurze Videos seines Auftritts zu machen."
@@ -680,23 +682,34 @@ function EmailListDashboard({ setAuth }) {
                         {/* Status badges (left side) */}
                         {getStatusCountsByType[type] &&
                           Object.entries(getStatusCountsByType[type]).length >
-                            0 && (
-                            <></>
-                          )}
+                            0 && <></>}
                         <div className="type-badge-container d-none d-md-flex">
-                            {emailTypes.map(({ type: emailType, icon, class: typeClass, label, tooltip }) => {
-                    const count = (getTypeCountsByCalendar[type] && getTypeCountsByCalendar[type][emailType]) || 0;
-                    return (
-                      <div
-                        key={emailType}
-                        className={`icon-badge icon-title ${typeClass} ${count === 0 ? "zero-count" : ""}`}
-                        data-tooltip={tooltip}
-                      >
-                        {icon}
-                        <span className="badge-count">{count}</span>
-                      </div>
-                    );
-                  })}
+                          {emailTypes.map(
+                            ({
+                              type: emailType,
+                              icon,
+                              class: typeClass,
+                              label,
+                              tooltip,
+                            }) => {
+                              const count =
+                                (getTypeCountsByCalendar[type] &&
+                                  getTypeCountsByCalendar[type][emailType]) ||
+                                0;
+                              return (
+                                <div
+                                  key={emailType}
+                                  className={`icon-badge icon-title ${typeClass} ${
+                                    count === 0 ? "zero-count" : ""
+                                  }`}
+                                  data-tooltip={tooltip}
+                                >
+                                  {icon}
+                                  <span className="badge-count">{count}</span>
+                                </div>
+                              );
+                            }
+                          )}
                         </div>
                       </div>
 
@@ -740,7 +753,7 @@ function EmailListDashboard({ setAuth }) {
                                         {email.email}
                                       </div>
                                     </td>
-                                     <td className="event-roles">
+                                    <td className="event-roles">
                                       <Badge
                                         bg={
                                           email.status === "Sent"
@@ -791,7 +804,7 @@ function EmailListDashboard({ setAuth }) {
                                           : email.type}
                                       </div>
                                     </td>
-                                    <td className="event-actions">
+                                    {/* <td className="event-actions">
                                       <Button
                                         variant="outline-primary"
                                         size="sm"
@@ -803,6 +816,18 @@ function EmailListDashboard({ setAuth }) {
                                           Details
                                         </span>
                                       </Button>
+                                    </td> */}
+                                    <td className="event-actions">
+                                      <Link
+                                        to={`/emails/${email._id}`}
+                                        target="_blank"
+                                        className="btn btn-outline-primary btn-sm open-calendar-button"
+                                      >
+                                        <Envelope className="button-icon" />
+                                        <span className="d-none d-md-inline">
+                                          Details
+                                        </span>
+                                      </Link>
                                     </td>
                                   </tr>
                                 ))}
@@ -858,7 +883,7 @@ function EmailListDashboard({ setAuth }) {
                                     </div>
                                   </div>
 
-                                  <div className="event-mobile-actions">
+                                  {/* <div className="event-mobile-actions">
                                     <Button
                                       variant="outline-primary"
                                       size="sm"
@@ -870,6 +895,18 @@ function EmailListDashboard({ setAuth }) {
                                         Details
                                       </span>
                                     </Button>
+                                  </div> */}
+                                  <div className="event-mobile-actions">
+                                    <Link
+                                      to={`/emails/${email._id}`}
+                                      target="_blank"
+                                      className="btn btn-outline-primary btn-sm open-calendar-button"
+                                    >
+                                      <Envelope className="button-icon" />
+                                      <span className="button-text">
+                                        Details
+                                      </span>
+                                    </Link>
                                   </div>
                                 </div>
                               </div>
@@ -882,7 +919,12 @@ function EmailListDashboard({ setAuth }) {
                               <span>E-Mails pro Seite:</span>
                               <select
                                 value={getEmailsPerPage(type)}
-                                onChange={(e) => handleEmailsPerPageChange(type, e.target.value)}
+                                onChange={(e) =>
+                                  handleEmailsPerPageChange(
+                                    type,
+                                    e.target.value
+                                  )
+                                }
                                 className="per-page-select"
                               >
                                 <option value="5">5</option>
@@ -902,8 +944,9 @@ function EmailListDashboard({ setAuth }) {
                                 <option value="150">150</option>
                               </select>
                             </div>
-                            
-                            {filteredEmailsByType[type].length > getEmailsPerPage(type) && (
+
+                            {filteredEmailsByType[type].length >
+                              getEmailsPerPage(type) && (
                               <div className="pagination">
                                 {renderPaginationButtons(
                                   type,

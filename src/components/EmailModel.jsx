@@ -1,25 +1,37 @@
-import React, { useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from 'react-bootstrap';
+import { Envelope, ArrowLeft } from 'react-bootstrap-icons';
+import api, { getEmailById } from '../utils/api';
 
-const EmailModal = ({ email, onClose }) => {
+const EmailModal = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    const navbar = document.querySelector('.navbar-main');
-    const dashboard = document.querySelector('.dashboard-page');
-    const contentWrapper = document.querySelector('.content-wrapper');
-
-    if (navbar) navbar.classList.add('hidden');
-    if (dashboard) dashboard.classList.add('navbar-hidden');
-    if (contentWrapper) contentWrapper.classList.add('navbar-hidden');
-
-    return () => {
-      if (navbar) navbar.classList.remove('hidden');
-      if (dashboard) dashboard.classList.remove('navbar-hidden');
-      if (contentWrapper) contentWrapper.classList.remove('navbar-hidden');
+    const fetchEmail = async () => {
+      try {
+        setLoading(true);
+        const response = await getEmailById(id);
+        console.log('Fetched email:', response.data);
+        setEmail(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching email:', err);
+        setError('Failed to load email details');
+        setLoading(false);
+      }
     };
-  }, []);
 
-  if (!email) return null;
+    fetchEmail();
+  }, [id]);
+
+  const handleClose = () => {
+    navigate('/emails');
+  };
 
   const formatDate = (dateInput) => {
     try {
@@ -47,40 +59,77 @@ const EmailModal = ({ email, onClose }) => {
     }
   };
 
-  // German translations for status values
   const translateStatus = (status) => {
     switch(status) {
-      case 'Delivered': return 'Zugestellt';
       case 'Sent': return 'Gesendet';
-      case 'Pending': return 'Ausstehend';
       case 'Failed': return 'Fehlgeschlagen';
-      case 'Opened': return 'Geöffnet';
+      case 'Pending': return 'Ausstehend';
       default: return status || 'N/A';
     }
   };
 
-  // German translations for type values
   const translateType = (type) => {
     switch(type) {
       case 'Invitation': return 'Einladung';
-      case 'New Deal': return 'Neues Angebot';
-      case 'Update Deal': return 'Angebotsaktualisierung';
-      case 'Cancel Deal': return 'Angebotsstornierung';
-      case 'Reminder': return 'Erinnerung';
-      case 'Follow Up': return 'Nachverfolgung';
+      case 'New Deal': return 'Neuer Job';
+      case 'Update Deal': return 'Update';
+      case 'Cancel Deal': return 'Absage';
+      case 'Reminder': return 'Event-Erinnerung';
+      case 'Follow Up': return 'Job noch offen';
+      case 'Performance Email': return 'Performance-Bericht';
       default: return type || 'N/A';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="email-modal-overlay">
+        <div className="email-modal-container">
+          <div className="text-center p-5">
+            <p>E-Mail-Details werden geladen...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="email-modal-overlay">
+        <div className="email-modal-container">
+          <div className="alert alert-danger">{error}</div>
+          <Button variant="primary" onClick={handleClose} className="email-modal-close-btn">
+            <ArrowLeft className="me-2" />
+            Zurück zur E-Mail-Liste
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!email) {
+    return (
+      <div className="email-modal-overlay">
+        <div className="email-modal-container">
+          <div className="alert alert-warning">E-Mail nicht gefunden</div>
+          <Button variant="primary" onClick={handleClose} className="email-modal-close-btn">
+            <ArrowLeft className="me-2" />
+            Zurück zur E-Mail-Liste
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="email-modal-overlay">
       <div className="email-modal-container">
         <div className="email-modal-header">
           <h2 className="email-modal-title">
-            <i className="bi bi-envelope-fill me-2"></i>
+            <Envelope className="me-2" />
             E-Mail-Details
           </h2>
-          <button className="email-modal-close" onClick={onClose}>
+          <button className="email-modal-close" onClick={handleClose}>
             <i className="bi bi-x-lg"></i>
           </button>
         </div>
@@ -94,7 +143,11 @@ const EmailModal = ({ email, onClose }) => {
             <div className="email-detail">
               <p className="email-detail-label">Status</p>
               <p className="email-detail-value">
-                <span className="email-status-badge">
+                <span className={`role-badge badge ${
+                  email.status === 'Sent' ? 'bg-success' :
+                  email.status === 'Failed' ? 'bg-danger' :
+                  email.status === 'Pending' ? 'bg-warning' : 'bg-secondary'
+                }`}>
                   {translateStatus(email.status)}
                 </span>
               </p>
