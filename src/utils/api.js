@@ -98,7 +98,9 @@ const mockApi = {
   getArtists:async  () => await apiArtist.get('/'),
   getCalendars: () => apiArtist.get('/calendars'),
   getRoleOptions: () => apiArtist.get('/roleOptions'),
-  addArtist:async (data) =>  await apiArtistCreate.post('/',  data ),
+  addArtist:async (data) => await apiArtistCreate.post('/',  data ),
+ 
+// await apiArtistCreateCloud.post('/',  {Calendar:data.calendar,Name:data.name,Role:data.role,email:data.email} )
   deleteArtist: async (data) => await apiArtistDelete.post('/',  data )
 };
 
@@ -127,6 +129,12 @@ const apiArtist = axios.create({
 });
 const apiArtistCreate = axios.create({
   baseURL: import.meta.env.VITE_API_ARTISTCREATE_URL || '/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+const apiArtistCreateCloud = axios.create({
+  baseURL: import.meta.env.VITE_API_ARTISTCREATECLOUD_URL || '/api',
   headers: {
     'Content-Type': 'application/json'
   }

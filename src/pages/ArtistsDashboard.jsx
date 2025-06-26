@@ -188,12 +188,15 @@ const ArtistsDashboard = ({ setAuth }) => {
   , [artistsByCalendar]);
 
   // Toggle add form for a specific calendar - updated to use the modal
-  const toggleAddForm = useCallback((calendar, e) => {
-    if (e) e.stopPropagation(); // Prevent calendar expansion toggle
-    // Set the selected calendar and show the modal
-    setSelectedCalendarForModal(calendar);
-    setShowAddModal(true);
-  }, []);
+const toggleAddForm = useCallback((calendar, e) => {
+  if (e) e.stopPropagation();
+  // Set the calendar first, then show modal in the next render
+  setSelectedCalendarForModal(calendar);
+  // Use setTimeout to ensure state update happens before modal shows
+  setTimeout(() => setShowAddModal(true), 0);
+  
+  setSelectedRoles([...new Set(artistsByCalendar[calendar].map(artist => artist.role))]);
+}, [artistsByCalendar]);
 
   // Add artist handler for the modal
   const handleAddArtistFromModal = async (artistData) => {

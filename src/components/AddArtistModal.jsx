@@ -13,35 +13,47 @@ function AddArtistModal({
 }) {
   const [validated, setValidated] = useState(false);
   const [artistData, setArtistData] = useState({
-    calendar: '',
-    name: '',
-    role: '',
-    email: ''
-  });
+  calendar: selectedCalendar || '',
+  name: '',
+  role: '',
+  email: ''
+});
 
   // Update form data when calendar changes
   useEffect(() => {
-    if (selectedCalendar) {
-      setArtistData(prev => ({
-        ...prev,
-        calendar: selectedCalendar
-      }));
-    }
-  }, [selectedCalendar]);
+    console.log('[Modal] Selected calendar prop changed:', selectedCalendar);
+  setArtistData(prev => ({
+    ...prev,
+    calendar: selectedCalendar || ''
+  }));
+}, [selectedCalendar, showModal]); // Add showModal to dependencies
 
-  const handleSubmit = useCallback((e) => {
+const [isLoading, setIsLoading] = useState(false);
+
+const handleSubmit = useCallback(async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  
+  if (!form.checkValidity()) {
     e.preventDefault();
-    const form = e.currentTarget;
-    
-    if (!form.checkValidity()) {
-      e.preventDefault();
-      e.stopPropagation();
-      setValidated(true);
-    } else {
-      handleAddArtist(artistData);
-      resetForm();
-    }
-  }, [artistData, handleAddArtist]);
+    e.stopPropagation();
+    setValidated(true);
+    return;
+  }
+
+  if (!artistData.calendar) {
+    toast.error('Bitte wählen Sie einen Kalender aus');
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    await handleAddArtist(artistData);
+    resetForm();
+  } finally {
+    setIsLoading(false);
+  }
+}, [artistData, handleAddArtist]);
 
   const handleClose = useCallback(() => {
     setShowModal(false);
