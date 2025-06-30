@@ -61,6 +61,14 @@ function Navbar({ setAuth }) {
             >
               Email Versand
             </Nav.Link>
+             <Nav.Link 
+              as={Link} 
+              to="/whatsapp" 
+              active={location.pathname === '/whatsapp'}
+              onClick={() => setExpanded(false)}
+            >
+              Whatsapp Versand
+            </Nav.Link>
           </Nav>
           
           <button 

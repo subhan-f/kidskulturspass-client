@@ -6,6 +6,7 @@ import { initDebug } from './utils/debug';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import EmailListDashboard from './pages/EmailDashboard';
 import EmailModal from './components/EmailModel';
+import WhatsAppListDashboard from './pages/WhatsAppListDashboard';
 
 // Initialize debug utilities only in development
 initDebug();
@@ -23,6 +24,7 @@ function App() {
         {/* Direct access to all routes without authentication */}
         <Route path="/" element={<ArtistsDashboard setAuth={handleLogout} />} />
         <Route path="/emails" element={<EmailListDashboard setAuth={handleLogout} />} />
+        <Route path="/whatsapp" element={<WhatsAppListDashboard setAuth={handleLogout} />} />
         <Route path="/unassigned-events" element={<UnassignedEventsDashboard setAuth={handleLogout} />} />
         <Route path="/emails/:id" element={<EmailModal />} />
         {/* <Route path="/history" element={<HistoryDashboard setAuth={handleLogout} />} /> */}
