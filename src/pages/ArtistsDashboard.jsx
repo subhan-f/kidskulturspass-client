@@ -68,7 +68,12 @@ const ArtistsDashboard = ({ setAuth }) => {
     
     try {
       const response = await api.get('/artists');
-      
+      response.data=response.data.map(artist => ({
+      name: artist.Name,
+      calendar: artist.Calendar,
+      email: artist["E-Mail"],
+      role: artist.Role
+    }));
       if (response.data.error) {
         setError(response.data.error);
         toast.error(`Error: ${response.data.error}`);
@@ -206,7 +211,12 @@ const toggleAddForm = useCallback((calendar, e) => {
         toast.error('Bitte füllen Sie alle Felder aus');
         return;
       }
-      
+      artistData={
+        Calendar:artistData.calendar,
+        Name:artistData.name,
+        Role:artistData.role,
+        email:artistData.email
+      }
       const response = await api.post('/artist', artistData);
       
       setShowAddModal(false); // Close the modal

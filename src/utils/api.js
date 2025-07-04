@@ -101,7 +101,12 @@ const mockApi = {
   addArtist:async (data) => await apiArtistCreate.post('/',  data ),
  
 // await apiArtistCreateCloud.post('/',  {Calendar:data.calendar,Name:data.name,Role:data.role,email:data.email} )
-  deleteArtist: async (data) => await apiArtistDelete.post('/',  data )
+  deleteArtist: async (data) =>
+  await apiArtistDelete.delete('/', {
+    data: data, // 👈 This becomes the request body
+    headers: { 'Content-Type': 'application/json' },
+  })
+
 };
 
  const eventService = {
@@ -189,7 +194,8 @@ export default {
       // return mockApi.getArtists();
       
       const data=await artistService.getArtists()
-      return data.data
+      console.log(data.data);
+      return data
 
     }
     
@@ -208,7 +214,7 @@ export default {
   post: async (url, data) => {
     
     if (url === '/artist') {
-      data.name = data.name.charAt(0).toUpperCase() + data.name.slice(1);
+      data.Name = data.Name.charAt(0).toUpperCase() + data.Name.slice(1);
       return await artistService.addArtist(data);
     }
     
