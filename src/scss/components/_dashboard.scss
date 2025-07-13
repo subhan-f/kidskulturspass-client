@@ -947,3 +947,15 @@
     text-align: center;
   }
 }
+.forgot-password-link a.text-link {
+  color: black;
+  text-decoration: underline;
+  font-size: 0.875rem;
+  display: inline-block;
+  margin: 0.5rem 0px;
+}
+
+.forgot-password-link a.text-link:hover {
+  color: rgb(36, 35, 35);
+  text-decoration: none;
+}

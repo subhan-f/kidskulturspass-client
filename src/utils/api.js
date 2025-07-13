@@ -158,22 +158,6 @@ const apiUnassignedEvents = axios.create({
 });
 
 
-// Export a mock version of the auth API that automatically "authenticates"
-export const authApi = {
-  login: async () => {
-    await delay(800);
-    return { data: { status: 'success', user: { name: 'Demo User' } } };
-  },
-  check: async () => {
-    await delay(300);
-    return { data: { authenticated: true } };
-  },
-  logout: async () => {
-    await delay(300);
-    return { data: { status: 'success' } };
-  }
-};
-
 // Override the default export to use our mock API
 export default {
   get: async (url, config) => {
@@ -237,4 +221,38 @@ export default {
     console.warn(`Unhandled mock DELETE request to: ${url}`);
     return { data: {} };
   }
+};
+
+const AUTH_API_BASE_URL = 'https://authentication-and-authorization-754826373806.europe-west1.run.app/api/v1';
+
+const axiosAuthInstance = axios.create({
+  baseURL: AUTH_API_BASE_URL,
+  withCredentials: true, // allows sending cookies with requests
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const authApi = {
+  login: async ({ username, password }) => {
+    return await axiosAuthInstance.post('/login', {
+      email: username, // maps to E-Mail in backend
+      password,
+    });
+  },
+
+  logout: async () => {
+    return await axiosAuthInstance.post('/logout');
+  },
+
+  getMe: async () => {
+    return await axiosAuthInstance.get('/me');
+  },
+  forgotPassword: async (data) => {
+    console.log('Sending forgot password request for:', data.email);
+    return await axiosAuthInstance.post('/forgotPassword',{
+      email: data.email,
+    });
+  },
+  resetPassword: (token, data) => axiosAuthInstance.patch(`/resetPassword/${token}`, data)
 };
