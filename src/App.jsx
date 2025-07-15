@@ -8,7 +8,7 @@ import {
 } from 'react-router-dom';
 
 import ArtistsDashboard from './pages/ArtistsDashboard';
-import UserDashboard from './pages/UserDashboard';
+import UserDashboard from './pages/UserAssignedDashboard';
 import UnassignedEventsDashboard from './pages/UnassignedEventsDashboard';
 import EmailListDashboard from './pages/EmailDashboard';
 import WhatsAppListDashboard from './pages/WhatsAppListDashboard';
@@ -22,6 +22,8 @@ import { initDebug } from './utils/debug';
 import LoadingSpinner from './components/LoadingSpinner';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
+import UserAssignedDashboard from './pages/UserAssignedDashboard';
+import UserUnassignedDashboard from './pages/UserUnassignedDashboard';
 
 // Init debug
 initDebug();
@@ -36,6 +38,7 @@ function AuthRoute({ children }) {
     const checkAuth = async () => {
       try {
         const res = await authApi.getMe();
+        console.log(res.data.user);
         setUser(res.data.user);
       } catch {
         setUser(null);
@@ -53,7 +56,7 @@ function AuthRoute({ children }) {
 
   if (user) {
     // Redirect based on user role
-    const redirectPath = user.Role === 'Admin' ? '/admin-dashboard' : '/user/dashboard';
+    const redirectPath = user.Role === 'Admin' ? '/admin-dashboard' : '/user-assigned-dashboard';
     return <Navigate to={redirectPath} replace />;
   }
 
@@ -71,6 +74,7 @@ function ProtectedRoute({ children, allowedRoles }) {
       try {
         const res = await authApi.getMe();
         const currentUser = res.data.user;
+        console.log(res.data.user);
         setUser(currentUser);
 
         if (!allowedRoles.includes(currentUser.Role)) {
@@ -107,11 +111,11 @@ function RoleBasedRedirect() {
       try {
         const res = await authApi.getMe();
         const role = res.data.user.Role;
-
+        console.log(res.data.user);
         if (role === 'Admin') {
           setRedirectPath('/admin-dashboard');
         } else {
-          setRedirectPath('/user/dashboard');
+          setRedirectPath('/user-assigned-dashboard');
         }
       } catch {
         setRedirectPath('/login');
@@ -208,10 +212,18 @@ function App() {
 
         {/* Artist-only route */}
         <Route
-          path="/user/dashboard"
+          path="/user-assigned-dashboard"
           element={
             <ProtectedRoute allowedRoles={["Geiger*in", "Moderator*in", "Pianist*in", "Instrumentalist*in", "Nikolaus", "Puppenspieler*in", "Detlef", "Sängerin*in"]}>
-              <UserDashboard setAuth={handleLogout} />
+              <UserAssignedDashboard setAuth={handleLogout} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user-unassigned-dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["Geiger*in", "Moderator*in", "Pianist*in", "Instrumentalist*in", "Nikolaus", "Puppenspieler*in", "Detlef", "Sängerin*in"]}>
+              <UserUnassignedDashboard setAuth={handleLogout} />
             </ProtectedRoute>
           }
         />

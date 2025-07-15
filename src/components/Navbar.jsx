@@ -95,11 +95,21 @@ function Navbar({ setAuth }) {
             {!isAdmin && (
               <Nav.Link
                 as={Link}
-                to="/user-dashboard"
-                active={location.pathname === '/user-dashboard'}
+                to="/user-assigned-dashboard"
+                active={location.pathname === '/user-assigned-dashboard'}
                 onClick={() => setExpanded(false)}
               >
-                User Dashboard
+                Assigned Events
+              </Nav.Link>
+            )}
+             {!isAdmin && (
+              <Nav.Link
+                as={Link}
+                to="/user-unassigned-dashboard"
+                active={location.pathname === '/user-unassigned-dashboard'}
+                onClick={() => setExpanded(false)}
+              >
+                Unassigned Events
               </Nav.Link>
             )}
           </Nav>

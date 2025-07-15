@@ -1,21 +1,22 @@
+
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Table, Alert, Badge, Card } from "react-bootstrap";
+import { Button, Table, Alert, Badge } from "react-bootstrap";
 import {
   ArrowClockwise,
   Calendar3,
   ChevronDown,
   ChevronUp,
-  PersonCheck,
-  PersonPlus,
+  PersonCircle,
 } from "react-bootstrap-icons";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBox from "../components/SearchBox";
 import DashboardLayout from "../components/DashboardLayout";
-import  { authApi } from "../utils/api";
 import DashboardLoader from "../components/DashboardLoader";
+import { authApi } from "../utils/api";
 import axios from "axios";
 
-function UnassignedEventsDashboard({ setAuth }) {
+function UserAssignedDashboard({ setAuth }) {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState({});
   const [loading, setLoading] = useState(true);
@@ -25,45 +26,58 @@ function UnassignedEventsDashboard({ setAuth }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
   const [searchFocused, setSearchFocused] = useState(false);
-  const [allCalendars, setAllCalendars] = useState([]);
+
+  
 
   const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
-
+  const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
+  // Fetch user data and events
   const fetchData = async () => {
-    setLoading(true);
-    setLoadingMessage("Daten werden geladen...");
-
     try {
-      // 1. First fetch the authenticated user
+      setLoading(true);
+      setLoadingMessage("Benutzerdaten werden geladen...");
+
+      // Get authenticated user
       const res = await authApi.getMe();
       const currentUser = res.data.user;
-      setUser(currentUser);
-      console.log("Authenticated user:", currentUser);
       
-      // 2. Then fetch assigned events for this user
-      const eventsRes = await axios.get(
-        `${API_URL}/assigned?email=${currentUser["E-Mail"]}&categorize=true`
-      );
+      // Get complete user data including joined calendars
+    const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
+    console.log("User data:", userData.data);
+    setUser(userData.data);
+      
+      const joinedCalendars = userData.data.joinedCalendars || [];
+    const calendarNames = joinedCalendars.map(c => c.Calendar);
+      
+      // Fetch assigned events for these calendars
+      setLoadingMessage("Veranstaltungen werden geladen...");
+        
+    console.log("Joined calendars:", calendarNames);
+    // 3. Fetch unassigned events only for these calendars
+    const eventsRes = await axios.get(`${API_URL}/assigned`, {
+      params: {
+        email: userData.data["E-Mail"],
+        calendars: calendarNames.join(','), // Send joined calendars to filter
+        categorize: true
+      }
+    });
+    
+      
       const responseData = eventsRes.data;
+      console.log("Fetched events:", responseData);
+      setEvents(responseData.categorizedEvents || {});
       
-      console.log("API response data:", responseData.categorizedEvents.categorizedEvents);
-      
-      // Transform the API data into our events structure
-      const categorizedEvents = responseData.categorizedEvents.categorizedEvents || {};
-      setEvents(categorizedEvents);
-      
-      // Extract all available calendars from the categorized events
-      const calendars = Object.keys(categorizedEvents).map(name => ({
-        name,
-        description: `${name} Kalender`
-      }));
-      console.log("Available calendars:", calendars);
-      setAllCalendars(calendars);
+      // Initialize expanded state for calendars
+      const initialExpandState = {};
+      Object.keys(responseData.categorizedEvents || {}).forEach(cal => {
+        initialExpandState[cal] = true;
+      });
+      setExpandedCalendars(initialExpandState);
       
       setLoading(false);
     } catch (err) {
-      console.error("Error fetching data:", err);
-      setError("Fehler beim Laden der Daten");
+      console.error("Error loading data:", err);
+      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
       setLoading(false);
     }
   };
@@ -72,17 +86,6 @@ function UnassignedEventsDashboard({ setAuth }) {
     fetchData();
   }, []);
 
-  // Initialize expanded calendars state when events are loaded
-  useEffect(() => {
-    if (allCalendars.length > 0) {
-      const initialExpandState = {};
-      allCalendars.forEach(cal => {
-        initialExpandState[cal.name] = true; // Default to expanded
-      });
-      setExpandedCalendars(initialExpandState);
-    }
-  }, [allCalendars]);
-
   const toggleCalendarExpand = useCallback((calendar) => {
     setExpandedCalendars((prev) => ({
       ...prev,
@@ -90,18 +93,15 @@ function UnassignedEventsDashboard({ setAuth }) {
     }));
   }, []);
 
+  // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
     const filtered = {};
     
     Object.keys(events).forEach(calendar => {
-      filtered[calendar] = events[calendar].filter(
+      filtered[calendar] = (events[calendar] || []).filter(
         (event) =>
-          (event.summary || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
+          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
           (event.role || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
           (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -110,18 +110,27 @@ function UnassignedEventsDashboard({ setAuth }) {
     return filtered;
   }, [events, searchTerm]);
 
-  const totalFilteredEvents = useMemo(() => {
-    return Object.values(filteredEventsByCalendar)
-      .reduce((total, calendarEvents) => total + calendarEvents.length, 0);
-  }, [filteredEventsByCalendar]);
+  const calendars = useMemo(
+    () => Object.keys(filteredEventsByCalendar).sort(),
+    [filteredEventsByCalendar]
+  );
+
+  const totalFilteredEvents = useMemo(
+    () => Object.values(filteredEventsByCalendar).flat().length,
+    [filteredEventsByCalendar]
+  );
 
   const calendarHasMatch = useCallback(
     (calendar) => {
-      return filteredEventsByCalendar[calendar]?.length > 0;
+      return (
+        filteredEventsByCalendar[calendar] &&
+        filteredEventsByCalendar[calendar].length > 0
+      );
     },
     [filteredEventsByCalendar]
   );
 
+  // Force refresh button handler
   const handleRefresh = useCallback(() => {
     setEvents({});
     setError(null);
@@ -145,48 +154,33 @@ function UnassignedEventsDashboard({ setAuth }) {
       </DashboardLayout>
     );
   }
-  
-  if (!user) {
-    return (
-      <DashboardLayout setAuth={setAuth} pageTitle="Meine Kalender">
-        <Alert variant="danger">Künstlerdaten konnten nicht geladen werden.</Alert>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout setAuth={setAuth} onRefresh={handleRefresh}>
-      <div className="unassigned-events-dashboard">
-        {/* Welcome section */}
-        {user && (
-          <div className="welcome-section mb-4">
-            <h2>Willkommen, {user.Name}!</h2>
-            <p className="text-muted">Hier sind deine zugewiesenen Veranstaltungen</p>
-          </div>
-        )}
-
-        {/* Joined calendars section */}
-        <div className="joined-calendars-section mb-5">
-          <h4 className="section-title">Meine Kalender</h4>
-          <div className="calendar-badges">
-            {allCalendars.map(calendar => (
-              <Badge key={calendar.name} bg="primary" className="me-2 mb-2 calendar-badge">
-                {calendar.name}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        {/* Header section with search bar */}
+      <div className="user-assigned-dashboard">
+        {/* Header section with welcome message and search box */}
         <div className="transparent-header-container">
-          <h1 className="dashboard-main-title">
-            Meine Veranstaltungen
-          </h1>
+          <div className="header-welcome-content">
+            <h1 className="dashboard-main-title">
+              Willkommen, {user?.Name || "Benutzer"}!
+            </h1>
+            {user?.joinedCalendars?.length > 0 && (
+              <div style={{margin:"15px 0px"}} className="joined-calendars-badges">
+                Ihre beigetretenen Kalender:
+                {user.joinedCalendars.map((calendar, index) => (
+                  <Badge key={index} bg="primary" style={{margin:"0px 2px"}} className="calendar-badge">
+                    {calendar.Calendar}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+          
           <div className="header-search-box">
             <SearchBox
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Name, Rolle oder Ort suchen..."
+              placeholder="Veranstaltungen suchen..."
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
             />
@@ -206,6 +200,8 @@ function UnassignedEventsDashboard({ setAuth }) {
 
         {/* Events Container */}
         <div className="events-container">
+          <h2 className="assigned-events-heading">Meine zugewiesene Veranstaltungen</h2>
+          
           {totalFilteredEvents === 0 && !searchTerm ? (
             <div className="empty-state">
               <div className="empty-state-icon">
@@ -216,27 +212,26 @@ function UnassignedEventsDashboard({ setAuth }) {
               </p>
             </div>
           ) : (
-            allCalendars.map((calendar) => {
-              const calendarName = calendar.name;
-              const hasEvents = filteredEventsByCalendar[calendarName]?.length > 0;
-              const isFilteredOut = searchTerm && !calendarHasMatch(calendarName);
+            calendars.map((calendar) => {
+              const hasEvents = filteredEventsByCalendar[calendar]?.length > 0;
+              const isFilteredOut = searchTerm && !calendarHasMatch(calendar);
 
               return (
                 <div
-                  key={calendarName}
+                  key={calendar}
                   className={`event-calendar-card ${
                     isFilteredOut ? "filtered-out" : ""
                   }`}
                 >
                   <div
                     className="calendar-header"
-                    onClick={() => toggleCalendarExpand(calendarName)}
+                    onClick={() => toggleCalendarExpand(calendar)}
                   >
                     <div className="header-content">
                       <div className="title-with-icon">
-                        <h5 className="calendar-title">{calendarName}</h5>
+                        <h5 className="calendar-title">{calendar}</h5>
                         <div className="dropdown-toggle-icon">
-                          {expandedCalendars[calendarName] ? (
+                          {expandedCalendars[calendar] ? (
                             <ChevronUp size={14} />
                           ) : (
                             <ChevronDown size={14} />
@@ -246,12 +241,12 @@ function UnassignedEventsDashboard({ setAuth }) {
                       <span className="events-count">
                         <span className="count-number">
                           {hasEvents
-                            ? filteredEventsByCalendar[calendarName].length
+                            ? filteredEventsByCalendar[calendar].length
                             : 0}
                         </span>
                         <span className="count-label">
                           {hasEvents
-                            ? filteredEventsByCalendar[calendarName].length === 1
+                            ? filteredEventsByCalendar[calendar].length === 1
                               ? " Veranstaltung"
                               : " Veranstaltungen"
                             : " Veranstaltungen"}
@@ -260,7 +255,7 @@ function UnassignedEventsDashboard({ setAuth }) {
                     </div>
                   </div>
 
-                  {expandedCalendars[calendarName] && (
+                  {expandedCalendars[calendar] && (
                     <div className="calendar-content">
                       {hasEvents ? (
                         <>
@@ -270,19 +265,21 @@ function UnassignedEventsDashboard({ setAuth }) {
                               <thead>
                                 <tr>
                                   <th>Veranstaltung</th>
-                                  <th>Rolle(n)</th>
+                                  <th>Meine Rolle(n)</th>
                                   <th>Datum/Uhrzeit</th>
-                                  <th>Ort</th>
                                   <th>Aktion</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {filteredEventsByCalendar[calendarName].map(
+                                {filteredEventsByCalendar[calendar].map(
                                   (event, index) => (
                                     <tr key={index} className="event-row">
                                       <td className="event-details">
                                         <div className="event-title">
                                           {event.summary}
+                                        </div>
+                                        <div className="event-location">
+                                          {event.location}
                                         </div>
                                       </td>
                                       <td className="event-roles">
@@ -292,6 +289,7 @@ function UnassignedEventsDashboard({ setAuth }) {
                                             <Badge
                                               key={i}
                                               className="role-badge"
+                                              bg="success"
                                             >
                                               {role.trim()}
                                             </Badge>
@@ -323,9 +321,6 @@ function UnassignedEventsDashboard({ setAuth }) {
                                         ) : (
                                           <span>Datum unbekannt</span>
                                         )}
-                                      </td>
-                                      <td className="event-location">
-                                        {event.location || "-"}
                                       </td>
                                       <td className="event-actions">
                                         {event.htmlLink ? (
@@ -366,7 +361,7 @@ function UnassignedEventsDashboard({ setAuth }) {
 
                           {/* Mobile-friendly cards for small screens */}
                           <div className="event-cards-container d-md-none">
-                            {filteredEventsByCalendar[calendarName].map(
+                            {filteredEventsByCalendar[calendar].map(
                               (event, index) => (
                                 <div key={index} className="event-mobile-card">
                                   <div className="event-mobile-header">
@@ -380,7 +375,7 @@ function UnassignedEventsDashboard({ setAuth }) {
                                       {event.role
                                         ?.split(", ")
                                         .map((role, i) => (
-                                          <Badge key={i} className="role-badge">
+                                          <Badge key={i} className="role-badge" bg="success">
                                             {role.trim()}
                                           </Badge>
                                         ))}
@@ -445,15 +440,8 @@ function UnassignedEventsDashboard({ setAuth }) {
                           </div>
                         </>
                       ) : (
-                        <div
-                          className="no-events-message"
-                          style={{
-                            textAlign: "center",
-                            margin: "50px 0px",
-                            color: "grey",
-                          }}
-                        >
-                          Keine Veranstaltungen in diesem Kalender.
+                        <div className="no-events-message">
+                          Keine zugewiesenen Veranstaltungen in diesem Kalender.
                         </div>
                       )}
                     </div>
@@ -468,5 +456,4 @@ function UnassignedEventsDashboard({ setAuth }) {
   );
 }
 
-export default UnassignedEventsDashboard;
-
+export default UserAssignedDashboard;
