@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../utils/api";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { Eye, EyeSlash } from "react-bootstrap-icons"; // 👈 Eye icons
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -10,6 +11,7 @@ function Login({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [fullPageLoading, setFullPageLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // 👈 new state
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,11 +26,9 @@ function Login({ onLogin }) {
     setError("");
 
     try {
-      // 🔐 Login request
       const res = await authApi.login({ username, password });
       console.log("Login response:", res);
       if (res.data.status === "success") {
-        // ✅ Fetch user info
         const me = await authApi.getMe();
         console.log("User info:", me);
         const user = me.data.user;
@@ -39,7 +39,6 @@ function Login({ onLogin }) {
 
         if (onLogin) onLogin(user);
 
-        // 🚦 Redirect based on role
         if (user.Role === "Admin") {
           console.log("Admin logged in, redirecting to admin dashboard");
           navigate("/admin/dashboard");
@@ -143,7 +142,10 @@ function Login({ onLogin }) {
 
             <div className="form-field">
               <label htmlFor="password">Passwort</label>
-              <div className="input-wrapper">
+              <div
+                className="input-wrapper password-wrapper"
+                style={{ position: "relative" }}
+              >
                 <div className="input-icon">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -156,15 +158,35 @@ function Login({ onLogin }) {
                   </svg>
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Passwort"
                   required
                 />
+                <button
+                  type="button"
+                  className="password-toggle-icon"
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // prevents focus loss
+                    setShowPassword(!showPassword);
+                  }}
+                >
+                  {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                </button>
               </div>
-              {/* Add this forgot password link */}
+
               <div className="forgot-password-link">
                 <a
                   href="/forgot-password"

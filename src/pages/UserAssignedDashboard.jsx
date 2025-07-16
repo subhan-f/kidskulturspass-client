@@ -166,7 +166,7 @@ function UserAssignedDashboard({ setAuth }) {
             </h1>
             {user?.joinedCalendars?.length > 0 && (
               <div style={{margin:"15px 0px"}} className="joined-calendars-badges">
-                Ihre beigetretenen Kalender:
+                Deine beigetretenen Kalender:
                 {user.joinedCalendars.map((calendar, index) => (
                   <Badge key={index} bg="primary" style={{margin:"0px 2px"}} className="calendar-badge">
                     {calendar.Calendar}
@@ -200,7 +200,7 @@ function UserAssignedDashboard({ setAuth }) {
 
         {/* Events Container */}
         <div className="events-container">
-          <h2 className="assigned-events-heading">Meine zugewiesene Veranstaltungen</h2>
+          <h2 className="assigned-events-heading">Meine kommenden Events</h2>
           
           {totalFilteredEvents === 0 && !searchTerm ? (
             <div className="empty-state">

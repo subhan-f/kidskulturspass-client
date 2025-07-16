@@ -99,7 +99,7 @@ function Navbar({ setAuth }) {
                 active={location.pathname === '/user-assigned-dashboard'}
                 onClick={() => setExpanded(false)}
               >
-                Assigned Events
+                Meine Events
               </Nav.Link>
             )}
              {!isAdmin && (
@@ -109,7 +109,7 @@ function Navbar({ setAuth }) {
                 active={location.pathname === '/user-unassigned-dashboard'}
                 onClick={() => setExpanded(false)}
               >
-                Unassigned Events
+                Neue Jobs
               </Nav.Link>
             )}
           </Nav>
