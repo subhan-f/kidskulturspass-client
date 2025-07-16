@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Table, Alert, Badge, Card } from "react-bootstrap";
+import { Button, Table, Alert, Badge } from "react-bootstrap";
 import {
   ArrowClockwise,
   Calendar3,
   ChevronDown,
   ChevronUp,
+  PersonCircle,
 } from "react-bootstrap-icons";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBox from "../components/SearchBox";
 import DashboardLayout from "../components/DashboardLayout";
-import { authApi } from "../utils/api";
 import DashboardLoader from "../components/DashboardLoader";
+import { authApi } from "../utils/api";
 import axios from "axios";
 
 function UserUnassignedDashboard({ setAuth }) {
   const [user, setUser] = useState(null);
-  const [events, setEvents] = useState({});
+  const [categorizedEvents, setCategorizedEvents] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
   const [error, setError] = useState(null);
@@ -27,60 +28,42 @@ function UserUnassignedDashboard({ setAuth }) {
   const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
   const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
 
- const fetchData = async () => {
-  setLoading(true);
-  setLoadingMessage("Daten werden geladen...");
+  // Fetch user data and events
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setLoadingMessage("Benutzerdaten werden geladen...");
 
-  try {
-    // 1. First fetch the authenticated user
-    const res = await authApi.getMe();
-    const currentUser = res.data.user;
-    
-    // 2. Get user details including joined calendars
-    const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
-    console.log("User data:", userData.data);
-    setUser(userData.data);
-    
-    // Extract joined calendars
-    const joinedCalendars = userData.data.joinedCalendars || [];
-    const calendarNames = joinedCalendars.map(c => c.Calendar);
-    console.log("Joined calendars:", calendarNames);
-    // 3. Fetch unassigned events only for these calendars
-    const eventsRes = await axios.get(`${API_URL}/unassigned`, {
-      params: {
-        email: userData.data["E-Mail"],
-        calendars: calendarNames.join(','), // Send joined calendars to filter
-        categorize: true
-      }
-    });
-    
-    const responseData = eventsRes.data;
-    console.log("API response data:", responseData);
-    
-    // Set the categorized events
-    setEvents(responseData.categorizedEvents || {});
-    
-    setLoading(false);
-  } catch (err) {
-    console.error("Error fetching data:", err);
-    setError("Fehler beim Laden der Daten");
-    setLoading(false);
-  }
-};
+      const res = await authApi.getMe();
+      const currentUser = res.data.user;
+      const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
+      setUser(userData.data);
+
+      const joinedCalendars = userData.data.joinedCalendars || [];
+      const joinedCalendarsEncoded = encodeURIComponent(JSON.stringify(joinedCalendars));
+
+      setLoadingMessage("Nicht zugewiesene Veranstaltungen werden geladen...");
+      const unassignedRes = await axios.get(`${API_URL}/unassigned?joinedCalendars=${joinedCalendarsEncoded}`);
+      const responseData = unassignedRes.data;
+      setCategorizedEvents(responseData.categorizedEvents || {});
+
+      const initialExpandState = {};
+      Object.keys(responseData.categorizedEvents || {}).forEach(cal => {
+        initialExpandState[cal] = true;
+      });
+      setExpandedCalendars(initialExpandState);
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Fehler beim Laden der Daten:", err);
+      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
-
-  // Initialize expanded calendars state when events are loaded
-  useEffect(() => {
-    if (Object.keys(events).length > 0) {
-      const initialExpandState = {};
-      Object.keys(events).forEach(calendar => {
-        initialExpandState[calendar] = true; // Default to expanded
-      });
-      setExpandedCalendars(initialExpandState);
-    }
-  }, [events]);
 
   const toggleCalendarExpand = useCallback((calendar) => {
     setExpandedCalendars((prev) => ({
@@ -89,40 +72,45 @@ function UserUnassignedDashboard({ setAuth }) {
     }));
   }, []);
 
+  // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
     const filtered = {};
     
-    Object.keys(events).forEach(calendar => {
-      filtered[calendar] = (events[calendar] || []).filter(
+    Object.keys(categorizedEvents).forEach(calendar => {
+      filtered[calendar] = (categorizedEvents[calendar] || []).filter(
         (event) =>
-          (event.summary || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (event.calendarName || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (event.role || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
           (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
     });
     
     return filtered;
-  }, [events, searchTerm]);
+  }, [categorizedEvents, searchTerm]);
 
-  const totalFilteredEvents = useMemo(() => {
-    return Object.values(filteredEventsByCalendar)
-      .reduce((total, calendarEvents) => total + calendarEvents.length, 0);
-  }, [filteredEventsByCalendar]);
+  const calendars = useMemo(
+    () => Object.keys(filteredEventsByCalendar).sort(),
+    [filteredEventsByCalendar]
+  );
+
+  const totalFilteredEvents = useMemo(
+    () => Object.values(filteredEventsByCalendar).flat().length,
+    [filteredEventsByCalendar]
+  );
 
   const calendarHasMatch = useCallback(
     (calendar) => {
-      return filteredEventsByCalendar[calendar]?.length > 0;
+      return (
+        filteredEventsByCalendar[calendar] &&
+        filteredEventsByCalendar[calendar].length > 0
+      );
     },
     [filteredEventsByCalendar]
   );
 
+  // Force refresh button handler
   const handleRefresh = useCallback(() => {
-    setEvents({});
+    setCategorizedEvents({});
     setError(null);
     setWarning(null);
     fetchData();
@@ -134,41 +122,43 @@ function UserUnassignedDashboard({ setAuth }) {
 
   if (loading) {
     return (
-      <DashboardLayout setAuth={setAuth} pageTitle="Meine unzugewiesenen Veranstaltungen">
-        <DashboardLoader message={loadingMessage} />
-      </DashboardLayout>
-    );
-  }
-  
-  if (!user) {
-    return (
-      <DashboardLayout setAuth={setAuth} pageTitle="Meine Kalender">
-        <Alert variant="danger">Künstlerdaten konnten nicht geladen werden.</Alert>
+      <DashboardLayout
+        setAuth={setAuth}
+        pageTitle="Nicht zugewiesene Veranstaltungen"
+      >
+        <DashboardLoader
+          message={loadingMessage}
+        />
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout setAuth={setAuth} onRefresh={handleRefresh}>
-      <div className="unassigned-events-dashboard">
-        {/* Welcome section */}
-        {user && (
-          <div className="welcome-section mb-4">
-            <h2>Willkommen, {user.Name}!</h2>
-            <p className="text-muted">Hier sind deine unzugewiesenen Veranstaltungen</p>
-          </div>
-        )}
-
-        {/* Header section with search bar */}
+      <div className="user-unassigned-dashboard">
+        {/* Header section with welcome message and search box */}
         <div className="transparent-header-container">
-          <h1 className="dashboard-main-title">
-            Unzugewiesene Veranstaltungen
-          </h1>
+          <div className="header-welcome-content">
+            <h1 className="dashboard-main-title">
+              Willkommen, {user?.Name || "Benutzer"}!
+            </h1>
+            {user?.joinedCalendars?.length > 0 && (
+              <div style={{margin:"15px 0px"}} className="joined-calendars-badges">
+                Deine beigetretenen Kalender:
+                {user.joinedCalendars.map((calendar, index) => (
+                  <Badge key={index} bg="primary" style={{margin:"0px 2px"}} className="calendar-badge">
+                    {calendar.Calendar}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+          
           <div className="header-search-box">
             <SearchBox
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Name, Rolle oder Ort suchen..."
+              placeholder="Veranstaltungen suchen..."
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
             />
@@ -188,36 +178,38 @@ function UserUnassignedDashboard({ setAuth }) {
 
         {/* Events Container */}
         <div className="events-container">
+          <h2 className="unassigned-events-heading">Nicht zugewiesene Veranstaltungen</h2>
+          
           {totalFilteredEvents === 0 && !searchTerm ? (
             <div className="empty-state">
               <div className="empty-state-icon">
                 <Calendar3 size={48} />
               </div>
               <p className="empty-state-message">
-                Keine unzugewiesenen Veranstaltungen gefunden.
+                Keine nicht zugewiesenen Veranstaltungen gefunden.
               </p>
             </div>
           ) : (
-            Object.keys(filteredEventsByCalendar).map((calendarName) => {
-              const hasEvents = filteredEventsByCalendar[calendarName]?.length > 0;
-              const isFilteredOut = searchTerm && !calendarHasMatch(calendarName);
+            calendars.map((calendar) => {
+              const hasEvents = filteredEventsByCalendar[calendar]?.length > 0;
+              const isFilteredOut = searchTerm && !calendarHasMatch(calendar);
 
               return (
                 <div
-                  key={calendarName}
+                  key={calendar}
                   className={`event-calendar-card ${
                     isFilteredOut ? "filtered-out" : ""
                   }`}
                 >
                   <div
                     className="calendar-header"
-                    onClick={() => toggleCalendarExpand(calendarName)}
+                    onClick={() => toggleCalendarExpand(calendar)}
                   >
                     <div className="header-content">
                       <div className="title-with-icon">
-                        <h5 className="calendar-title">{calendarName}</h5>
+                        <h5 className="calendar-title">{calendar}</h5>
                         <div className="dropdown-toggle-icon">
-                          {expandedCalendars[calendarName] ? (
+                          {expandedCalendars[calendar] ? (
                             <ChevronUp size={14} />
                           ) : (
                             <ChevronDown size={14} />
@@ -226,11 +218,13 @@ function UserUnassignedDashboard({ setAuth }) {
                       </div>
                       <span className="events-count">
                         <span className="count-number">
-                          {hasEvents ? filteredEventsByCalendar[calendarName].length : 0}
+                          {hasEvents
+                            ? filteredEventsByCalendar[calendar].length
+                            : 0}
                         </span>
                         <span className="count-label">
                           {hasEvents
-                            ? filteredEventsByCalendar[calendarName].length === 1
+                            ? filteredEventsByCalendar[calendar].length === 1
                               ? " Veranstaltung"
                               : " Veranstaltungen"
                             : " Veranstaltungen"}
@@ -239,62 +233,59 @@ function UserUnassignedDashboard({ setAuth }) {
                     </div>
                   </div>
 
-                  {expandedCalendars[calendarName] && (
+                  {expandedCalendars[calendar] && (
                     <div className="calendar-content">
                       {hasEvents ? (
                         <>
-                          {/* Desktop table view */}
+                          {/* Regular table for desktop */}
                           <div className="table-responsive d-none d-md-block">
                             <Table className="events-table">
                               <thead>
                                 <tr>
                                   <th>Veranstaltung</th>
-                                  <th>Fehlende Rolle(n)</th>
                                   <th>Datum/Uhrzeit</th>
+                                  <th>Ort</th>
                                   <th>Aktion</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {filteredEventsByCalendar[calendarName].map(
+                                {filteredEventsByCalendar[calendar].map(
                                   (event, index) => (
                                     <tr key={index} className="event-row">
                                       <td className="event-details">
                                         <div className="event-title">
                                           {event.summary}
                                         </div>
-                                        <div className="event-location">
-                                          {event.location}
-                                        </div>
-                                      </td>
-                                      <td className="event-roles">
-                                        {event.role
-                                          ?.split(", ")
-                                          .map((role, i) => (
-                                            <Badge key={i} className="role-badge">
-                                              {role.trim()}
-                                            </Badge>
-                                          ))}
                                       </td>
                                       <td className="event-time">
-                                        {event.start?.dateTime ? (
+                                        {event?.start?.dateTime ? (
                                           <div className="date-time">
                                             <div className="date">
-                                              {new Date(event.start.dateTime).toLocaleDateString("de-DE", {
+                                              {new Date(
+                                                event.start.dateTime
+                                              ).toLocaleDateString("de-DE", {
                                                 day: "2-digit",
                                                 month: "2-digit",
-                                                year: "numeric"
+                                                year: "numeric",
+                                                timeZone: event.start.timeZone,
                                               })}
                                             </div>
                                             <div className="time">
-                                              {new Date(event.start.dateTime).toLocaleTimeString("de-DE", {
+                                              {new Date(
+                                                event.start.dateTime
+                                              ).toLocaleTimeString("de-DE", {
                                                 hour: "2-digit",
-                                                minute: "2-digit"
+                                                minute: "2-digit",
+                                                timeZone: event.start.timeZone,
                                               })}
                                             </div>
                                           </div>
                                         ) : (
                                           <span>Datum unbekannt</span>
                                         )}
+                                      </td>
+                                      <td className="event-location">
+                                        {event.location || "Nicht angegeben"}
                                       </td>
                                       <td className="event-actions">
                                         {event.htmlLink ? (
@@ -304,13 +295,25 @@ function UserUnassignedDashboard({ setAuth }) {
                                             href={event.htmlLink}
                                             target="_blank"
                                             rel="noopener noreferrer"
+                                            className="open-calendar-button"
                                           >
-                                            <Calendar3 />
-                                            <span className="ms-1 d-none d-md-inline">Öffnen</span>
+                                            <Calendar3 className="button-icon" />
+                                            <span className="d-none d-md-inline">
+                                              Öffnen
+                                            </span>
                                           </Button>
                                         ) : (
-                                          <Button variant="outline-secondary" size="sm" disabled>
-                                            N/A
+                                          <Button
+                                            variant="outline-secondary"
+                                            size="sm"
+                                            disabled
+                                          >
+                                            <span className="d-none d-md-inline">
+                                              Nicht verfügbar
+                                            </span>
+                                            <span className="d-md-none">
+                                              N/A
+                                            </span>
                                           </Button>
                                         )}
                                       </td>
@@ -321,58 +324,79 @@ function UserUnassignedDashboard({ setAuth }) {
                             </Table>
                           </div>
 
-                          {/* Mobile cards view */}
+                          {/* Mobile-friendly cards for small screens */}
                           <div className="event-cards-container d-md-none">
-                            {filteredEventsByCalendar[calendarName].map((event, index) => (
-                              <Card key={index} className="mb-3">
-                                <Card.Body>
-                                  <Card.Title>{event.summary}</Card.Title>
-                                  <div className="mb-2">
-                                    {event.role?.split(", ").map((role, i) => (
-                                      <Badge key={i} className="me-1">
-                                        {role.trim()}
-                                      </Badge>
-                                    ))}
+                            {filteredEventsByCalendar[calendar].map(
+                              (event, index) => (
+                                <div key={index} className="event-mobile-card">
+                                  <div className="event-mobile-header">
+                                    <div className="event-mobile-title">
+                                      {event.summary}
+                                    </div>
                                   </div>
-                                  {event.location && (
-                                    <div className="mb-1">
-                                      <small className="text-muted">
-                                        <i className="bi bi-geo-alt"></i> {event.location}
-                                      </small>
+
+                                  <div className="event-mobile-content">
+                                    <div className="event-mobile-details">
+                                      {event.location && (
+                                        <div className="event-mobile-location">
+                                          <i className="bi bi-geo-alt"></i>{" "}
+                                          {event.location}
+                                        </div>
+                                      )}
+
+                                      {event.start?.dateTime && (
+                                        <div className="event-mobile-datetime">
+                                          <i className="bi bi-calendar-event"></i>{" "}
+                                          {new Date(
+                                            event.start.dateTime
+                                          ).toLocaleDateString("de-DE")}
+                                          <span className="mobile-time">
+                                            {" "}
+                                            {new Date(
+                                              event.start.dateTime
+                                            ).toLocaleTimeString("de-DE", {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                  {event.start?.dateTime && (
-                                    <div className="mb-2">
-                                      <small>
-                                        <i className="bi bi-calendar-event"></i>{" "}
-                                        {new Date(event.start.dateTime).toLocaleDateString("de-DE")}{" "}
-                                        {new Date(event.start.dateTime).toLocaleTimeString("de-DE", {
-                                          hour: "2-digit",
-                                          minute: "2-digit"
-                                        })}
-                                      </small>
+
+                                    <div className="event-mobile-actions">
+                                      {event.htmlLink ? (
+                                        <Button
+                                          variant="outline-primary"
+                                          size="sm"
+                                          href={event.htmlLink}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="open-calendar-button"
+                                        >
+                                          <Calendar3 className="button-icon" />
+                                          <span className="button-text">
+                                            Öffnen
+                                          </span>
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          variant="outline-secondary"
+                                          size="sm"
+                                          disabled
+                                        >
+                                          N/A
+                                        </Button>
+                                      )}
                                     </div>
-                                  )}
-                                  {event.htmlLink && (
-                                    <Button
-                                      variant="outline-primary"
-                                      size="sm"
-                                      href={event.htmlLink}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <Calendar3 className="me-1" />
-                                      Öffnen
-                                    </Button>
-                                  )}
-                                </Card.Body>
-                              </Card>
-                            ))}
+                                  </div>
+                                </div>
+                              )
+                            )}
                           </div>
                         </>
                       ) : (
-                        <div className="no-events-message text-center py-4 text-muted">
-                          Keine unzugewiesenen Veranstaltungen in diesem Kalender.
+                        <div className="no-events-message">
+                          Keine nicht zugewiesenen Veranstaltungen in diesem Kalender.
                         </div>
                       )}
                     </div>
