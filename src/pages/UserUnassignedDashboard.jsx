@@ -18,15 +18,32 @@ function UserUnassignedDashboard({ setAuth }) {
   const [user, setUser] = useState(null);
   const [categorizedEvents, setCategorizedEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Daten werden geladen..."
+  );
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
-  const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
+  const API_URL =
+    "https://user-dashboard-data-754826373806.europe-west1.run.app";
+  const USER_API_URL =
+    "https://artist-crud-function-754826373806.europe-west10.run.app";
+
+  const CALENDAR_MAPPING = {
+    "Klavier Mitmachkonzert": "info@kidskulturspass.de",
+    "Geigen Mitmachkonzert":
+      "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
+    "Weihnachts Mitmachkonzert":
+      "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
+    "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
+    "Laternenumzug mit Musik":
+      "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
+    Puppentheater:
+      "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
+  };
 
   // Fetch user data and events
   const fetchData = async () => {
@@ -36,19 +53,25 @@ function UserUnassignedDashboard({ setAuth }) {
 
       const res = await authApi.getMe();
       const currentUser = res.data.user;
-      const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
+      const userData = await axios.get(
+        `${USER_API_URL}/?id=${currentUser._id}`
+      );
       setUser(userData.data);
 
       const joinedCalendars = userData.data.joinedCalendars || [];
-      const joinedCalendarsEncoded = encodeURIComponent(JSON.stringify(joinedCalendars));
+      const joinedCalendarsEncoded = encodeURIComponent(
+        JSON.stringify(joinedCalendars)
+      );
 
       setLoadingMessage("Nicht zugewiesene Veranstaltungen werden geladen...");
-      const unassignedRes = await axios.get(`${API_URL}/unassigned?joinedCalendars=${joinedCalendarsEncoded}`);
+      const unassignedRes = await axios.get(
+        `${API_URL}/unassigned?joinedCalendars=${joinedCalendarsEncoded}`
+      );
       const responseData = unassignedRes.data;
       setCategorizedEvents(responseData.categorizedEvents || {});
 
       const initialExpandState = {};
-      Object.keys(responseData.categorizedEvents || {}).forEach(cal => {
+      Object.keys(responseData.categorizedEvents || {}).forEach((cal) => {
         initialExpandState[cal] = true;
       });
       setExpandedCalendars(initialExpandState);
@@ -56,7 +79,9 @@ function UserUnassignedDashboard({ setAuth }) {
       setLoading(false);
     } catch (err) {
       console.error("Fehler beim Laden der Daten:", err);
-      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      setError(
+        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
+      );
       setLoading(false);
     }
   };
@@ -72,19 +97,81 @@ function UserUnassignedDashboard({ setAuth }) {
     }));
   }, []);
 
+  // Handle join event button click
+  const handleJoinEvent = useCallback(
+    async (event) => {
+      try {
+        setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
+        setLoading(true);
+
+        // Find the calendar ID by matching the calendar name
+        const calendarName = event.calendarName?.trim().toLowerCase();
+        let calendarId = null;
+
+        // Log for debugging
+        // console.log("Event calendar name:", event.calendarName);
+        // console.log("Available calendars:", Object.keys(CALENDAR_MAPPING));
+
+        // Find matching calendar
+        for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
+          if (name.trim().toLowerCase() === calendarName) {
+            calendarId = id;
+            break;
+          }
+        }
+
+        if (!calendarId) {
+          console.error("Calendar ID not found for:", event.calendar);
+          setWarning("Kalender-ID konnte nicht gefunden werden");
+          return;
+        }
+
+        // Prepare the request data
+        const requestData = {
+          calendarId,
+          eventId: event.id,
+          artistEmail: user["E-Mail"],
+        };
+
+        console.log("Sending POST request with:", requestData);
+
+        const response = await axios.post(`${API_URL}/add-artist`, requestData);
+
+        if (response.data.success) {
+          setWarning("Artist erfolgreich hinzugefügt!");
+          // Refresh events
+          fetchData();
+        } else {
+          setWarning(response.data.message);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        setError("Fehler beim Hinzufügen des Artists");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, fetchData]
+  );
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
     const filtered = {};
-    
-    Object.keys(categorizedEvents).forEach(calendar => {
+
+    Object.keys(categorizedEvents).forEach((calendar) => {
       filtered[calendar] = (categorizedEvents[calendar] || []).filter(
         (event) =>
-          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
+          (event.summary || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (event.location || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     });
-    
+
     return filtered;
   }, [categorizedEvents, searchTerm]);
 
@@ -126,9 +213,7 @@ function UserUnassignedDashboard({ setAuth }) {
         setAuth={setAuth}
         pageTitle="Nicht zugewiesene Veranstaltungen"
       >
-        <DashboardLoader
-          message={loadingMessage}
-        />
+        <DashboardLoader message={loadingMessage} />
       </DashboardLayout>
     );
   }
@@ -143,17 +228,25 @@ function UserUnassignedDashboard({ setAuth }) {
               Willkommen, {user?.Name || "Benutzer"}!
             </h1>
             {user?.joinedCalendars?.length > 0 && (
-              <div style={{margin:"15px 0px"}} className="joined-calendars-badges">
+              <div
+                style={{ margin: "15px 0px" }}
+                className="joined-calendars-badges"
+              >
                 Deine beigetretenen Kalender:
                 {user.joinedCalendars.map((calendar, index) => (
-                  <Badge key={index} bg="primary" style={{margin:"0px 2px"}} className="calendar-badge">
+                  <Badge
+                    key={index}
+                    bg="primary"
+                    style={{ margin: "0px 2px" }}
+                    className="calendar-badge"
+                  >
                     {calendar.Calendar}
                   </Badge>
                 ))}
               </div>
             )}
           </div>
-          
+
           <div className="header-search-box">
             <SearchBox
               value={searchTerm}
@@ -178,8 +271,10 @@ function UserUnassignedDashboard({ setAuth }) {
 
         {/* Events Container */}
         <div className="events-container">
-          <h2 className="unassigned-events-heading">Nicht zugewiesene Veranstaltungen</h2>
-          
+          <h2 className="unassigned-events-heading">
+            Nicht zugewiesene Veranstaltungen
+          </h2>
+
           {totalFilteredEvents === 0 && !searchTerm ? (
             <div className="empty-state">
               <div className="empty-state-icon">
@@ -242,10 +337,15 @@ function UserUnassignedDashboard({ setAuth }) {
                             <Table className="events-table">
                               <thead>
                                 <tr>
-                                  <th>Veranstaltung</th>
-                                  <th>Datum/Uhrzeit</th>
-                                  <th>Ort</th>
-                                  <th>Aktion</th>
+                                  <th style={{ minWidth: "200px" }}>
+                                    Veranstaltung
+                                  </th>
+                                  <th style={{ minWidth: "120px" }}>
+                                    Datum/Uhrzeit
+                                  </th>
+                                  <th style={{ minWidth: "150px" }}>Ort</th>
+                                  <th className="actions-column">Aktion</th>
+                                  <th className="join-column">Beitreten</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -257,7 +357,7 @@ function UserUnassignedDashboard({ setAuth }) {
                                           {event.summary}
                                         </div>
                                       </td>
-                                      <td className="event-time">
+                                      <td className="event-time date-time-column">
                                         {event?.start?.dateTime ? (
                                           <div className="date-time">
                                             <div className="date">
@@ -287,7 +387,7 @@ function UserUnassignedDashboard({ setAuth }) {
                                       <td className="event-location">
                                         {event.location || "Nicht angegeben"}
                                       </td>
-                                      <td className="event-actions">
+                                      <td className="event-actions actions-column">
                                         {event.htmlLink ? (
                                           <Button
                                             variant="outline-primary"
@@ -316,6 +416,19 @@ function UserUnassignedDashboard({ setAuth }) {
                                             </span>
                                           </Button>
                                         )}
+                                      </td>
+                                      <td className="join-event-column join-column">
+                                        <Button
+                                          variant="success"
+                                          size="sm"
+                                          onClick={() => handleJoinEvent(event)}
+                                          className="join-event-button"
+                                        >
+                                          <PersonCircle className="button-icon" />
+                                          <span className="d-none d-md-inline">
+                                            Beitreten
+                                          </span>
+                                        </Button>
                                       </td>
                                     </tr>
                                   )
@@ -371,7 +484,7 @@ function UserUnassignedDashboard({ setAuth }) {
                                           href={event.htmlLink}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="open-calendar-button"
+                                          className="open-calendar-button me-2" // Added margin-end
                                         >
                                           <Calendar3 className="button-icon" />
                                           <span className="button-text">
@@ -383,10 +496,22 @@ function UserUnassignedDashboard({ setAuth }) {
                                           variant="outline-secondary"
                                           size="sm"
                                           disabled
+                                          className="me-2" // Added margin-end
                                         >
                                           N/A
                                         </Button>
                                       )}
+                                      <Button
+                                        variant="success"
+                                        size="sm"
+                                        onClick={() => handleJoinEvent(event)}
+                                        className="join-event-button"
+                                      >
+                                        <PersonCircle className="button-icon" />
+                                        <span className="button-text">
+                                          Beitreten
+                                        </span>
+                                      </Button>
                                     </div>
                                   </div>
                                 </div>
@@ -396,7 +521,8 @@ function UserUnassignedDashboard({ setAuth }) {
                         </>
                       ) : (
                         <div className="no-events-message">
-                          Keine nicht zugewiesenen Veranstaltungen in diesem Kalender.
+                          Keine nicht zugewiesenen Veranstaltungen in diesem
+                          Kalender.
                         </div>
                       )}
                     </div>

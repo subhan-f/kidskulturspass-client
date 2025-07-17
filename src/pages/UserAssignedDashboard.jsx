@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button, Table, Alert, Badge } from "react-bootstrap";
 import {
@@ -8,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   PersonCircle,
+  PersonDash,
 } from "react-bootstrap-icons";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBox from "../components/SearchBox";
@@ -20,17 +19,33 @@ function UserAssignedDashboard({ setAuth }) {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Daten werden geladen..."
+  );
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
   const [searchFocused, setSearchFocused] = useState(false);
 
-  
+  const CALENDAR_MAPPING = {
+    "Klavier Mitmachkonzert": "info@kidskulturspass.de",
+    "Geigen Mitmachkonzert":
+      "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
+    "Weihnachts Mitmachkonzert":
+      "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
+    "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
+    "Laternenumzug mit Musik":
+      "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
+    Puppentheater:
+      "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
+  };
 
-  const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
-  const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
+  const API_URL =
+    "https://user-dashboard-data-754826373806.europe-west1.run.app";
+  const USER_API_URL =
+    "https://artist-crud-function-754826373806.europe-west10.run.app";
+
   // Fetch user data and events
   const fetchData = async () => {
     try {
@@ -40,44 +55,43 @@ function UserAssignedDashboard({ setAuth }) {
       // Get authenticated user
       const res = await authApi.getMe();
       const currentUser = res.data.user;
-      
+
       // Get complete user data including joined calendars
-    const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
-    console.log("User data:", userData.data);
-    setUser(userData.data);
-      
+      const userData = await axios.get(
+        `${USER_API_URL}/?id=${currentUser._id}`
+      );
+      setUser(userData.data);
+
       const joinedCalendars = userData.data.joinedCalendars || [];
-    const calendarNames = joinedCalendars.map(c => c.Calendar);
-      
+      const calendarNames = joinedCalendars.map((c) => c.Calendar);
+
       // Fetch assigned events for these calendars
       setLoadingMessage("Veranstaltungen werden geladen...");
-        
-    console.log("Joined calendars:", calendarNames);
-    // 3. Fetch unassigned events only for these calendars
-    const eventsRes = await axios.get(`${API_URL}/assigned`, {
-      params: {
-        email: userData.data["E-Mail"],
-        calendars: calendarNames.join(','), // Send joined calendars to filter
-        categorize: true
-      }
-    });
-    
-      
+
+      const eventsRes = await axios.get(`${API_URL}/assigned`, {
+        params: {
+          email: userData.data["E-Mail"],
+          calendars: calendarNames.join(","), // Send joined calendars to filter
+          categorize: true,
+        },
+      });
+
       const responseData = eventsRes.data;
-      console.log("Fetched events:", responseData);
       setEvents(responseData.categorizedEvents || {});
-      
+
       // Initialize expanded state for calendars
       const initialExpandState = {};
-      Object.keys(responseData.categorizedEvents || {}).forEach(cal => {
+      Object.keys(responseData.categorizedEvents || {}).forEach((cal) => {
         initialExpandState[cal] = true;
       });
       setExpandedCalendars(initialExpandState);
-      
+
       setLoading(false);
     } catch (err) {
       console.error("Error loading data:", err);
-      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      setError(
+        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
+      );
       setLoading(false);
     }
   };
@@ -93,20 +107,80 @@ function UserAssignedDashboard({ setAuth }) {
     }));
   }, []);
 
+  // Handle leave event button click
+  const handleLeaveEvent = useCallback(
+    async (event) => {
+      try {
+        setLoadingMessage("Artist wird von der Veranstaltung entfernt...");
+        setLoading(true);
+
+        // Find the calendar ID by matching the calendar name
+        const calendarName = event.calendarName?.trim().toLowerCase();
+        let calendarId = null;
+
+        // Find matching calendar
+        for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
+          if (name.trim().toLowerCase() === calendarName) {
+            calendarId = id;
+            break;
+          }
+        }
+
+        if (!calendarId) {
+          console.error("Calendar ID not found for:", event.calendar);
+          setWarning("Kalender-ID konnte nicht gefunden werden");
+          return;
+        }
+
+        // Prepare the request data
+        const requestData = {
+          calendarId,
+          eventId: event.id,
+          artistEmail: user["E-Mail"],
+        };
+
+        const response = await axios.post(
+          `${API_URL}/remove-artist`,
+          requestData
+        );
+
+        if (response.data.success) {
+          setWarning("Artist erfolgreich entfernt!");
+          // Refresh events
+          fetchData();
+        } else {
+          setWarning(response.data.message);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        setError("Fehler beim Entfernen des Artists");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, fetchData]
+  );
+
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
     const filtered = {};
-    
-    Object.keys(events).forEach(calendar => {
+
+    Object.keys(events).forEach((calendar) => {
       filtered[calendar] = (events[calendar] || []).filter(
         (event) =>
-          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (event.summary || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           (event.role || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
+          (event.location || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     });
-    
+
     return filtered;
   }, [events, searchTerm]);
 
@@ -144,13 +218,8 @@ function UserAssignedDashboard({ setAuth }) {
 
   if (loading) {
     return (
-      <DashboardLayout
-        setAuth={setAuth}
-        pageTitle="Meine Veranstaltungen"
-      >
-        <DashboardLoader
-          message={loadingMessage}
-        />
+      <DashboardLayout setAuth={setAuth} pageTitle="Meine Veranstaltungen">
+        <DashboardLoader message={loadingMessage} />
       </DashboardLayout>
     );
   }
@@ -165,17 +234,25 @@ function UserAssignedDashboard({ setAuth }) {
               Willkommen, {user?.Name || "Benutzer"}!
             </h1>
             {user?.joinedCalendars?.length > 0 && (
-              <div style={{margin:"15px 0px"}} className="joined-calendars-badges">
+              <div
+                style={{ margin: "15px 0px" }}
+                className="joined-calendars-badges"
+              >
                 Deine beigetretenen Kalender:
                 {user.joinedCalendars.map((calendar, index) => (
-                  <Badge key={index} bg="primary" style={{margin:"0px 2px"}} className="calendar-badge">
+                  <Badge
+                    key={index}
+                    bg="primary"
+                    style={{ margin: "0px 2px" }}
+                    className="calendar-badge"
+                  >
                     {calendar.Calendar}
                   </Badge>
                 ))}
               </div>
             )}
           </div>
-          
+
           <div className="header-search-box">
             <SearchBox
               value={searchTerm}
@@ -201,7 +278,7 @@ function UserAssignedDashboard({ setAuth }) {
         {/* Events Container */}
         <div className="events-container">
           <h2 className="assigned-events-heading">Meine kommenden Events</h2>
-          
+
           {totalFilteredEvents === 0 && !searchTerm ? (
             <div className="empty-state">
               <div className="empty-state-icon">
@@ -264,10 +341,17 @@ function UserAssignedDashboard({ setAuth }) {
                             <Table className="events-table">
                               <thead>
                                 <tr>
-                                  <th>Veranstaltung</th>
-                                  <th>Meine Rolle(n)</th>
-                                  <th>Datum/Uhrzeit</th>
-                                  <th>Aktion</th>
+                                  <th style={{ minWidth: "200px" }}>
+                                    Veranstaltung
+                                  </th>
+                                  <th style={{ minWidth: "150px" }}>
+                                    Meine Rolle(n)
+                                  </th>
+                                  <th style={{ minWidth: "120px" }}>
+                                    Datum/Uhrzeit
+                                  </th>
+                                  <th className="actions-column">Aktion</th>
+                                  <th className="leave-column">Verlassen</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -295,7 +379,7 @@ function UserAssignedDashboard({ setAuth }) {
                                             </Badge>
                                           ))}
                                       </td>
-                                      <td className="event-time">
+                                      <td className="event-time date-time-column">
                                         {event?.start?.dateTime ? (
                                           <div className="date-time">
                                             <div className="date">
@@ -322,7 +406,7 @@ function UserAssignedDashboard({ setAuth }) {
                                           <span>Datum unbekannt</span>
                                         )}
                                       </td>
-                                      <td className="event-actions">
+                                      <td className="event-actions actions-column">
                                         {event.htmlLink ? (
                                           <Button
                                             variant="outline-primary"
@@ -352,6 +436,21 @@ function UserAssignedDashboard({ setAuth }) {
                                           </Button>
                                         )}
                                       </td>
+                                      <td className="leave-event-column leave-column">
+                                        <Button
+                                          variant="danger"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleLeaveEvent(event)
+                                          }
+                                          className="leave-event-button"
+                                        >
+                                          <PersonDash className="button-icon" />
+                                          <span className="d-none d-md-inline">
+                                            Verlassen
+                                          </span>
+                                        </Button>
+                                      </td>
                                     </tr>
                                   )
                                 )}
@@ -375,7 +474,11 @@ function UserAssignedDashboard({ setAuth }) {
                                       {event.role
                                         ?.split(", ")
                                         .map((role, i) => (
-                                          <Badge key={i} className="role-badge" bg="success">
+                                          <Badge
+                                            key={i}
+                                            className="role-badge"
+                                            bg="success"
+                                          >
                                             {role.trim()}
                                           </Badge>
                                         ))}
@@ -416,7 +519,7 @@ function UserAssignedDashboard({ setAuth }) {
                                           href={event.htmlLink}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="open-calendar-button"
+                                          className="open-calendar-button me-2" // Added margin-end
                                         >
                                           <Calendar3 className="button-icon" />
                                           <span className="button-text">
@@ -428,10 +531,22 @@ function UserAssignedDashboard({ setAuth }) {
                                           variant="outline-secondary"
                                           size="sm"
                                           disabled
+                                          className="me-2" // Added margin-end
                                         >
                                           N/A
                                         </Button>
                                       )}
+                                      <Button
+                                        variant="danger"
+                                        size="sm"
+                                        onClick={() => handleLeaveEvent(event)}
+                                        className="leave-event-button"
+                                      >
+                                        <PersonDash className="button-icon" />
+                                        <span className="button-text">
+                                          Verlassen
+                                        </span>
+                                      </Button>
                                     </div>
                                   </div>
                                 </div>
