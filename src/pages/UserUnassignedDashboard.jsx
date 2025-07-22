@@ -26,6 +26,8 @@ function UserUnassignedDashboard({ setAuth }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
   const [searchFocused, setSearchFocused] = useState(false);
+  const [joiningEventId, setJoiningEventId] = useState(null);
+  const [isProcessingJoin, setIsProcessingJoin] = useState(false);
 
   const API_URL =
     "https://user-dashboard-data-754826373806.europe-west1.run.app";
@@ -98,61 +100,68 @@ function UserUnassignedDashboard({ setAuth }) {
   }, []);
 
   // Handle join event button click
-  const handleJoinEvent = useCallback(
-    async (event) => {
-      try {
-        setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
-        setLoading(true);
+ const handleJoinEvent = useCallback(
+  async (event) => {
+    if (isProcessingJoin) return; // prevent double click globally
 
-        // Find the calendar ID by matching the calendar name
-        const calendarName = event.calendarName?.trim().toLowerCase();
-        let calendarId = null;
+    setIsProcessingJoin(true);
+    setJoiningEventId(event.id);
+    setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
+    setLoading(true);
 
-        // Log for debugging
-        // console.log("Event calendar name:", event.calendarName);
-        // console.log("Available calendars:", Object.keys(CALENDAR_MAPPING));
+    try {
+      const calendarName = event.calendarName?.trim().toLowerCase();
+      let calendarId = null;
 
-        // Find matching calendar
-        for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
-          if (name.trim().toLowerCase() === calendarName) {
-            calendarId = id;
-            break;
-          }
+      for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
+        if (name.trim().toLowerCase() === calendarName) {
+          calendarId = id;
+          break;
         }
-
-        if (!calendarId) {
-          console.error("Calendar ID not found for:", event.calendar);
-          setWarning("Kalender-ID konnte nicht gefunden werden");
-          return;
-        }
-
-        // Prepare the request data
-        const requestData = {
-          calendarId,
-          eventId: event.id,
-          artistEmail: user["E-Mail"],
-        };
-
-        console.log("Sending POST request with:", requestData);
-
-        const response = await axios.post(`${API_URL}/add-artist`, requestData);
-
-        if (response.data.success) {
-          setWarning("Artist erfolgreich hinzugefügt!");
-          // Refresh events
-          fetchData();
-        } else {
-          setWarning(response.data.message);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        setError("Fehler beim Hinzufügen des Artists");
-      } finally {
-        setLoading(false);
       }
-    },
-    [user, fetchData]
-  );
+
+      if (!calendarId) {
+        console.error("Calendar ID not found for:", event.calendarName);
+        setWarning("Kalender-ID konnte nicht gefunden werden");
+        setLoading(false);
+        setIsProcessingJoin(false);
+        setJoiningEventId(null);
+        return;
+      }
+
+      const requestData = {
+        calendarId,
+        eventId: event.id,
+        artistEmail: user["E-Mail"],
+      };
+
+      // API request
+      const response = await axios.post(`${API_URL}/add-artist`, requestData);
+
+      if (response.data.success) {
+        setWarning("Artist erfolgreich hinzugefügt!");
+      } else {
+        setWarning(response.data.message || "Fehler beim Hinzufügen des Artists");
+      }
+
+      // Enforce additional 7-second delay after API response
+      await new Promise(resolve => setTimeout(resolve, 20000));
+
+      // Refresh events after total delay
+      await fetchData();
+
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Fehler beim Hinzufügen des Artists");
+    } finally {
+      setIsProcessingJoin(false);
+      setJoiningEventId(null);
+      setLoading(false);
+    }
+  },
+  [user, fetchData, isProcessingJoin]
+);
+
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
     const filtered = {};
@@ -423,11 +432,34 @@ function UserUnassignedDashboard({ setAuth }) {
                                           size="sm"
                                           onClick={() => handleJoinEvent(event)}
                                           className="join-event-button"
+                                          disabled={
+                                            isProcessingJoin &&
+                                            joiningEventId === event.id
+                                          }
                                         >
-                                          <PersonCircle className="button-icon" />
-                                          <span className="d-none d-md-inline">
-                                            Beitreten
-                                          </span>
+                                          {isProcessingJoin &&
+                                          joiningEventId === event.id ? (
+                                            <>
+                                              <Spinner
+                                                as="span"
+                                                animation="border"
+                                                size="sm"
+                                                role="status"
+                                                aria-hidden="true"
+                                                className="me-2"
+                                              />
+                                              <span className="d-none d-md-inline">
+                                                Wird hinzugefügt...
+                                              </span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <PersonCircle className="button-icon" />
+                                              <span className="d-none d-md-inline">
+                                                Beitreten
+                                              </span>
+                                            </>
+                                          )}
                                         </Button>
                                       </td>
                                     </tr>
@@ -506,11 +538,34 @@ function UserUnassignedDashboard({ setAuth }) {
                                         size="sm"
                                         onClick={() => handleJoinEvent(event)}
                                         className="join-event-button"
+                                        disabled={
+                                          isProcessingJoin &&
+                                          joiningEventId === event.id
+                                        }
                                       >
-                                        <PersonCircle className="button-icon" />
-                                        <span className="button-text">
-                                          Beitreten
-                                        </span>
+                                        {isProcessingJoin &&
+                                        joiningEventId === event.id ? (
+                                          <>
+                                            <Spinner
+                                              as="span"
+                                              animation="border"
+                                              size="sm"
+                                              role="status"
+                                              aria-hidden="true"
+                                              className="me-2"
+                                            />
+                                            <span className="button-text">
+                                              Wird hinzugefügt...
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <PersonCircle className="button-icon" />
+                                            <span className="button-text">
+                                              Beitreten
+                                            </span>
+                                          </>
+                                        )}
                                       </Button>
                                     </div>
                                   </div>

@@ -1,64 +1,63 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Modal, Form, Button, Container, Row, Col } from 'react-bootstrap';
+import { Modal, Form, Button, Spinner } from 'react-bootstrap';
 import { PersonPlus, X, Check2 } from 'react-bootstrap-icons';
+import { toast } from 'react-toastify';
 
 function AddArtistModal({ 
   showModal, 
   setShowModal, 
   selectedCalendar, 
   selectedRoles,
-  fetchArtists,
-  roleOptions, 
-  handleAddArtist 
+  handleAddArtist,
+  roleOptions
 }) {
   const [validated, setValidated] = useState(false);
   const [artistData, setArtistData] = useState({
-  calendar: selectedCalendar || '',
-  name: '',
-  role: '',
-  email: ''
-});
+    calendar: selectedCalendar || '',
+    name: '',
+    role: '',
+    email: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Update form data when calendar changes
   useEffect(() => {
-    console.log('[Modal] Selected calendar prop changed:', selectedCalendar);
-  setArtistData(prev => ({
-    ...prev,
-    calendar: selectedCalendar || ''
-  }));
-}, [selectedCalendar, showModal]); // Add showModal to dependencies
+    setArtistData(prev => ({
+      ...prev,
+      calendar: selectedCalendar || ''
+    }));
+  }, [selectedCalendar, showModal]);
 
-const [isLoading, setIsLoading] = useState(false);
-
-const handleSubmit = useCallback(async (e) => {
-  e.preventDefault();
-  const form = e.currentTarget;
-  
-  if (!form.checkValidity()) {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    setValidated(true);
-    return;
-  }
+    const form = e.currentTarget;
+    
+    if (!form.checkValidity()) {
+      e.preventDefault();
+      e.stopPropagation();
+      setValidated(true);
+      return;
+    }
 
-  if (!artistData.calendar) {
-    toast.error('Bitte wählen Sie einen Kalender aus');
-    return;
-  }
+    if (!artistData.calendar) {
+      toast.error('Bitte wählen Sie einen Kalender aus');
+      return;
+    }
 
-  setIsLoading(true);
-  try {
-    await handleAddArtist(artistData);
-    resetForm();
-  } finally {
-    setIsLoading(false);
-  }
-}, [artistData, handleAddArtist]);
+    setIsLoading(true);
+    try {
+      await handleAddArtist(artistData);
+      resetForm();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [artistData, handleAddArtist]);
 
   const handleClose = useCallback(() => {
-    setShowModal(false);
-    resetForm();
-  }, [setShowModal]);
+    if (!isLoading) {
+      setShowModal(false);
+      resetForm();
+    }
+  }, [setShowModal, isLoading]);
 
   const resetForm = () => {
     setArtistData({
@@ -77,7 +76,7 @@ const handleSubmit = useCallback(async (e) => {
   return (
     <Modal 
       show={showModal} 
-      onHide={handleClose}
+      onHide={isLoading ? null : handleClose}
       size="lg"
       centered
       dialogClassName="artist-popup-modal"
@@ -149,14 +148,25 @@ const handleSubmit = useCallback(async (e) => {
             <Button 
               variant="outline-secondary" 
               onClick={handleClose}
+              disabled={isLoading}
             >
               <X className="me-1" /> Abbrechen
             </Button>
             <Button 
               variant="primary" 
               type="submit"
+              disabled={isLoading}
             >
-              <Check2 className="me-1" /> Speichern
+              {isLoading ? (
+                <>
+                  <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                  <span className="ms-2">Speichern...</span>
+                </>
+              ) : (
+                <>
+                  <Check2 className="me-1" /> Speichern
+                </>
+              )}
             </Button>
           </div>
         </Form>

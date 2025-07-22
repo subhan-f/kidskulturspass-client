@@ -27,6 +27,8 @@ function UserAssignedDashboard({ setAuth }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
   const [searchFocused, setSearchFocused] = useState(false);
+  const [leavingEventId, setLeavingEventId] = useState(null);
+  const [isProcessingLeave, setIsProcessingLeave] = useState(false);
 
   const CALENDAR_MAPPING = {
     "Klavier Mitmachkonzert": "info@kidskulturspass.de",
@@ -110,10 +112,14 @@ function UserAssignedDashboard({ setAuth }) {
   // Handle leave event button click
   const handleLeaveEvent = useCallback(
     async (event) => {
-      try {
-        setLoadingMessage("Artist wird von der Veranstaltung entfernt...");
-        setLoading(true);
+      if (isProcessingLeave) return; // Prevent double click
 
+      setIsProcessingLeave(true);
+      setLeavingEventId(event.id);
+      setLoadingMessage("Artist wird von der Veranstaltung entfernt...");
+      setLoading(true);
+
+      try {
         // Find the calendar ID by matching the calendar name
         const calendarName = event.calendarName?.trim().toLowerCase();
         let calendarId = null;
@@ -139,6 +145,9 @@ function UserAssignedDashboard({ setAuth }) {
           artistEmail: user["E-Mail"],
         };
 
+        // Add 7 second delay before making the API call
+        await new Promise((resolve) => setTimeout(resolve, 20000));
+
         const response = await axios.post(
           `${API_URL}/remove-artist`,
           requestData
@@ -155,10 +164,12 @@ function UserAssignedDashboard({ setAuth }) {
         console.error("Error:", error);
         setError("Fehler beim Entfernen des Artists");
       } finally {
+        setIsProcessingLeave(false);
+        setLeavingEventId(null);
         setLoading(false);
       }
     },
-    [user, fetchData]
+    [user, fetchData, isProcessingLeave]
   );
 
   // Filter events based on search term
@@ -444,11 +455,34 @@ function UserAssignedDashboard({ setAuth }) {
                                             handleLeaveEvent(event)
                                           }
                                           className="leave-event-button"
+                                          disabled={
+                                            isProcessingLeave &&
+                                            leavingEventId === event.id
+                                          }
                                         >
-                                          <PersonDash className="button-icon" />
-                                          <span className="d-none d-md-inline">
-                                            Verlassen
-                                          </span>
+                                          {isProcessingLeave &&
+                                          leavingEventId === event.id ? (
+                                            <>
+                                              <Spinner
+                                                as="span"
+                                                animation="border"
+                                                size="sm"
+                                                role="status"
+                                                aria-hidden="true"
+                                                className="me-2"
+                                              />
+                                              <span className="button-text">
+                                                Wird entfernt...
+                                              </span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <PersonDash className="button-icon" />
+                                              <span className="button-text">
+                                                Verlassen
+                                              </span>
+                                            </>
+                                          )}
                                         </Button>
                                       </td>
                                     </tr>

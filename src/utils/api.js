@@ -215,6 +215,7 @@ export default {
     
     if (url === '/artist') {
       // return mockApi.deleteArtist(config.data);
+      console.log('Deleting artist with data:', config.data);
       return  await artistService.deleteArtist(config.data);
     }
     

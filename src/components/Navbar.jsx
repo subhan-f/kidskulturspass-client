@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Container, Navbar as BootstrapNavbar, Nav } from 'react-bootstrap';
+import { Container, Navbar as BootstrapNavbar, Nav, Spinner } from 'react-bootstrap';
 import { BoxArrowRight } from 'react-bootstrap-icons';
 import { authApi } from '../utils/api';
 
 function Navbar({ setAuth }) {
   const [expanded, setExpanded] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // New state for logout loading
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -27,11 +28,22 @@ function Navbar({ setAuth }) {
   }, [setAuth, navigate]);
 
   const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevent double click
+    
+    setIsLoggingOut(true); // Set loading state
     try {
-      const res= await setAuth();
-      consol.log('Logout response:', res);
+      await authApi.logout(); // Make sure to call the actual logout API
+      setAuth(false);
+      localStorage.clear();
+      navigate('/login');
     } catch (error) {
       console.error('Logout error', error);
+      // Even if logout fails, we should still clear auth state
+      setAuth(false);
+      localStorage.clear();
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false); // Reset loading state
     }
   };
 
@@ -102,7 +114,7 @@ function Navbar({ setAuth }) {
                 Meine Events
               </Nav.Link>
             )}
-             {!isAdmin && (
+            {!isAdmin && (
               <Nav.Link
                 as={Link}
                 to="/user-unassigned-dashboard"
@@ -114,9 +126,29 @@ function Navbar({ setAuth }) {
             )}
           </Nav>
 
-          <button className="logout-button" onClick={handleLogout}>
-            <BoxArrowRight className="me-2" />
-            <span>Abmelden</span>
+          <button 
+            className="logout-button" 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                  className="me-2"
+                />
+                <span>Abmeldung...</span>
+              </>
+            ) : (
+              <>
+                <BoxArrowRight className="me-2" />
+                <span>Abmelden</span>
+              </>
+            )}
           </button>
         </BootstrapNavbar.Collapse>
       </Container>

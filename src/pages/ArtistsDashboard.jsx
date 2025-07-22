@@ -8,7 +8,7 @@ import SearchBox from '../components/SearchBox';
 import { useMediaQuery } from 'react-responsive';
 import api from '../utils/api';
 import DashboardLoader from '../components/DashboardLoader';
-import AddArtistModal from '../components/AddArtistModal'; // Import the AddArtistModal component
+import AddArtistModal from '../components/AddArtistModal';
 
 const ArtistsDashboard = ({ setAuth }) => {
   // State for artists and UI
@@ -19,35 +19,26 @@ const ArtistsDashboard = ({ setAuth }) => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArtist, setSelectedArtist] = useState(null);
-  const [selectedRoles,setSelectedRoles]=useState([])
+  const [selectedRoles, setSelectedRoles] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedCalendars, setExpandedCalendars] = useState({});
-  
-  // Add the missing state variables
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedCalendarForModal, setSelectedCalendarForModal] = useState('');
-  
-  // Track which calendar's add form is open
   const [openAddForms, setOpenAddForms] = useState({});
-  
-  // Initialize these states with empty arrays instead of null
   const [calendars, setCalendars] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
-
-  // Form state for each calendar
   const [newArtistForms, setNewArtistForms] = useState({});
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Check if on mobile device
   const isMobile = useMediaQuery({ query: '(max-width: 768px)' });
 
-  // Fetch calendars and roles
   const fetchCalendars = useCallback(async () => {
     try {
       const response = await api.get('/calendars');
       setCalendars(response.data || []);
     } catch (err) {
       console.error('Error fetching calendars:', err);
-      setCalendars([]); // Set to empty array on error
+      setCalendars([]);
     }
   }, []);
 
@@ -57,23 +48,23 @@ const ArtistsDashboard = ({ setAuth }) => {
       setRoleOptions(response.data || []);
     } catch (err) {
       console.error('Error fetching role options:', err);
-      setRoleOptions([]); // Set to empty array on error
+      setRoleOptions([]);
     }
   }, []);
 
-  // Fetch artists
   const fetchArtists = useCallback(async (refresh = false) => {
     setLoading(true);
     setError(null);
     
     try {
       const response = await api.get('/artists');
-      response.data=response.data.map(artist => ({
-      name: artist.Name,
-      calendar: artist.Calendar,
-      email: artist["E-Mail"],
-      role: artist.Role
-    }));
+      response.data = response.data.map(artist => ({
+        name: artist.Name,
+        calendar: artist.Calendar,
+        email: artist["E-Mail"],
+        role: artist.Role
+      }));
+      
       if (response.data.error) {
         setError(response.data.error);
         toast.error(`Error: ${response.data.error}`);
@@ -84,16 +75,14 @@ const ArtistsDashboard = ({ setAuth }) => {
         setArtists(artistData);
         setFilteredArtists(artistData);
         
-        // Initialize expanded calendars state
         if (artistData.length > 0) {
           const uniqueCalendars = [...new Set(artistData.map(artist => artist.calendar))];
           const initialExpandState = {};
           uniqueCalendars.forEach(cal => {
-            initialExpandState[cal] = true; // Default to expanded
+            initialExpandState[cal] = true;
           });
           setExpandedCalendars(initialExpandState);
           
-          // Initialize form state for each calendar
           const initialFormState = {};
           uniqueCalendars.forEach(cal => {
             initialFormState[cal] = {
@@ -118,14 +107,12 @@ const ArtistsDashboard = ({ setAuth }) => {
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     fetchArtists();
     fetchCalendars();
     fetchRoleOptions();
   }, [fetchArtists, fetchCalendars, fetchRoleOptions]);
 
-  // Toggle calendar expansion
   const toggleCalendarExpand = useCallback((calendar) => {
     setExpandedCalendars(prev => ({
       ...prev,
@@ -133,7 +120,6 @@ const ArtistsDashboard = ({ setAuth }) => {
     }));
   }, []);
 
-  // Group artists by calendar
   const artistsByCalendar = useMemo(() => {
     const filtered = searchTerm.trim() === '' 
       ? artists 
@@ -154,12 +140,10 @@ const ArtistsDashboard = ({ setAuth }) => {
     }, {});
   }, [artists, searchTerm]);
 
-  // Get all calendars with artists
   const calendarsWithArtists = useMemo(() => 
     Object.keys(artistsByCalendar).sort()
   , [artistsByCalendar]);
 
-  // Count artists by role type
   const getRoleCounts = useMemo(() => {
     return artists.reduce((acc, artist) => {
       if (!artist.role) return acc;
@@ -168,7 +152,6 @@ const ArtistsDashboard = ({ setAuth }) => {
     }, {});
   }, [artists]);
 
-  // Count roles per calendar - new function
   const getRoleCountsByCalendar = useMemo(() => {
     return artists.reduce((acc, artist) => {
       if (!artist.calendar || !artist.role) return acc;
@@ -182,45 +165,37 @@ const ArtistsDashboard = ({ setAuth }) => {
     }, {});
   }, [artists]);
 
-  // Check if a calendar has a match with the search term
   const calendarHasMatch = useCallback((calendar) => {
     return artistsByCalendar[calendar] && artistsByCalendar[calendar].length > 0;
   }, [artistsByCalendar]);
 
-  // Get total filtered artists count
   const totalFilteredArtists = useMemo(() => 
     Object.values(artistsByCalendar).flat().length
   , [artistsByCalendar]);
 
-  // Toggle add form for a specific calendar - updated to use the modal
-const toggleAddForm = useCallback((calendar, e) => {
-  if (e) e.stopPropagation();
-  // Set the calendar first, then show modal in the next render
-  setSelectedCalendarForModal(calendar);
-  // Use setTimeout to ensure state update happens before modal shows
-  setTimeout(() => setShowAddModal(true), 0);
-  
-  setSelectedRoles([...new Set(artistsByCalendar[calendar].map(artist => artist.role))]);
-}, [artistsByCalendar]);
+  const toggleAddForm = useCallback((calendar, e) => {
+    if (e) e.stopPropagation();
+    setSelectedCalendarForModal(calendar);
+    setTimeout(() => setShowAddModal(true), 0);
+    setSelectedRoles([...new Set(artistsByCalendar[calendar].map(artist => artist.role))]);
+  }, [artistsByCalendar]);
 
-  // Add artist handler for the modal
   const handleAddArtistFromModal = async (artistData) => {
     try {
-      // Validate form data
       if (!artistData.name || !artistData.role || !artistData.email) {
         toast.error('Bitte füllen Sie alle Felder aus');
         return;
       }
-      artistData={
-        Calendar:artistData.calendar,
-        Name:artistData.name,
-        Role:artistData.role,
-        email:artistData.email
-      }
-      const response = await api.post('/artist', artistData);
+      artistData = {
+        Calendar: artistData.calendar,
+        Name: artistData.name,
+        Role: artistData.role,
+        email: artistData.email
+      };
       
-      setShowAddModal(false); // Close the modal
-      fetchArtists(true); // Refresh the artists list
+      const response = await api.post('/artist', artistData);
+      setShowAddModal(false);
+      fetchArtists(true);
       
       if (response.data.status === 'success') {
         toast.success('Künstler erfolgreich hinzugefügt');
@@ -233,11 +208,11 @@ const toggleAddForm = useCallback((calendar, e) => {
     }
   };
 
-  // Delete artist
   const handleDeleteConfirm = async () => {
     try {
-      if (!selectedArtist) return;
+      if (!selectedArtist || isDeleting) return;
       
+      setIsDeleting(true);
       const response = await api.delete('/artist', {
         data: {
           calendar: selectedArtist.calendar,
@@ -256,10 +231,11 @@ const toggleAddForm = useCallback((calendar, e) => {
     } catch (error) {
       console.error('Error deleting artist:', error);
       toast.error('Fehler beim Löschen des Künstlers: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  // Handle search change
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
@@ -270,7 +246,6 @@ const toggleAddForm = useCallback((calendar, e) => {
       onRefresh={() => fetchArtists(true)}
     >
       <div className="artists-dashboard">
-        {/* Header section with vertically centered heading and search bar */}
         <div className="transparent-header-container">
           <h1 className="dashboard-main-title">Künstler Management</h1>
           <div className="header-search-box">
@@ -282,12 +257,10 @@ const toggleAddForm = useCallback((calendar, e) => {
           </div>
         </div>
 
-        {/* Display error message if any */}
         {error && (
           <div className="alert alert-danger mb-4">{error}</div>
         )}
 
-        {/* Artists Container */}
         <div className="artists-container">
           {loading ? (
             <DashboardLoader message="Künstler werden geladen..." />
@@ -329,12 +302,11 @@ const toggleAddForm = useCallback((calendar, e) => {
                           }
                         </div>
                         
-                        {/* Role count badges after dropdown icon with spacing - hidden on mobile */}
                         {getRoleCountsByCalendar[calendar] && Object.entries(getRoleCountsByCalendar[calendar]).length > 0 && (
                           <div className="calendar-role-badges d-none d-md-flex">
                             {Object.entries(getRoleCountsByCalendar[calendar])
                               .sort((a, b) => b[1] - a[1])
-                              .slice(0, 3) // Show only top 3 roles
+                              .slice(0, 3)
                               .map(([role, count]) => (
                                 <Badge 
                                   key={role}
@@ -363,10 +335,9 @@ const toggleAddForm = useCallback((calendar, e) => {
                       variant="outline-primary"
                       size="sm"
                       className="add-calendar-artist-btn"
-                      onClick={(e) =>{
+                      onClick={(e) => {
                         setSelectedRoles([...new Set(artistsByCalendar[calendar].map(artist => artist.role))]);
-
-                        return  toggleAddForm(calendar, e)
+                        toggleAddForm(calendar, e);
                       }}
                       title="Künstler hinzufügen"
                     >
@@ -376,73 +347,6 @@ const toggleAddForm = useCallback((calendar, e) => {
                   
                   {expandedCalendars[calendar] && (
                     <div className="calendar-content">
-                      {/* Calendar-specific add artist form */}
-                      {openAddForms[calendar] && (
-                        <div className="calendar-add-form">
-                          <div className="form-header">
-                            <h6>Neuen Künstler für {calendar} hinzufügen</h6>
-                            <Button 
-                              variant="link" 
-                              className="close-form-btn"
-                              onClick={(e) => toggleAddForm(calendar, e)}
-                            >
-                              <X size={20} />
-                            </Button>
-                          </div>
-                          <Form className="calendar-artist-form">
-                            <Form.Group className="mb-3">
-                              <Form.Label>Name *</Form.Label>
-                              <Form.Control
-                                type="text"
-                                placeholder="Name des Künstlers eingeben"
-                                value={newArtistForms[calendar]?.name || ''}
-                                onChange={(e) => handleCalendarInputChange(calendar, 'name', e.target.value)}
-                                required
-                              />
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                              <Form.Label>Rolle *</Form.Label>
-                              <Form.Select
-                                value={newArtistForms[calendar]?.role || ''}
-                                onChange={(e) => handleCalendarInputChange(calendar, 'role', e.target.value)}
-                                required
-                              >
-                                <option value="">Rolle auswählen</option>
-                                {roleOptions && roleOptions.map((role, index) => (
-                                  <option key={index} value={role}>{role}</option>
-                                ))}
-                              </Form.Select>
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                              <Form.Label>E-Mail *</Form.Label>
-                              <Form.Control
-                                type="email"
-                                placeholder="E-Mail eingeben"
-                                value={newArtistForms[calendar]?.email || ''}
-                                onChange={(e) => handleCalendarInputChange(calendar, 'email', e.target.value)}
-                                required
-                              />
-                            </Form.Group>
-                            <div className="form-actions">
-                              <Button 
-                                variant="secondary" 
-                                onClick={(e) => toggleAddForm(calendar, e)}
-                                className="me-2"
-                              >
-                                Abbrechen
-                              </Button>
-                              <Button 
-                                variant="primary" 
-                                onClick={() => handleAddCalendarArtist(calendar)}
-                              >
-                                Hinzufügen
-                              </Button>
-                            </div>
-                          </Form>
-                        </div>
-                      )}
-                      
-                      {/* Regular table for desktop */}
                       <div className="table-responsive d-none d-md-block">
                         <Table className="artists-table">
                           <thead>
@@ -483,7 +387,6 @@ const toggleAddForm = useCallback((calendar, e) => {
                         </Table>
                       </div>
                       
-                      {/* Mobile cards */}
                       <div className="artist-cards-container d-md-none">
                         {artistsByCalendar[calendar].map((artist, index) => (
                           <div key={index} className="artist-mobile-card">
@@ -533,7 +436,6 @@ const toggleAddForm = useCallback((calendar, e) => {
         </div>
       </div>
 
-      {/* Add the full-screen modal component */}
       <AddArtistModal
         fetchArtists={fetchArtists}
         showModal={showAddModal}
@@ -542,10 +444,10 @@ const toggleAddForm = useCallback((calendar, e) => {
         selectedRoles={selectedRoles}
         selectedCalendar={selectedCalendarForModal}
         handleAddArtist={handleAddArtistFromModal}
+        roleOptions={roleOptions}
       />
 
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+      <Modal show={showDeleteModal} onHide={() => !isDeleting && setShowDeleteModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Löschen bestätigen</Modal.Title>
         </Modal.Header>
@@ -553,11 +455,24 @@ const toggleAddForm = useCallback((calendar, e) => {
           Sind Sie sicher, dass Sie den Künstler "{selectedArtist?.name}" löschen möchten?
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowDeleteModal(false)}
+            disabled={isDeleting}
+          >
             Abbrechen
           </Button>
-          <Button variant="danger" onClick={handleDeleteConfirm}>
-            Löschen
+          <Button 
+            variant="danger" 
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                <span className="ms-2">Löschen...</span>
+              </>
+            ) : 'Löschen'}
           </Button>
         </Modal.Footer>
       </Modal>

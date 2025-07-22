@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { authApi } from "../utils/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { Eye, EyeSlash } from "react-bootstrap-icons"; // 👈 Eye icons
+import { Spinner } from "react-bootstrap";
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -11,7 +12,8 @@ function Login({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [fullPageLoading, setFullPageLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // 👈 new state
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 👈 New state for submission
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,16 +23,17 @@ function Login({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // 👈 Prevent double submission
+
+    setIsSubmitting(true); // 👈 Set submitting state
     setLoading(true);
     setFullPageLoading(true);
     setError("");
 
     try {
       const res = await authApi.login({ username, password });
-      console.log("Login response:", res);
       if (res.data.status === "success") {
         const me = await authApi.getMe();
-        console.log("User info:", me);
         const user = me.data.user;
 
         localStorage.setItem("auth_status", "loggedin");
@@ -39,15 +42,12 @@ function Login({ onLogin }) {
 
         if (onLogin) onLogin(user);
 
-        if (user.Role === "Admin") {
-          console.log("Admin logged in, redirecting to admin dashboard");
-          navigate("/admin/dashboard");
-        } else {
-          console.log("user logged in.");
-          navigate("/user/dashboard");
-        }
+        navigate(
+          user.Role === "Admin" ? "/admin/dashboard" : "/user/dashboard"
+        );
       }
     } catch (err) {
+      // Error handling remains the same
       if (err.response) {
         setError(
           err.response.data.message ||
@@ -65,6 +65,7 @@ function Login({ onLogin }) {
       setFullPageLoading(false);
     } finally {
       setLoading(false);
+      setIsSubmitting(false); // 👈 Reset submitting state
     }
   };
 
@@ -203,13 +204,20 @@ function Login({ onLogin }) {
 
             <button
               type="submit"
-              className={`login-button ${loading ? "loading" : ""}`}
-              disabled={loading}
+              className={`login-button ${isSubmitting ? "loading" : ""}`}
+              disabled={isSubmitting}
             >
-              {loading ? (
+              {isSubmitting ? (
                 <>
-                  <span className="login-spinner"></span>
-                  <span>Anmeldung...</span>
+                  <Spinner
+                    as="span"
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    aria-hidden="true"
+                    className="me-2"
+                  />
+                  Anmeldung...
                 </>
               ) : (
                 "Anmelden"
