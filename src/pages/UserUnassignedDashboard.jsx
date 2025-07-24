@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Table, Alert, Badge } from "react-bootstrap";
+import { Button, Table, Alert, Badge, Spinner } from "react-bootstrap";
 import {
   ArrowClockwise,
   Calendar3,
@@ -7,20 +7,18 @@ import {
   ChevronUp,
   PersonCircle,
 } from "react-bootstrap-icons";
-import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBox from "../components/SearchBox";
 import DashboardLayout from "../components/DashboardLayout";
 import DashboardLoader from "../components/DashboardLoader";
 import { authApi } from "../utils/api";
 import axios from "axios";
+import EventModal from "../components/EventModal";
 
 function UserUnassignedDashboard({ setAuth }) {
   const [user, setUser] = useState(null);
   const [categorizedEvents, setCategorizedEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState(
-    "Daten werden geladen..."
-  );
+  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,23 +26,19 @@ function UserUnassignedDashboard({ setAuth }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [joiningEventId, setJoiningEventId] = useState(null);
   const [isProcessingJoin, setIsProcessingJoin] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showEventModal, setShowEventModal] = useState(false);
 
-  const API_URL =
-    "https://user-dashboard-data-754826373806.europe-west1.run.app";
-  const USER_API_URL =
-    "https://artist-crud-function-754826373806.europe-west10.run.app";
+  const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
+  const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
 
   const CALENDAR_MAPPING = {
     "Klavier Mitmachkonzert": "info@kidskulturspass.de",
-    "Geigen Mitmachkonzert":
-      "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
-    "Weihnachts Mitmachkonzert":
-      "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
+    "Geigen Mitmachkonzert": "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
+    "Weihnachts Mitmachkonzert": "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
     "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
-    "Laternenumzug mit Musik":
-      "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
-    Puppentheater:
-      "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
+    "Laternenumzug mit Musik": "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
+    "Puppentheater": "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
   };
 
   // Fetch user data and events
@@ -55,15 +49,11 @@ function UserUnassignedDashboard({ setAuth }) {
 
       const res = await authApi.getMe();
       const currentUser = res.data.user;
-      const userData = await axios.get(
-        `${USER_API_URL}/?id=${currentUser._id}`
-      );
+      const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
       setUser(userData.data);
 
       const joinedCalendars = userData.data.joinedCalendars || [];
-      const joinedCalendarsEncoded = encodeURIComponent(
-        JSON.stringify(joinedCalendars)
-      );
+      const joinedCalendarsEncoded = encodeURIComponent(JSON.stringify(joinedCalendars));
 
       setLoadingMessage("Nicht zugewiesene Veranstaltungen werden geladen...");
       const unassignedRes = await axios.get(
@@ -81,9 +71,7 @@ function UserUnassignedDashboard({ setAuth }) {
       setLoading(false);
     } catch (err) {
       console.error("Fehler beim Laden der Daten:", err);
-      setError(
-        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
-      );
+      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
       setLoading(false);
     }
   };
@@ -99,68 +87,70 @@ function UserUnassignedDashboard({ setAuth }) {
     }));
   }, []);
 
+  // Handle event details click
+  const handleEventClick = useCallback((event) => {
+    setSelectedEvent(event);
+    setShowEventModal(true);
+  }, []);
+
   // Handle join event button click
- const handleJoinEvent = useCallback(
-  async (event) => {
-    if (isProcessingJoin) return; // prevent double click globally
+  const handleJoinEvent = useCallback(
+    async (event) => {
+      if (isProcessingJoin) return;
 
-    setIsProcessingJoin(true);
-    setJoiningEventId(event.id);
-    setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
-    setLoading(true);
+      setIsProcessingJoin(true);
+      setJoiningEventId(event.id);
+      setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
+      setLoading(true);
 
-    try {
-      const calendarName = event.calendarName?.trim().toLowerCase();
-      let calendarId = null;
+      try {
+        const calendarName = event.calendarName?.trim().toLowerCase();
+        let calendarId = null;
 
-      for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
-        if (name.trim().toLowerCase() === calendarName) {
-          calendarId = id;
-          break;
+        for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
+          if (name.trim().toLowerCase() === calendarName) {
+            calendarId = id;
+            break;
+          }
         }
-      }
 
-      if (!calendarId) {
-        console.error("Calendar ID not found for:", event.calendarName);
-        setWarning("Kalender-ID konnte nicht gefunden werden");
-        setLoading(false);
+        if (!calendarId) {
+          console.error("Calendar ID not found for:", event.calendarName);
+          setWarning("Kalender-ID konnte nicht gefunden werden");
+          setLoading(false);
+          setIsProcessingJoin(false);
+          setJoiningEventId(null);
+          return;
+        }
+
+        const requestData = {
+          calendarId,
+          eventId: event.id,
+          artistEmail: user["E-Mail"],
+        };
+
+        const response = await axios.post(`${API_URL}/add-artist`, requestData);
+
+        if (response.data.success) {
+          setWarning("Artist erfolgreich hinzugefügt!");
+        } else {
+          setWarning(response.data.message || "Fehler beim Hinzufügen des Artists");
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 20000));
+        await fetchData();
+
+      } catch (error) {
+        console.error("Error:", error);
+        setError("Fehler beim Hinzufügen des Artists");
+      } finally {
         setIsProcessingJoin(false);
         setJoiningEventId(null);
-        return;
+        setLoading(false);
       }
-
-      const requestData = {
-        calendarId,
-        eventId: event.id,
-        artistEmail: user["E-Mail"],
-      };
-
-      // API request
-      const response = await axios.post(`${API_URL}/add-artist`, requestData);
-
-      if (response.data.success) {
-        setWarning("Artist erfolgreich hinzugefügt!");
-      } else {
-        setWarning(response.data.message || "Fehler beim Hinzufügen des Artists");
-      }
-
-      // Enforce additional 7-second delay after API response
-      await new Promise(resolve => setTimeout(resolve, 20000));
-
-      // Refresh events after total delay
-      await fetchData();
-
-    } catch (error) {
-      console.error("Error:", error);
-      setError("Fehler beim Hinzufügen des Artists");
-    } finally {
-      setIsProcessingJoin(false);
-      setJoiningEventId(null);
-      setLoading(false);
-    }
-  },
-  [user, fetchData, isProcessingJoin]
-);
+    },
+    [user, fetchData, isProcessingJoin]
+  );
 
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
@@ -169,15 +159,9 @@ function UserUnassignedDashboard({ setAuth }) {
     Object.keys(categorizedEvents).forEach((calendar) => {
       filtered[calendar] = (categorizedEvents[calendar] || []).filter(
         (event) =>
-          (event.summary || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (event.location || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
+          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
     });
 
@@ -218,10 +202,7 @@ function UserUnassignedDashboard({ setAuth }) {
 
   if (loading) {
     return (
-      <DashboardLayout
-        setAuth={setAuth}
-        pageTitle="Nicht zugewiesene Veranstaltungen"
-      >
+      <DashboardLayout setAuth={setAuth} pageTitle="Nicht zugewiesene Veranstaltungen">
         <DashboardLoader message={loadingMessage} />
       </DashboardLayout>
     );
@@ -237,10 +218,7 @@ function UserUnassignedDashboard({ setAuth }) {
               Willkommen, {user?.Name || "Benutzer"}!
             </h1>
             {user?.joinedCalendars?.length > 0 && (
-              <div
-                style={{ margin: "15px 0px" }}
-                className="joined-calendars-badges"
-              >
+              <div style={{ margin: "15px 0px" }} className="joined-calendars-badges">
                 Deine beigetretenen Kalender:
                 {user.joinedCalendars.map((calendar, index) => (
                   <Badge
@@ -322,9 +300,7 @@ function UserUnassignedDashboard({ setAuth }) {
                       </div>
                       <span className="events-count">
                         <span className="count-number">
-                          {hasEvents
-                            ? filteredEventsByCalendar[calendar].length
-                            : 0}
+                          {hasEvents ? filteredEventsByCalendar[calendar].length : 0}
                         </span>
                         <span className="count-label">
                           {hasEvents
@@ -346,12 +322,8 @@ function UserUnassignedDashboard({ setAuth }) {
                             <Table className="events-table">
                               <thead>
                                 <tr>
-                                  <th style={{ minWidth: "200px" }}>
-                                    Veranstaltung
-                                  </th>
-                                  <th style={{ minWidth: "120px" }}>
-                                    Datum/Uhrzeit
-                                  </th>
+                                  <th style={{ minWidth: "200px" }}>Veranstaltung</th>
+                                  <th style={{ minWidth: "120px" }}>Datum/Uhrzeit</th>
                                   <th style={{ minWidth: "150px" }}>Ort</th>
                                   <th className="actions-column">Aktion</th>
                                   <th className="join-column">Beitreten</th>
@@ -397,34 +369,17 @@ function UserUnassignedDashboard({ setAuth }) {
                                         {event.location || "Nicht angegeben"}
                                       </td>
                                       <td className="event-actions actions-column">
-                                        {event.htmlLink ? (
-                                          <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            href={event.htmlLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="open-calendar-button"
-                                          >
-                                            <Calendar3 className="button-icon" />
-                                            <span className="d-none d-md-inline">
-                                              Öffnen
-                                            </span>
-                                          </Button>
-                                        ) : (
-                                          <Button
-                                            variant="outline-secondary"
-                                            size="sm"
-                                            disabled
-                                          >
-                                            <span className="d-none d-md-inline">
-                                              Nicht verfügbar
-                                            </span>
-                                            <span className="d-md-none">
-                                              N/A
-                                            </span>
-                                          </Button>
-                                        )}
+                                        <Button
+                                          variant="outline-primary"
+                                          size="sm"
+                                          onClick={() => handleEventClick(event)}
+                                          className="open-calendar-button"
+                                        >
+                                          <i className="bi bi-info-circle me-1"></i>
+                                          <span className="d-none d-md-inline">
+                                            Details
+                                          </span>
+                                        </Button>
                                       </td>
                                       <td className="join-event-column join-column">
                                         <Button
@@ -509,35 +464,19 @@ function UserUnassignedDashboard({ setAuth }) {
                                     </div>
 
                                     <div className="event-mobile-actions">
-                                      {event.htmlLink ? (
-                                        <Button
-                                          variant="outline-primary"
-                                          size="sm"
-                                          href={event.htmlLink}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="open-calendar-button me-2" // Added margin-end
-                                        >
-                                          <Calendar3 className="button-icon" />
-                                          <span className="button-text">
-                                            Öffnen
-                                          </span>
-                                        </Button>
-                                      ) : (
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          disabled
-                                          className="me-2" // Added margin-end
-                                        >
-                                          N/A
-                                        </Button>
-                                      )}
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={() => handleEventClick(event)}
+                                        className="me-2"
+                                      >
+                                        <i className="bi bi-info-circle me-1"></i>
+                                        Details
+                                      </Button>
                                       <Button
                                         variant="success"
                                         size="sm"
                                         onClick={() => handleJoinEvent(event)}
-                                        className="join-event-button"
                                         disabled={
                                           isProcessingJoin &&
                                           joiningEventId === event.id
@@ -554,16 +493,12 @@ function UserUnassignedDashboard({ setAuth }) {
                                               aria-hidden="true"
                                               className="me-2"
                                             />
-                                            <span className="button-text">
-                                              Wird hinzugefügt...
-                                            </span>
+                                            Wird hinzugefügt...
                                           </>
                                         ) : (
                                           <>
-                                            <PersonCircle className="button-icon" />
-                                            <span className="button-text">
-                                              Beitreten
-                                            </span>
+                                            <PersonCircle className="me-1" />
+                                            Beitreten
                                           </>
                                         )}
                                       </Button>
@@ -587,6 +522,14 @@ function UserUnassignedDashboard({ setAuth }) {
             })
           )}
         </div>
+
+        {/* Event Modal */}
+        {showEventModal && (
+          <EventModal 
+            event={selectedEvent} 
+            onClose={() => setShowEventModal(false)} 
+          />
+        )}
       </div>
     </DashboardLayout>
   );

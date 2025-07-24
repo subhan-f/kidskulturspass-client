@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Table, Alert, Badge } from "react-bootstrap";
+import { Button, Table, Alert, Badge, Spinner } from "react-bootstrap";
 import {
   ArrowClockwise,
   Calendar3,
@@ -14,14 +14,13 @@ import DashboardLayout from "../components/DashboardLayout";
 import DashboardLoader from "../components/DashboardLoader";
 import { authApi } from "../utils/api";
 import axios from "axios";
+import EventModal from "../components/EventModal"; // Import the EventModal component
 
 function UserAssignedDashboard({ setAuth }) {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState(
-    "Daten werden geladen..."
-  );
+  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,24 +28,20 @@ function UserAssignedDashboard({ setAuth }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [leavingEventId, setLeavingEventId] = useState(null);
   const [isProcessingLeave, setIsProcessingLeave] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null); // State for selected event
+  const [showEventModal, setShowEventModal] = useState(false); // State for modal visibility
 
   const CALENDAR_MAPPING = {
     "Klavier Mitmachkonzert": "info@kidskulturspass.de",
-    "Geigen Mitmachkonzert":
-      "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
-    "Weihnachts Mitmachkonzert":
-      "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
+    "Geigen Mitmachkonzert": "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
+    "Weihnachts Mitmachkonzert": "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
     "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
-    "Laternenumzug mit Musik":
-      "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
-    Puppentheater:
-      "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
+    "Laternenumzug mit Musik": "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
+    "Puppentheater": "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
   };
 
-  const API_URL =
-    "https://user-dashboard-data-754826373806.europe-west1.run.app";
-  const USER_API_URL =
-    "https://artist-crud-function-754826373806.europe-west10.run.app";
+  const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
+  const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
 
   // Fetch user data and events
   const fetchData = async () => {
@@ -59,9 +54,7 @@ function UserAssignedDashboard({ setAuth }) {
       const currentUser = res.data.user;
 
       // Get complete user data including joined calendars
-      const userData = await axios.get(
-        `${USER_API_URL}/?id=${currentUser._id}`
-      );
+      const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
       setUser(userData.data);
 
       const joinedCalendars = userData.data.joinedCalendars || [];
@@ -91,9 +84,7 @@ function UserAssignedDashboard({ setAuth }) {
       setLoading(false);
     } catch (err) {
       console.error("Error loading data:", err);
-      setError(
-        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
-      );
+      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
       setLoading(false);
     }
   };
@@ -107,6 +98,12 @@ function UserAssignedDashboard({ setAuth }) {
       ...prev,
       [calendar]: !prev[calendar],
     }));
+  }, []);
+
+  // Handle event details click
+  const handleEventClick = useCallback((event) => {
+    setSelectedEvent(event);
+    setShowEventModal(true);
   }, []);
 
   // Handle leave event button click
@@ -148,10 +145,7 @@ function UserAssignedDashboard({ setAuth }) {
         // Add 7 second delay before making the API call
         await new Promise((resolve) => setTimeout(resolve, 20000));
 
-        const response = await axios.post(
-          `${API_URL}/remove-artist`,
-          requestData
-        );
+        const response = await axios.post(`${API_URL}/remove-artist`, requestData);
 
         if (response.data.success) {
           setWarning("Artist erfolgreich entfernt!");
@@ -179,16 +173,10 @@ function UserAssignedDashboard({ setAuth }) {
     Object.keys(events).forEach((calendar) => {
       filtered[calendar] = (events[calendar] || []).filter(
         (event) =>
-          (event.summary || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
+          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
           (event.role || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.location || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
+          (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
     });
 
@@ -245,10 +233,7 @@ function UserAssignedDashboard({ setAuth }) {
               Willkommen, {user?.Name || "Benutzer"}!
             </h1>
             {user?.joinedCalendars?.length > 0 && (
-              <div
-                style={{ margin: "15px 0px" }}
-                className="joined-calendars-badges"
-              >
+              <div style={{ margin: "15px 0px" }} className="joined-calendars-badges">
                 Deine beigetretenen Kalender:
                 {user.joinedCalendars.map((calendar, index) => (
                   <Badge
@@ -328,9 +313,7 @@ function UserAssignedDashboard({ setAuth }) {
                       </div>
                       <span className="events-count">
                         <span className="count-number">
-                          {hasEvents
-                            ? filteredEventsByCalendar[calendar].length
-                            : 0}
+                          {hasEvents ? filteredEventsByCalendar[calendar].length : 0}
                         </span>
                         <span className="count-label">
                           {hasEvents
@@ -352,15 +335,9 @@ function UserAssignedDashboard({ setAuth }) {
                             <Table className="events-table">
                               <thead>
                                 <tr>
-                                  <th style={{ minWidth: "200px" }}>
-                                    Veranstaltung
-                                  </th>
-                                  <th style={{ minWidth: "150px" }}>
-                                    Meine Rolle(n)
-                                  </th>
-                                  <th style={{ minWidth: "120px" }}>
-                                    Datum/Uhrzeit
-                                  </th>
+                                  <th style={{ minWidth: "200px" }}>Veranstaltung</th>
+                                  <th style={{ minWidth: "150px" }}>Meine Rolle(n)</th>
+                                  <th style={{ minWidth: "120px" }}>Datum/Uhrzeit</th>
                                   <th className="actions-column">Aktion</th>
                                   <th className="leave-column">Verlassen</th>
                                 </tr>
@@ -418,42 +395,23 @@ function UserAssignedDashboard({ setAuth }) {
                                         )}
                                       </td>
                                       <td className="event-actions actions-column">
-                                        {event.htmlLink ? (
-                                          <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            href={event.htmlLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="open-calendar-button"
-                                          >
-                                            <Calendar3 className="button-icon" />
-                                            <span className="d-none d-md-inline">
-                                              Öffnen
-                                            </span>
-                                          </Button>
-                                        ) : (
-                                          <Button
-                                            variant="outline-secondary"
-                                            size="sm"
-                                            disabled
-                                          >
-                                            <span className="d-none d-md-inline">
-                                              Nicht verfügbar
-                                            </span>
-                                            <span className="d-md-none">
-                                              N/A
-                                            </span>
-                                          </Button>
-                                        )}
+                                        <Button
+                                          variant="outline-primary"
+                                          size="sm"
+                                          onClick={() => handleEventClick(event)}
+                                          className="open-calendar-button"
+                                        >
+                                          <i className="bi bi-info-circle me-1"></i>
+                                          <span className="d-none d-md-inline">
+                                            Details
+                                          </span>
+                                        </Button>
                                       </td>
                                       <td className="leave-event-column leave-column">
                                         <Button
                                           variant="danger"
                                           size="sm"
-                                          onClick={() =>
-                                            handleLeaveEvent(event)
-                                          }
+                                          onClick={() => handleLeaveEvent(event)}
                                           className="leave-event-button"
                                           disabled={
                                             isProcessingLeave &&
@@ -546,40 +504,23 @@ function UserAssignedDashboard({ setAuth }) {
                                     </div>
 
                                     <div className="event-mobile-actions">
-                                      {event.htmlLink ? (
-                                        <Button
-                                          variant="outline-primary"
-                                          size="sm"
-                                          href={event.htmlLink}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="open-calendar-button me-2" // Added margin-end
-                                        >
-                                          <Calendar3 className="button-icon" />
-                                          <span className="button-text">
-                                            Öffnen
-                                          </span>
-                                        </Button>
-                                      ) : (
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          disabled
-                                          className="me-2" // Added margin-end
-                                        >
-                                          N/A
-                                        </Button>
-                                      )}
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={() => handleEventClick(event)}
+                                        className="me-2"
+                                      >
+                                        <i className="bi bi-info-circle me-1"></i>
+                                        Details
+                                      </Button>
                                       <Button
                                         variant="danger"
                                         size="sm"
                                         onClick={() => handleLeaveEvent(event)}
                                         className="leave-event-button"
                                       >
-                                        <PersonDash className="button-icon" />
-                                        <span className="button-text">
-                                          Verlassen
-                                        </span>
+                                        <PersonDash className="me-1" />
+                                        Verlassen
                                       </Button>
                                     </div>
                                   </div>
@@ -600,6 +541,14 @@ function UserAssignedDashboard({ setAuth }) {
             })
           )}
         </div>
+
+        {/* Event Modal */}
+        {showEventModal && (
+          <EventModal 
+            event={selectedEvent} 
+            onClose={() => setShowEventModal(false)} 
+          />
+        )}
       </div>
     </DashboardLayout>
   );
