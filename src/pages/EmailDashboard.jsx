@@ -22,7 +22,7 @@ import DashboardLoader from "../components/DashboardLoader";
 import EmailModal from "../components/EmailModel";
 import { Link } from "react-router-dom";
 
-function EmailListDashboard({ setAuth }) {
+function EmailListDashboard({ setAuth,handleLogout }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState(
@@ -500,7 +500,7 @@ function EmailListDashboard({ setAuth }) {
 
   if (loading) {
     return (
-      <DashboardLayout setAuth={setAuth} pageTitle="E-Mail Liste">
+      <DashboardLayout setAuth={setAuth} handleLogout={handleLogout}>
         <DashboardLoader
           message={loadingMessage}
           progress={polling ? Math.min(pollingAttempts * 4, 100) : null}
@@ -517,9 +517,10 @@ function EmailListDashboard({ setAuth }) {
   }
 
   return (
-    <DashboardLayout setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} onRefresh={handleRefresh}>
       <div className="unassigned-events-dashboard">
         {/* Header section with vertically centered heading and search bar */}
+        {!loading && (
         <div className="transparent-header-container">
           <h1 className="dashboard-main-title">E-Mail Liste</h1>
           <div className="header-search-box">
@@ -532,6 +533,7 @@ function EmailListDashboard({ setAuth }) {
             />
           </div>
         </div>
+        )}
 
         {warning && (
           <Alert variant="warning" className="dashboard-alert">

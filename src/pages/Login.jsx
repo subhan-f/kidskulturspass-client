@@ -21,53 +21,38 @@ function Login({ onLogin }) {
     return () => setMounted(false);
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isSubmitting) return; // 👈 Prevent double submission
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  // setLoading(true);
+  setError("");
+  setIsSubmitting(true);
 
-    setIsSubmitting(true); // 👈 Set submitting state
-    setLoading(true);
-    setFullPageLoading(true);
-    setError("");
+  try {
+    const res = await authApi.login({ username, password });
+    
+    // Get user info after successful login
+    const userRes = await authApi.getMe();
+    const user = userRes.data.user;
 
-    try {
-      const res = await authApi.login({ username, password });
-      if (res.data.status === "success") {
-        const me = await authApi.getMe();
-        const user = me.data.user;
+    if (onLogin) onLogin(user);
+    
+    // Redirect based on role
+    const role = user.Role;
+    console.log('Logged in user:', user);
+    navigate(role === "Admin" ? "/artists" : "/user-assigned-dashboard");
+  } catch (err) {
+    console.error('Login error:', err);
+    setError(
+      err.response?.data?.message ||
+      "Ungültige Anmeldeinformationen. Bitte überprüfen Sie Ihre Anmeldedaten."
+    );
+  } finally {
+    setLoading(false);
+    setIsSubmitting(false);
+  }
+};
 
-        localStorage.setItem("auth_status", "loggedin");
-        localStorage.setItem("user_role", user.Role);
-        localStorage.setItem("user_name", user.Name);
 
-        if (onLogin) onLogin(user);
-
-        navigate(
-          user.Role === "Admin" ? "/admin/dashboard" : "/user/dashboard"
-        );
-      }
-    } catch (err) {
-      // Error handling remains the same
-      if (err.response) {
-        setError(
-          err.response.data.message ||
-            "Ungültige Anmeldeinformationen. Bitte überprüfen Sie Ihre Anmeldedaten."
-        );
-      } else if (err.request) {
-        setError(
-          "Keine Antwort vom Server. Bitte überprüfen Sie Ihre Internetverbindung."
-        );
-      } else {
-        setError(
-          "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
-        );
-      }
-      setFullPageLoading(false);
-    } finally {
-      setLoading(false);
-      setIsSubmitting(false); // 👈 Reset submitting state
-    }
-  };
 
   if (fullPageLoading) {
     return (

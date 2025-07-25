@@ -12,7 +12,7 @@ import DashboardLayout from "../components/DashboardLayout"; // Added DashboardL
 import api from "../utils/api";
 import DashboardLoader from "../components/DashboardLoader";
 
-function UnassignedEventsDashboard({ setAuth }) {
+function UnassignedEventsDashboard({ setAuth,handleLogout }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState(
@@ -270,8 +270,8 @@ function UnassignedEventsDashboard({ setAuth }) {
   if (loading) {
     return (
       <DashboardLayout
+      handleLogout={handleLogout}
         setAuth={setAuth}
-        pageTitle="Unzugewiesene Veranstaltungen"
       >
         <DashboardLoader
           message={loadingMessage}
@@ -289,9 +289,10 @@ function UnassignedEventsDashboard({ setAuth }) {
   }
 
   return (
-    <DashboardLayout setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} onRefresh={handleRefresh}>
       <div className="unassigned-events-dashboard">
         {/* Header section with vertically centered heading and search bar */}
+        {!loading && (
         <div className="transparent-header-container">
           <h1 className="dashboard-main-title">
             Unzugewiesene Veranstaltungen
@@ -306,7 +307,7 @@ function UnassignedEventsDashboard({ setAuth }) {
             />
           </div>
         </div>
-
+        )}
         {warning && (
           <Alert variant="warning" className="dashboard-alert">
             {warning}

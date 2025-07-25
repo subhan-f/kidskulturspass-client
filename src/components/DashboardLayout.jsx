@@ -8,14 +8,15 @@ import NetworkStatusIndicator from './NetworkStatusIndicator';
  */
 function DashboardLayout({ 
   setAuth, 
-  onRefresh, 
+  onRefresh,
+  handleLogout,
   children, 
   containerClass = 'container',
   pageTitle
 }) {
   return (
     <div className="dashboard-page">
-      <Navbar setAuth={setAuth} onRefresh={onRefresh} />
+      <Navbar setAuth={setAuth} onRefresh={onRefresh} handleLogout={handleLogout}/>
       <NetworkStatusIndicator />
       
       <div className={`content-wrapper ${containerClass}`}>

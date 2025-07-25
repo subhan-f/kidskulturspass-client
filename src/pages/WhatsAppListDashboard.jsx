@@ -23,7 +23,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import DashboardLoader from "../components/DashboardLoader";
 import { Link } from "react-router-dom";
 
-function WhatsAppListDashboard({ setAuth }) {
+function WhatsAppListDashboard({ setAuth,handleLogout }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Nachrichten werden geladen...");
@@ -533,15 +533,16 @@ function WhatsAppListDashboard({ setAuth }) {
 
   if (loading) {
     return (
-      <DashboardLayout setAuth={setAuth} pageTitle="WhatsApp Nachrichten">
+      <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} >
         <DashboardLoader message={loadingMessage} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} onRefresh={handleRefresh}>
       <div className="unassigned-events-dashboard">
+        {!loading && (
         <div className="transparent-header-container">
           <h1 className="dashboard-main-title">WhatsApp Nachrichten</h1>
           <div className="header-search-box">
@@ -552,7 +553,7 @@ function WhatsAppListDashboard({ setAuth }) {
             />
           </div>
         </div>
-
+        )}
         {warning && (
           <Alert variant="warning" className="dashboard-alert">
             {warning}

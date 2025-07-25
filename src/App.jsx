@@ -16,6 +16,7 @@ import EmailModal from './components/EmailModel';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Navbar from './components/Navbar';
 
 import { authApi } from './utils/api';
 import { initDebug } from './utils/debug';
@@ -56,7 +57,7 @@ function AuthRoute({ children }) {
 
   if (user) {
     // Redirect based on user role
-    const redirectPath = user.Role === 'Admin' ? '/admin-dashboard' : '/user-assigned-dashboard';
+    const redirectPath = user.Role === 'Admin' ? '/artists' : '/user-assigned-dashboard';
     return <Navigate to={redirectPath} replace />;
   }
 
@@ -88,7 +89,7 @@ function ProtectedRoute({ children, allowedRoles }) {
     };
 
     checkAuth();
-  }, [location.pathname]);
+  }, [location.pathname, allowedRoles]);
 
   if (!authChecked) {
     return <LoadingSpinner message="Authentifizierung wird überprüft..." fullPage />;
@@ -113,7 +114,7 @@ function RoleBasedRedirect() {
         const role = res.data.user.Role;
         console.log(res.data.user);
         if (role === 'Admin') {
-          setRedirectPath('/admin-dashboard');
+          setRedirectPath('/artists');
         } else {
           setRedirectPath('/user-assigned-dashboard');
         }
@@ -138,11 +139,16 @@ function App() {
   const [loggedInUser, setLoggedInUser] = useState(null);
 
   const handleLogout = async () => {
-    await authApi.logout();
-    localStorage.clear();
-    setLoggedInUser(null);
-    document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    window.location.href = '/login';
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error('Logout error', error);
+    } finally {
+      localStorage.clear();
+      setLoggedInUser(null);
+      document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      window.location.href = '/login'; // Full reload to clear all state
+    }
   };
 
   return (
@@ -170,10 +176,10 @@ function App() {
 
         {/* Admin-only routes */}
         <Route
-          path="/admin-dashboard"
+          path="/artists"
           element={
             <ProtectedRoute allowedRoles={['Admin']}>
-              <ArtistsDashboard setAuth={handleLogout} />
+              <ArtistsDashboard handleLogout={handleLogout}/>
             </ProtectedRoute>
           }
         />
@@ -181,7 +187,7 @@ function App() {
           path="/emails"
           element={
             <ProtectedRoute allowedRoles={['Admin']}>
-              <EmailListDashboard setAuth={handleLogout} />
+              <EmailListDashboard handleLogout={handleLogout}/>
             </ProtectedRoute>
           }
         />
@@ -189,7 +195,7 @@ function App() {
           path="/whatsapp"
           element={
             <ProtectedRoute allowedRoles={['Admin']}>
-              <WhatsAppListDashboard setAuth={handleLogout} />
+              <WhatsAppListDashboard handleLogout={handleLogout}/>
             </ProtectedRoute>
           }
         />
@@ -197,7 +203,7 @@ function App() {
           path="/unassigned-events"
           element={
             <ProtectedRoute allowedRoles={['Admin']}>
-              <UnassignedEventsDashboard setAuth={handleLogout} />
+              <UnassignedEventsDashboard handleLogout={handleLogout}/>
             </ProtectedRoute>
           }
         />
@@ -215,7 +221,7 @@ function App() {
           path="/user-assigned-dashboard"
           element={
             <ProtectedRoute allowedRoles={["Geiger*in", "Moderator*in", "Pianist*in", "Instrumentalist*in", "Nikolaus", "Puppenspieler*in", "Detlef", "Sängerin*in"]}>
-              <UserAssignedDashboard setAuth={handleLogout} />
+              <UserAssignedDashboard handleLogout={handleLogout}/>
             </ProtectedRoute>
           }
         />
@@ -223,7 +229,7 @@ function App() {
           path="/user-unassigned-dashboard"
           element={
             <ProtectedRoute allowedRoles={["Geiger*in", "Moderator*in", "Pianist*in", "Instrumentalist*in", "Nikolaus", "Puppenspieler*in", "Detlef", "Sängerin*in"]}>
-              <UserUnassignedDashboard setAuth={handleLogout} />
+              <UserUnassignedDashboard handleLogout={handleLogout}/>
             </ProtectedRoute>
           }
         />

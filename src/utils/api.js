@@ -226,34 +226,45 @@ export default {
 
 const AUTH_API_BASE_URL = 'https://authentication-and-authorization-754826373806.europe-west1.run.app/api/v1';
 
-const axiosAuthInstance = axios.create({
+const axiosAuth = axios.create({
   baseURL: AUTH_API_BASE_URL,
-  withCredentials: true, // allows sending cookies with requests
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' }
+});
+
+// Interceptor to automatically attach the token from localStorage
+axiosAuth.interceptors.request.use(config => {
+  const token = localStorage.getItem('jwt');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const authApi = {
   login: async ({ username, password }) => {
-    return await axiosAuthInstance.post('/login', {
-      email: username, // maps to E-Mail in backend
-      password,
+    const res = await axiosAuth.post('/login', {
+      email: username,
+      password
     });
+    // store the returned JWT
+    localStorage.setItem('jwt', res.data.token);
+    return res;
   },
 
   logout: async () => {
-    return await axiosAuthInstance.post('/logout');
+    localStorage.removeItem('jwt');
+    // (optionally call a server-side logout endpoint here)
+    return Promise.resolve();
   },
 
   getMe: async () => {
-    return await axiosAuthInstance.get('/me');
+    return await axiosAuth.get('/me');
   },
+
   forgotPassword: async (data) => {
-    console.log('Sending forgot password request for:', data.email);
-    return await axiosAuthInstance.post('/forgotPassword',{
-      email: data.email,
-    });
+    return await axiosAuth.post('/forgotPassword', { email: data.email });
   },
-  resetPassword: (token, data) => axiosAuthInstance.patch(`/resetPassword/${token}`, data)
+
+  resetPassword: (token, data) =>
+    axiosAuth.patch(`/resetPassword/${token}`, data)
 };

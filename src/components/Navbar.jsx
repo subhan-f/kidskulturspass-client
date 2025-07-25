@@ -4,55 +4,59 @@ import { Container, Navbar as BootstrapNavbar, Nav, Spinner } from 'react-bootst
 import { BoxArrowRight } from 'react-bootstrap-icons';
 import { authApi } from '../utils/api';
 
-function Navbar({ setAuth }) {
+function Navbar({ handleLogout }) {
   const [expanded, setExpanded] = useState(false);
   const [userRole, setUserRole] = useState(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false); // New state for logout loading
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Fetch user role on mount
+  // Fetch user role on mount and when location changes
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchUser = async () => {
       try {
+        setLoading(true);
         const res = await authApi.getMe();
-        setUserRole(res.data.user.Role);
+        if (isMounted) {
+          setUserRole(res.data.user.Role);
+        }
       } catch (error) {
         console.error('Failed to get user info:', error);
-        setAuth(false);
         navigate('/login');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchUser();
-  }, [setAuth, navigate]);
 
-  const handleLogout = async () => {
-    if (isLoggingOut) return; // Prevent double click
-    
-    setIsLoggingOut(true); // Set loading state
-    try {
-      await authApi.logout(); // Make sure to call the actual logout API
-      setAuth(false);
-      localStorage.clear();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error', error);
-      // Even if logout fails, we should still clear auth state
-      setAuth(false);
-      localStorage.clear();
-      navigate('/login');
-    } finally {
-      setIsLoggingOut(false); // Reset loading state
-    }
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate, location.pathname]);
+
+  const handleLogoutClick = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    await handleLogout();
   };
+
+  // Don't render anything until we know the user role
+  if (loading) {
+    return null;
+  }
 
   const isAdmin = userRole === 'Admin';
 
   return (
     <BootstrapNavbar expanded={expanded} expand="lg" fixed="top" bg="white" className="navbar-main">
       <Container className="d-flex align-items-center">
-        <BootstrapNavbar.Brand as={Link} to="/" className="d-flex align-items-center">
+        <BootstrapNavbar.Brand as={Link} to={isAdmin ? "/" : "/user-assigned-dashboard"} className="d-flex align-items-center">
           <img
             src="https://eor5ian77se.exactdn.com/wp-content/uploads/elementor/thumbs/Logo-pwgenx7648rlkrgzrcnygabjyp4ih47iofjornqrvq.webp?lossy=0&ssl=1"
             alt="KidsKulturSpass Logo"
@@ -67,12 +71,12 @@ function Navbar({ setAuth }) {
 
         <BootstrapNavbar.Collapse id="basic-navbar-nav" className="justify-content-between">
           <Nav className="mr-auto">
-            {isAdmin && (
+            {isAdmin ? (
               <>
                 <Nav.Link
                   as={Link}
-                  to="/"
-                  active={location.pathname === '/'}
+                  to="/artists"
+                  active={location.pathname === '/artists'}
                   onClick={() => setExpanded(false)}
                 >
                   Künstler
@@ -102,33 +106,31 @@ function Navbar({ setAuth }) {
                   Whatsapp Versand
                 </Nav.Link>
               </>
-            )}
-
-            {!isAdmin && (
-              <Nav.Link
-                as={Link}
-                to="/user-assigned-dashboard"
-                active={location.pathname === '/user-assigned-dashboard'}
-                onClick={() => setExpanded(false)}
-              >
-                Meine Events
-              </Nav.Link>
-            )}
-            {!isAdmin && (
-              <Nav.Link
-                as={Link}
-                to="/user-unassigned-dashboard"
-                active={location.pathname === '/user-unassigned-dashboard'}
-                onClick={() => setExpanded(false)}
-              >
-                Neue Jobs
-              </Nav.Link>
+            ) : (
+              <>
+                <Nav.Link
+                  as={Link}
+                  to="/user-assigned-dashboard"
+                  active={location.pathname === '/user-assigned-dashboard'}
+                  onClick={() => setExpanded(false)}
+                >
+                  Meine Events
+                </Nav.Link>
+                <Nav.Link
+                  as={Link}
+                  to="/user-unassigned-dashboard"
+                  active={location.pathname === '/user-unassigned-dashboard'}
+                  onClick={() => setExpanded(false)}
+                >
+                  Neue Jobs
+                </Nav.Link>
+              </>
             )}
           </Nav>
 
           <button 
             className="logout-button" 
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             disabled={isLoggingOut}
           >
             {isLoggingOut ? (

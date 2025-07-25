@@ -16,7 +16,7 @@ import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal"; // Import the EventModal component
 
-function UserAssignedDashboard({ setAuth }) {
+function UserAssignedDashboard({ setAuth,handleLogout }) {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState({});
   const [loading, setLoading] = useState(true);
@@ -52,7 +52,6 @@ function UserAssignedDashboard({ setAuth }) {
       // Get authenticated user
       const res = await authApi.getMe();
       const currentUser = res.data.user;
-
       // Get complete user data including joined calendars
       const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
       setUser(userData.data);
@@ -217,16 +216,17 @@ function UserAssignedDashboard({ setAuth }) {
 
   if (loading) {
     return (
-      <DashboardLayout setAuth={setAuth} pageTitle="Meine Veranstaltungen">
+      <DashboardLayout handleLogout={handleLogout} setAuth={setAuth}>
         <DashboardLoader message={loadingMessage} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout handleLogout={handleLogout}  setAuth={setAuth} onRefresh={handleRefresh}>
       <div className="user-assigned-dashboard">
         {/* Header section with welcome message and search box */}
+        {!loading && (
         <div className="transparent-header-container">
           <div className="header-welcome-content">
             <h1 className="dashboard-main-title">
@@ -248,7 +248,7 @@ function UserAssignedDashboard({ setAuth }) {
               </div>
             )}
           </div>
-
+          
           <div className="header-search-box">
             <SearchBox
               value={searchTerm}
@@ -259,7 +259,7 @@ function UserAssignedDashboard({ setAuth }) {
             />
           </div>
         </div>
-
+        )}
         {warning && (
           <Alert variant="warning" className="dashboard-alert">
             {warning}

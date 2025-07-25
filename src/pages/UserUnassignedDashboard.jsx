@@ -14,7 +14,7 @@ import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal";
 
-function UserUnassignedDashboard({ setAuth }) {
+function UserUnassignedDashboard({ setAuth,handleLogout }) {
   const [user, setUser] = useState(null);
   const [categorizedEvents, setCategorizedEvents] = useState({});
   const [loading, setLoading] = useState(true);
@@ -202,16 +202,17 @@ function UserUnassignedDashboard({ setAuth }) {
 
   if (loading) {
     return (
-      <DashboardLayout setAuth={setAuth} pageTitle="Nicht zugewiesene Veranstaltungen">
+      <DashboardLayout handleLogout={handleLogout} setAuth={setAuth}>
         <DashboardLoader message={loadingMessage} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} onRefresh={handleRefresh}>
       <div className="user-unassigned-dashboard">
         {/* Header section with welcome message and search box */}
+        {!loading && (
         <div className="transparent-header-container">
           <div className="header-welcome-content">
             <h1 className="dashboard-main-title">
@@ -244,6 +245,7 @@ function UserUnassignedDashboard({ setAuth }) {
             />
           </div>
         </div>
+        )}
 
         {warning && (
           <Alert variant="warning" className="dashboard-alert">
