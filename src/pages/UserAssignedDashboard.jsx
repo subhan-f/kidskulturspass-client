@@ -43,6 +43,16 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
   const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
   const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
 
+  // Sort events by date (most recent first)
+  const sortEventsByDate = (eventsArray) => {
+    return [...eventsArray].sort((a, b) => {
+      const dateA = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : 0;
+      const dateB = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+      return dateA - dateB; // For ascending order (oldest first)
+      // Use return dateB - dateA; for descending order (newest first)
+    });
+  };
+
   // Fetch user data and events
   const fetchData = async () => {
     try {
@@ -71,11 +81,18 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
       });
 
       const responseData = eventsRes.data;
-      setEvents(responseData.categorizedEvents || {});
+      
+      // Sort events for each calendar by date
+      const sortedCategorizedEvents = {};
+      Object.keys(responseData.categorizedEvents || {}).forEach(calendar => {
+        sortedCategorizedEvents[calendar] = sortEventsByDate(responseData.categorizedEvents[calendar]);
+      });
+      
+      setEvents(sortedCategorizedEvents);
 
       // Initialize expanded state for calendars
       const initialExpandState = {};
-      Object.keys(responseData.categorizedEvents || {}).forEach((cal) => {
+      Object.keys(sortedCategorizedEvents || {}).forEach((cal) => {
         initialExpandState[cal] = true;
       });
       setExpandedCalendars(initialExpandState);

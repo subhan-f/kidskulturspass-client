@@ -41,6 +41,16 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
     "Puppentheater": "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
   };
 
+  // Sort events by date (most recent first)
+  const sortEventsByDate = (eventsArray) => {
+    return [...eventsArray].sort((a, b) => {
+      const dateA = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : 0;
+      const dateB = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+      return dateA - dateB; // For ascending order (oldest first)
+      // Use return dateB - dateA; for descending order (newest first)
+    });
+  };
+
   // Fetch user data and events
   const fetchData = async () => {
     try {
@@ -60,10 +70,17 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
         `${API_URL}/unassigned?joinedCalendars=${joinedCalendarsEncoded}`
       );
       const responseData = unassignedRes.data;
-      setCategorizedEvents(responseData.categorizedEvents || {});
+      
+      // Sort events for each calendar by date
+      const sortedCategorizedEvents = {};
+      Object.keys(responseData.categorizedEvents || {}).forEach(calendar => {
+        sortedCategorizedEvents[calendar] = sortEventsByDate(responseData.categorizedEvents[calendar]);
+      });
+      
+      setCategorizedEvents(sortedCategorizedEvents);
 
       const initialExpandState = {};
-      Object.keys(responseData.categorizedEvents || {}).forEach((cal) => {
+      Object.keys(sortedCategorizedEvents || {}).forEach((cal) => {
         initialExpandState[cal] = true;
       });
       setExpandedCalendars(initialExpandState);
