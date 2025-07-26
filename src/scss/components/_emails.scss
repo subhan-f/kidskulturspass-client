@@ -902,3 +902,14 @@
   background-color: white;
   font-size: 14px;
 }
+/* Transactional Email Badge */
+.type-badge-transactional {
+  background-color: #6c757d;
+  color: white;
+}
+
+.type-badge-transactional.zero-count {
+  background-color: #e9ecef;
+  color: #6c757d;
+}
+

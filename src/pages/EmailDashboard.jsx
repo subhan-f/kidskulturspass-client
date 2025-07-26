@@ -22,7 +22,7 @@ import DashboardLoader from "../components/DashboardLoader";
 import EmailModal from "../components/EmailModel";
 import { Link } from "react-router-dom";
 
-function EmailListDashboard({ setAuth,handleLogout }) {
+function EmailListDashboard({ setAuth, handleLogout }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState(
@@ -103,6 +103,14 @@ function EmailListDashboard({ setAuth,handleLogout }) {
       tooltip:
         "Erinnerung an den Künstler, sich ca. 30 Minuten nach dem Event per WhatsApp oder Telefon zu melden – für Feedback zum Ablauf.",
     },
+    {
+      type: "Transactional",
+      label: "Transaktional",
+      icon: <Envelope size={14} />,
+      class: "type-badge-transactional",
+      tooltip:
+        "Automatische Transaktions-E-Mails wie Passwort-Reset, Bestätigungen, etc.",
+    },
   ];
 
   const calendarTypes = [
@@ -112,6 +120,7 @@ function EmailListDashboard({ setAuth,handleLogout }) {
     "Nikolaus Besuch",
     "Puppentheater",
     "Weihnachts Mitmachkonzert",
+    "Transactional",
   ];
 
   const emailsPerPage = 7;
@@ -517,22 +526,26 @@ function EmailListDashboard({ setAuth,handleLogout }) {
   }
 
   return (
-    <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout
+      handleLogout={handleLogout}
+      setAuth={setAuth}
+      onRefresh={handleRefresh}
+    >
       <div className="unassigned-events-dashboard">
         {/* Header section with vertically centered heading and search bar */}
         {!loading && (
-        <div className="transparent-header-container">
-          <h1 className="dashboard-main-title">E-Mail Liste</h1>
-          <div className="header-search-box">
-            <SearchBox
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Suche nach Emails, Empfänger, Betreff oder Typ"
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-            />
+          <div className="transparent-header-container">
+            <h1 className="dashboard-main-title">E-Mail Liste</h1>
+            <div className="header-search-box">
+              <SearchBox
+                value={searchTerm}
+                onChange={handleSearchChange}
+                placeholder="Suche nach Emails, Empfänger, Betreff oder Typ"
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+              />
+            </div>
           </div>
-        </div>
         )}
 
         {warning && (
@@ -629,6 +642,15 @@ function EmailListDashboard({ setAuth,handleLogout }) {
                 <Telephone size={16} />
               </div>
               <span className="glossary-label">Performance-Bericht</span>
+            </div>
+            <div
+              className="glossary-item-vertical transactional-glossaryitem"
+              data-tooltip="Automatische Transaktions-E-Mails wie Passwort-Reset, Bestätigungen, etc."
+            >
+              <div className="icon-badge type-badge-transactional">
+                <Envelope size={16} />
+              </div>
+              <span className="glossary-label">Transaktional</span>
             </div>
           </div>
         </div>
@@ -792,7 +814,7 @@ function EmailListDashboard({ setAuth,handleLogout }) {
                                         {email.type === "Invitation"
                                           ? "Einladung"
                                           : email.type === "New Deal"
-                                          ? "Neuer Job"
+                                          ? "Neuer Job"
                                           : email.type === "Cancel Deal"
                                           ? "Absage"
                                           : email.type === "Update Deal"
@@ -803,6 +825,8 @@ function EmailListDashboard({ setAuth,handleLogout }) {
                                           ? "Job noch offen"
                                           : email.type === "Performance Email"
                                           ? "Performance-Bericht"
+                                          : email.type === "Transactional"
+                                          ? "Transaktional"
                                           : email.type}
                                       </div>
                                     </td>
@@ -881,7 +905,24 @@ function EmailListDashboard({ setAuth,handleLogout }) {
                                       {formatDate(email.date)}
                                     </div>
                                     <div className="event-mobile-type">
-                                      <i className="bi bi-tag"></i> {email.type}
+                                      <i className="bi bi-tag"></i>{" "}
+                                      {email.type === "Invitation"
+                                        ? "Einladung"
+                                        : email.type === "New Deal"
+                                        ? "Neuer Job"
+                                        : email.type === "Cancel Deal"
+                                        ? "Absage"
+                                        : email.type === "Update Deal"
+                                        ? "Update"
+                                        : email.type === "Reminder"
+                                        ? "Event-Erinnerung"
+                                        : email.type === "Follow Up"
+                                        ? "Job noch offen"
+                                        : email.type === "Performance Email"
+                                        ? "Performance-Bericht"
+                                        : email.type === "Transactional"
+                                        ? "Transaktional"
+                                        : email.type}
                                     </div>
                                   </div>
 
