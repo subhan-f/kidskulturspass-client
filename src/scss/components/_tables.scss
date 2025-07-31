@@ -265,3 +265,104 @@
     padding: $spacing-sm $spacing-md;
   }
 }
+
+/* Add these styles to your dashboard CSS file */
+
+.artists-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.artists-table th,
+.artists-table td {
+  padding: 12px 15px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Fixed column widths */
+.artists-table th:nth-child(1),
+.artists-table td:nth-child(1) {
+  width: 20%; /* Name column */
+}
+
+.artists-table th:nth-child(2),
+.artists-table td:nth-child(2) {
+  width: 25%; /* Email column */
+}
+
+.artists-table th:nth-child(3),
+.artists-table td:nth-child(3) {
+  width: 15%; /* Role column */
+}
+
+.artists-table th:nth-child(4),
+.artists-table td:nth-child(4) {
+  width: 20%; /* Password column */
+}
+
+.artists-table th:nth-child(5),
+.artists-table td:nth-child(5) {
+  width: 20%; /* Actions column */
+}
+
+/* Password display styling */
+.password-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.password-toggle {
+  padding: 0;
+  color: #6c757d;
+}
+
+.password-toggle:hover {
+  color: #0d6efd;
+}
+
+/* Ensure text doesn't overflow columns */
+.artist-name,
+.artist-email,
+.artist-role,
+.artist-password {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mobile view adjustments */
+@media (max-width: 768px) {
+  .artist-mobile-password {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  
+  .artist-mobile-password .password-toggle {
+    margin-left: auto;
+  }
+}
+
+/* Sticky header for better scrolling */
+.artists-table thead {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 10;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Hover effects for rows */
+.artist-row:hover {
+  background-color: #f8f9fa;
+}
+
+/* Action buttons styling */
+.artist-actions .btn {
+  min-width: 100px;
+}

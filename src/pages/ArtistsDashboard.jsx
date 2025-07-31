@@ -7,6 +7,8 @@ import {
   PersonPlus,
   Trash,
   X,
+  Eye,
+  EyeSlash,
 } from "react-bootstrap-icons";
 import DashboardLayout from "../components/DashboardLayout";
 import PullToRefresh from "../components/PullToRefresh";
@@ -35,6 +37,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const [roleOptions, setRoleOptions] = useState([]);
   const [newArtistForms, setNewArtistForms] = useState({});
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({});
 
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
 
@@ -69,6 +72,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         calendar: artist.Calendar,
         email: artist["E-Mail"],
         role: artist.Role,
+        password: artist.password,
       }));
 
       if (response.data.error) {
@@ -98,6 +102,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
               name: "",
               role: "",
               email: "",
+              password: "",
             };
           });
           setNewArtistForms(initialFormState);
@@ -128,6 +133,13 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     }));
   }, []);
 
+  const togglePasswordVisibility = (email) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [email]: !prev[email],
+    }));
+  };
+
   const artistsByCalendar = useMemo(() => {
     const filtered =
       searchTerm.trim() === ""
@@ -145,9 +157,12 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                 .includes(searchTerm.toLowerCase()) ||
               (artist.role || "")
                 .toLowerCase()
+                .includes(searchTerm.toLowerCase()) ||
+              (artist.password || "")
+                .toLowerCase()
                 .includes(searchTerm.toLowerCase())
           );
-
+    console.log("Filtered artists:", filtered);
     return filtered.reduce((acc, artist) => {
       const calendar = artist.calendar || "Unbekannt";
       if (!acc[calendar]) {
@@ -214,7 +229,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const handleAddArtistFromModal = async (artistData) => {
     try {
       if (!artistData.name || !artistData.role || !artistData.email) {
-        toast.error("Bitte füllen Sie alle Felder aus");
+         console.error("Bitte füllen Sie alle Felder aus");
         return;
       }
       artistData = {
@@ -222,22 +237,24 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         Name: artistData.name,
         Role: artistData.role,
         email: artistData.email,
+        password: artistData.password,
       };
 
       const response = await api.post("/artist", artistData);
+      console.log(response)
       setShowAddModal(false);
       fetchArtists(true);
 
       if (response.data.status === "success") {
-        toast.success("Künstler erfolgreich hinzugefügt");
+        console.success("Künstler erfolgreich hinzugefügt");
       } else {
-        toast.error(
+        console.error(
           response.data.message || "Fehler beim Hinzufügen des Künstlers"
         );
       }
     } catch (error) {
       console.error("Error adding artist:", error);
-      toast.error(
+      console.error(
         "Fehler beim Hinzufügen des Künstlers: " +
           (error.response?.data?.message || error.message)
       );
@@ -260,15 +277,15 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       setShowDeleteModal(false);
       setSelectedArtist(null);
       if (response.data.status === "success") {
-        toast.success("Künstler erfolgreich gelöscht");
+        console.success("Künstler erfolgreich gelöscht");
       } else {
-        toast.error(
+        console.error(
           response.data.message || "Fehler beim Löschen des Künstlers"
         );
       }
     } catch (error) {
       console.error("Error deleting artist:", error);
-      toast.error(
+      console.error(
         "Fehler beim Löschen des Künstlers: " +
           (error.response?.data?.message || error.message)
       );
@@ -296,7 +313,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
               <SearchBox
                 value={searchTerm}
                 onChange={handleSearchChange}
-                placeholder="Name, E-Mail, Rolle oder Kalender suchen..."
+                placeholder="Name, E-Mail, Rolle, Passwort oder Kalender suchen..."
               />
             </div>
           </div>
@@ -438,6 +455,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                               <th>Name</th>
                               <th>E-Mail</th>
                               <th>Rolle</th>
+                              <th>Passwort</th>
                               <th>Aktion</th>
                             </tr>
                           </thead>
@@ -457,6 +475,28 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                     >
                                       {artist.role}
                                     </Badge>
+                                  </td>
+                                  <td className="artist-password">
+                                    <div className="password-display">
+                                      {showPasswords[artist.email] ? (
+                                        artist.password
+                                      ) : (
+                                        "••••••••"
+                                      )}
+                                      <Button
+                                        variant="link"
+                                        size="sm"
+                                        className="password-toggle"
+                                        onClick={() => togglePasswordVisibility(artist.email)}
+                                        title={showPasswords[artist.email] ? "Passwort verbergen" : "Passwort anzeigen"}
+                                      >
+                                        {showPasswords[artist.email] ? (
+                                          <EyeSlash size={14} />
+                                        ) : (
+                                          <Eye size={14} />
+                                        )}
+                                      </Button>
+                                    </div>
                                   </td>
                                   <td className="artist-actions">
                                     <Button
@@ -505,6 +545,27 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                 <div className="artist-mobile-email">
                                   <i className="bi bi-envelope"></i>{" "}
                                   {artist.email}
+                                </div>
+                                <div className="artist-mobile-password">
+                                  <i className="bi bi-key"></i>{" "}
+                                  {showPasswords[artist.email] ? (
+                                    artist.password
+                                  ) : (
+                                    "••••••••"
+                                  )}
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="password-toggle"
+                                    onClick={() => togglePasswordVisibility(artist.email)}
+                                    title={showPasswords[artist.email] ? "Passwort verbergen" : "Passwort anzeigen"}
+                                  >
+                                    {showPasswords[artist.email] ? (
+                                      <EyeSlash size={14} />
+                                    ) : (
+                                      <Eye size={14} />
+                                    )}
+                                  </Button>
                                 </div>
                               </div>
 
