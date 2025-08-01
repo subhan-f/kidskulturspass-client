@@ -14,9 +14,10 @@ import DashboardLayout from "../components/DashboardLayout";
 import PullToRefresh from "../components/PullToRefresh";
 import SearchBox from "../components/SearchBox";
 import { useMediaQuery } from "react-responsive";
-import api from "../utils/api";
+import api, { authApi } from "../utils/api";
 import DashboardLoader from "../components/DashboardLoader";
 import AddArtistModal from "../components/AddArtistModal";
+import { useNavigate } from "react-router-dom";
 
 const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   // State for artists and UI
@@ -37,9 +38,12 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const [roleOptions, setRoleOptions] = useState([]);
   const [newArtistForms, setNewArtistForms] = useState({});
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loggingIn, setLoggingIn] = useState({});
   const [showPasswords, setShowPasswords] = useState({});
 
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
+
+  const navigate = useNavigate();
 
   const fetchCalendars = useCallback(async () => {
     try {
@@ -229,7 +233,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const handleAddArtistFromModal = async (artistData) => {
     try {
       if (!artistData.name || !artistData.role || !artistData.email) {
-         console.error("Bitte füllen Sie alle Felder aus");
+        console.error("Bitte füllen Sie alle Felder aus");
         return;
       }
       artistData = {
@@ -241,7 +245,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       };
 
       const response = await api.post("/artist", artistData);
-      console.log(response)
+      console.log(response);
       setShowAddModal(false);
       fetchArtists(true);
 
@@ -258,6 +262,37 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         "Fehler beim Hinzufügen des Künstlers: " +
           (error.response?.data?.message || error.message)
       );
+    }
+  };
+
+  const handleAdminLoginAsArtist = async (artist) => {
+    if (loggingIn[artist.email]) return; // prevent duplicate clicks
+
+    setLoggingIn((prev) => ({ ...prev, [artist.email]: true }));
+
+    try {
+      const res = await authApi.login({
+        username: artist.email,
+        password: artist.password,
+      });
+
+      const userRes = await authApi.getMe();
+      const user = userRes.data.user;
+
+      if (user.Role === "Admin") {
+        toast.warning("You just logged in again as Admin.");
+        navigate("/artists");
+      } else {
+        toast.success(`Eingeloggt als ${user.Name || user.email}`);
+        navigate("/user-assigned-dashboard");
+      }
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          "Login fehlgeschlagen. Bitte überprüfen Sie die Zugangsdaten."
+      );
+    } finally {
+      setLoggingIn((prev) => ({ ...prev, [artist.email]: false }));
     }
   };
 
@@ -476,19 +511,24 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                       {artist.role}
                                     </Badge>
                                   </td>
+
                                   <td className="artist-password">
                                     <div className="password-display">
-                                      {showPasswords[artist.email] ? (
-                                        artist.password
-                                      ) : (
-                                        "••••••••"
-                                      )}
+                                      {showPasswords[artist.email]
+                                        ? artist.password
+                                        : "••••••••"}
                                       <Button
                                         variant="link"
                                         size="sm"
                                         className="password-toggle"
-                                        onClick={() => togglePasswordVisibility(artist.email)}
-                                        title={showPasswords[artist.email] ? "Passwort verbergen" : "Passwort anzeigen"}
+                                        onClick={() =>
+                                          togglePasswordVisibility(artist.email)
+                                        }
+                                        title={
+                                          showPasswords[artist.email]
+                                            ? "Passwort verbergen"
+                                            : "Passwort anzeigen"
+                                        }
                                       >
                                         {showPasswords[artist.email] ? (
                                           <EyeSlash size={14} />
@@ -498,7 +538,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                       </Button>
                                     </div>
                                   </td>
-                                  <td className="artist-actions">
+                                  <td className="artist-actions d-flex gap-2">
                                     <Button
                                       variant="outline-danger"
                                       size="sm"
@@ -512,6 +552,36 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                       <span className="d-none d-lg-inline">
                                         Entfernen
                                       </span>
+                                    </Button>
+
+                                    <Button
+                                      variant="outline-success"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleAdminLoginAsArtist(artist)
+                                      }
+                                      className="login-btn"
+                                      disabled={loggingIn[artist.email]}
+                                    >
+                                      {loggingIn[artist.email] ? (
+                                        <>
+                                          <Spinner
+                                            animation="border"
+                                            size="sm"
+                                            className="me-1"
+                                          />
+                                          <span className="d-none d-lg-inline">
+                                            Login läuft
+                                          </span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <i className="bi bi-box-arrow-in-right me-1"></i>
+                                          <span className="d-none d-lg-inline">
+                                            Login
+                                          </span>
+                                        </>
+                                      )}
                                     </Button>
                                   </td>
                                 </tr>
@@ -548,17 +618,21 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                 </div>
                                 <div className="artist-mobile-password">
                                   <i className="bi bi-key"></i>{" "}
-                                  {showPasswords[artist.email] ? (
-                                    artist.password
-                                  ) : (
-                                    "••••••••"
-                                  )}
+                                  {showPasswords[artist.email]
+                                    ? artist.password
+                                    : "••••••••"}
                                   <Button
                                     variant="link"
                                     size="sm"
                                     className="password-toggle"
-                                    onClick={() => togglePasswordVisibility(artist.email)}
-                                    title={showPasswords[artist.email] ? "Passwort verbergen" : "Passwort anzeigen"}
+                                    onClick={() =>
+                                      togglePasswordVisibility(artist.email)
+                                    }
+                                    title={
+                                      showPasswords[artist.email]
+                                        ? "Passwort verbergen"
+                                        : "Passwort anzeigen"
+                                    }
                                   >
                                     {showPasswords[artist.email] ? (
                                       <EyeSlash size={14} />
@@ -581,6 +655,31 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                 >
                                   <Trash className="me-2" />
                                   Entfernen
+                                </Button>
+                                <Button
+                                  variant="outline-success"
+                                  size="sm"
+                                  className="w-100 mb-2"
+                                  onClick={() =>
+                                    handleAdminLoginAsArtist(artist)
+                                  }
+                                  disabled={loggingIn[artist.email]}
+                                >
+                                  {loggingIn[artist.email] ? (
+                                    <>
+                                      <Spinner
+                                        animation="border"
+                                        size="sm"
+                                        className="me-2"
+                                      />
+                                      Login läuft
+                                    </>
+                                  ) : (
+                                    <>
+                                      <i className="bi bi-box-arrow-in-right me-2" />
+                                      Login
+                                    </>
+                                  )}
                                 </Button>
                               </div>
                             </div>
