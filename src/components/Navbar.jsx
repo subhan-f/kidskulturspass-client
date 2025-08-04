@@ -124,6 +124,14 @@ function Navbar({ handleLogout }) {
                 >
                   Neue Jobs
                 </Nav.Link>
+                <Nav.Link
+                  as={Link}
+                  to="/unavailability-form"
+                  active={location.pathname === '/unavailability-form'}
+                  onClick={() => setExpanded(false)}
+                >
+                  Unavailability Form
+                </Nav.Link>
               </>
             )}
           </Nav>

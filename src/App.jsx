@@ -17,6 +17,7 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Navbar from './components/Navbar';
+import UnavailabilityDashboard from './pages/UnavailabilityDashboard'; // Add this import
 
 import { authApi } from './utils/api';
 import { initDebug } from './utils/debug';
@@ -28,6 +29,18 @@ import UserUnassignedDashboard from './pages/UserUnassignedDashboard';
 
 // Init debug
 initDebug();
+
+// Define artist roles in a constant for easier maintenance
+const ARTIST_ROLES = [
+  "Geiger*in", 
+  "Moderator*in", 
+  "Pianist*in", 
+  "Instrumentalist*in", 
+  "Nikolaus", 
+  "Puppenspieler*in", 
+  "Detlef", 
+  "Sängerin*in"
+];
 
 // AuthRoute wrapper component - prevents logged-in users from accessing auth routes
 function AuthRoute({ children }) {
@@ -96,6 +109,44 @@ function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
+
+// ArtistOnlyRoute wrapper component - specifically for artist-only routes
+function ArtistOnlyRoute({ children }) {
+  const location = useLocation();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await authApi.getMe();
+        const currentUser = res.data.user;
+        setUser(currentUser);
+
+        // Explicitly check if the user is an admin
+        if (currentUser.Role === 'Admin') {
+          setUser(null); // Treat admin as unauthorized for artist-only routes
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setAuthChecked(true);
+      }
+    };
+
+    checkAuth();
+  }, [location.pathname]);
+
+  if (!authChecked) {
+    return <LoadingSpinner message="Authentifizierung wird überprüft..." fullPage />;
+  }
+
+  if (!user || !ARTIST_ROLES.includes(user.Role)) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -216,11 +267,11 @@ function App() {
           }
         />
 
-        {/* Artist-only route */}
+        {/* Artist-only routes */}
         <Route
           path="/user-assigned-dashboard"
           element={
-            <ProtectedRoute allowedRoles={["Geiger*in", "Moderator*in", "Pianist*in", "Instrumentalist*in", "Nikolaus", "Puppenspieler*in", "Detlef", "Sängerin*in"]}>
+            <ProtectedRoute allowedRoles={ARTIST_ROLES}>
               <UserAssignedDashboard handleLogout={handleLogout}/>
             </ProtectedRoute>
           }
@@ -228,9 +279,17 @@ function App() {
         <Route
           path="/user-unassigned-dashboard"
           element={
-            <ProtectedRoute allowedRoles={["Geiger*in", "Moderator*in", "Pianist*in", "Instrumentalist*in", "Nikolaus", "Puppenspieler*in", "Detlef", "Sängerin*in"]}>
+            <ProtectedRoute allowedRoles={ARTIST_ROLES}>
               <UserUnassignedDashboard handleLogout={handleLogout}/>
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/unavailability-form"
+          element={
+            <ArtistOnlyRoute>
+              <UnavailabilityDashboard handleLogout={handleLogout} artistName={loggedInUser?.name} />
+            </ArtistOnlyRoute>
           }
         />
 
