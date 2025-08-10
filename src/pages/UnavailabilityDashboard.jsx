@@ -8,10 +8,6 @@ import {
   Clock,
   Plus,
   CalendarEvent,
-  MusicNoteBeamed,
-  Briefcase,
-  Heart,
-  Globe,
   ExclamationCircle,
   Check,
 } from "react-bootstrap-icons";
@@ -35,8 +31,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [startTimeInput, setStartTimeInput] = useState(null);
   const [endTimeInput, setEndTimeInput] = useState(null);
-  const [reason, setReason] = useState("");
-  const [customReason, setCustomReason] = useState("");
   const [selectedUnavailability, setSelectedUnavailability] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -45,44 +39,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const [joinedCalendars, setJoinedCalendars] = useState([]);
 
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
-
-  const reasonOptions = [
-    {
-      value: "performance",
-      label: "Other performance",
-      icon: <MusicNoteBeamed className="reason-icon" />,
-    },
-    {
-      value: "recording",
-      label: "Recording session",
-      icon: <MusicNoteBeamed className="reason-icon" />,
-    },
-    {
-      value: "travel",
-      label: "Business trip",
-      icon: <Globe className="reason-icon" />,
-    },
-    {
-      value: "personal",
-      label: "Personal reasons",
-      icon: <Heart className="reason-icon" />,
-    },
-    {
-      value: "contract",
-      label: "Contractual obligation",
-      icon: <Briefcase className="reason-icon" />,
-    },
-    {
-      value: "health",
-      label: "Health reasons",
-      icon: <Heart className="reason-icon" />,
-    },
-    {
-      value: "other",
-      label: "Other reason",
-      icon: <ExclamationCircle className="reason-icon" />,
-    },
-  ];
 
   const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
   const UNAVAILABLE_API_URL = "https://unavailable-events-754826373806.europe-west1.run.app";
@@ -130,20 +86,19 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         return {
           id: event.id || event.iCalUID || event.uid || `${startDate.getTime()}-${Math.random()}`,
           date: berlinStart.toISOString().split('T')[0],
-          startTime: berlinStart.toLocaleTimeString("en-US", {
+          startTime: berlinStart.toLocaleTimeString("de-DE", {
             hour: "2-digit",
             minute: "2-digit",
-            hour12: true,
+            hour12: false,
             timeZone: 'Europe/Berlin'
           }),
-          endTime: berlinEnd.toLocaleTimeString("en-US", {
+          endTime: berlinEnd.toLocaleTimeString("de-DE", {
             hour: "2-digit",
             minute: "2-digit",
-            hour12: true,
+            hour12: false,
             timeZone: 'Europe/Berlin'
           }),
-          reason: event.extendedProperties?.private?.type || "other",
-          details: event.description?.replace("Reason: ", "") || "No reason provided",
+          details: "Nicht verfügbar", // Default reason in German
           uid: event.extendedProperties?.private?.uid || event.id || "",
         };
       });
@@ -151,8 +106,8 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       setUnavailabilities(fetched);
     } catch (err) {
       console.error("Error loading data:", err);
-      setError("Error loading data. Please try again later.");
-      toast.error("Error loading unavailabilities");
+      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      toast.error("Fehler beim Laden der Sperrtermine");
       setUnavailabilities([]);
     } finally {
       setLoading(false);
@@ -235,25 +190,21 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
 
     const searchLower = searchTerm.toLowerCase();
     return unavailabilities.filter((unavailability) => {
-      const reasonText = unavailability.reason === "other"
-        ? (unavailability.details || "").toLowerCase()
-        : reasonOptions.find((r) => r.value === unavailability.reason)?.label.toLowerCase() || "";
-
       const dateText = new Date(unavailability.date)
-        .toLocaleDateString("en-US", { timeZone: 'Europe/Berlin' })
+        .toLocaleDateString("de-DE", { timeZone: 'Europe/Berlin' })
         .toLowerCase();
       const timeText = `${unavailability.startTime}-${unavailability.endTime}`.toLowerCase();
 
-      return reasonText.includes(searchLower) || dateText.includes(searchLower) || timeText.includes(searchLower);
+      return dateText.includes(searchLower) || timeText.includes(searchLower);
     });
-  }, [unavailabilities, searchTerm, reasonOptions]);
+  }, [unavailabilities, searchTerm]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     if (!startTimeInput || !endTimeInput || startTimeInput >= endTimeInput) {
-      toast.error("Please select a valid time range.");
+      toast.error("Bitte wählen Sie einen gültigen Zeitraum.");
       setIsSubmitting(false);
       return;
     }
@@ -261,16 +212,16 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     try {
       const calendarNames = joinedCalendars.map((c) => c.Calendar);
       
-      // Convert times to Berlin time strings
+      // Convert times to Berlin time strings in 24-hour format
       const berlinTimeOptions = { 
         timeZone: 'Europe/Berlin', 
-        hour12: true,
+        hour12: false,
         hour: '2-digit',
         minute: '2-digit'
       };
       
-      const startTime = startTimeInput.toLocaleTimeString('en-US', berlinTimeOptions);
-      const endTime = endTimeInput.toLocaleTimeString('en-US', berlinTimeOptions);
+      const startTime = startTimeInput.toLocaleTimeString('de-DE', berlinTimeOptions);
+      const endTime = endTimeInput.toLocaleTimeString('de-DE', berlinTimeOptions);
 
       // Format date in Berlin time
       const berlinDate = toBerlinTime(selectedDate);
@@ -290,9 +241,8 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
           date: formattedDate,
           startTime,
           endTime,
-          reason: reason,
-          details: reason === "other" ? customReason : 
-                  reasonOptions.find((r) => r.value === reason)?.label,
+          reason: "unavailable", // Default reason
+          details: "Nicht verfügbar", // Default reason in German
         },
       };
 
@@ -302,7 +252,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       );
 
       setSubmitSuccess(true);
-      toast.success("Unavailability added successfully");
+      toast.success("Sperrtermin erfolgreich hinzugefügt");
 
       setTimeout(() => {
         setShowFormModal(false);
@@ -311,15 +261,13 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       }, 1000);
     } catch (error) {
       console.error("Submission error:", error);
-      toast.error("Error saving unavailability");
+      toast.error("Fehler beim Speichern des Sperrtermins");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const resetForm = () => {
-    setReason("");
-    setCustomReason("");
     setStartTimeInput(null);
     setEndTimeInput(null);
     setSelectedDate(new Date());
@@ -328,7 +276,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
 
   const handleDeleteConfirm = async () => {
     if (!selectedUnavailability || !selectedUnavailability.uid) {
-      toast.error("Invalid unavailability selected");
+      toast.error("Ungültiger Sperrtermin ausgewählt");
       return;
     }
 
@@ -349,20 +297,19 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         data: deletePayload,
       });
 
-      toast.success("Unavailability deleted successfully");
+      toast.success("Sperrtermin erfolgreich gelöscht");
       setShowDeleteModal(false);
       fetchUnavailabilities();
     } catch (error) {
       console.error("Delete error:", error);
-      toast.error("Error deleting unavailability");
+      toast.error("Fehler beim Löschen des Sperrtermins");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const getReasonIcon = (reasonValue) => {
-    const option = reasonOptions.find((opt) => opt.value === reasonValue);
-    return option ? option.icon : <ExclamationCircle className="reason-icon" />;
+  const getReasonIcon = () => {
+    return <ExclamationCircle className="reason-icon" />;
   };
 
   const toggleExpand = () => {
@@ -370,7 +317,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("de-DE", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -387,12 +334,12 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       <div className="unavailability-dashboard">
         {!loading && (
           <div className="transparent-header-container">
-            <h1 className="dashboard-main-title">Unavailabilities</h1>
+            <h1 className="dashboard-main-title">Sperrtermine</h1>
             <div className="header-search-box">
               <SearchBox
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by date, time or reason..."
+                placeholder="Nach Datum oder Zeit suchen..."
               />
             </div>
           </div>
@@ -411,30 +358,30 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             className="add-unavailability-btn"
           >
             <Plus className="me-2" />
-            Add Unavailability
+            Sperrtermin hinzufügen
           </Button>
         </div>
 
         <div className="events-container">
           {loading ? (
-            <DashboardLoader message="Loading unavailabilities..." />
+            <DashboardLoader message="Lade Sperrtermine..." />
           ) : (
             <div className="event-calendar-card">
               <div className="calendar-header" onClick={toggleExpand}>
                 <div className="header-content">
                   <div className="title-with-icon">
-                    <h5 className="calendar-title">My Unavailabilities</h5>
+                    <h5 className="calendar-title">Meine Sperrtermine</h5>
                     <div className="dropdown-toggle-icon">
                       {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </div>
                     <Badge bg="primary" className="enhanced-badge capsule-badge">
-                      Total <span className="badge-count">{filteredUnavailabilities.length}</span>
+                      Gesamt <span className="badge-count">{filteredUnavailabilities.length}</span>
                     </Badge>
                   </div>
                   <span className="events-count">
                     <span className="count-number">{filteredUnavailabilities.length}</span>
                     <span className="count-label">
-                      {filteredUnavailabilities.length === 1 ? " entry" : " entries"}
+                      {filteredUnavailabilities.length === 1 ? " Eintrag" : " Einträge"}
                     </span>
                   </span>
                 </div>
@@ -448,10 +395,10 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                         <CalendarEvent size={48} />
                       </div>
                       <h4>
-                        {searchTerm ? "No matching unavailabilities found" : "No unavailabilities scheduled"}
+                        {searchTerm ? "Keine passenden Sperrtermine gefunden" : "Keine Sperrtermine eingetragen"}
                       </h4>
                       <p>
-                        {searchTerm ? "Try a different search term" : "Click the button above to add an unavailability"}
+                        {searchTerm ? "Versuchen Sie einen anderen Suchbegriff" : "Klicken Sie oben auf den Button, um einen Sperrtermin hinzuzufügen"}
                       </p>
                     </div>
                   ) : (
@@ -460,10 +407,10 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                         <Table className="events-table">
                           <thead>
                             <tr>
-                              <th>Date (Berlin Time)</th>
-                              <th>Time (Berlin Time)</th>
-                              <th>Reason</th>
-                              <th>Actions</th>
+                              <th>Datum (Berliner Zeit)</th>
+                              <th>Zeit (Berliner Zeit)</th>
+                              <th>Grund</th>
+                              <th>Aktionen</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -480,12 +427,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                     {unavailability.startTime} - {unavailability.endTime}
                                   </div>
                                 </td>
-                                <td className="event-details">
-                                  <Badge bg="light" text="dark" className="role-badge">
-                                    {getReasonIcon(unavailability.reason)}
-                                    <span className="ms-2">{unavailability.details}</span>
-                                  </Badge>
-                                </td>
                                 <td className="event-actions">
                                   <Button
                                     variant="outline-danger"
@@ -497,7 +438,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                     className="delete-btn"
                                   >
                                     <X className="me-1" />
-                                    <span className="d-none d-md-inline">Delete</span>
+                                    <span className="d-none d-md-inline">Löschen</span>
                                   </Button>
                                 </td>
                               </tr>
@@ -522,7 +463,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                 </div>
                                 <div className="event-mobile-reason">
                                   <Badge bg="light" text="dark" className="role-badge">
-                                    {getReasonIcon(unavailability.reason)}
+                                    {getReasonIcon()}
                                     <span className="ms-2">{unavailability.details}</span>
                                   </Badge>
                                 </div>
@@ -538,7 +479,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                   className="delete-btn"
                                 >
                                   <X className="me-1" />
-                                  Delete
+                                  Löschen
                                 </Button>
                               </div>
                             </div>
@@ -561,7 +502,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         centered
       >
         <Modal.Header closeButton>
-          <Modal.Title>Add Unavailability (Berlin Time)</Modal.Title>
+          <Modal.Title>Sperrtermin eintragen</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {submitSuccess ? (
@@ -569,19 +510,13 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
               <div className="text-success mb-3">
                 <Check size={48} />
               </div>
-              <h4>Unavailability successfully saved!</h4>
-              <p>The list will refresh automatically...</p>
+              <h4>Sperrtermin erfolgreich gespeichert!</h4>
+              <p>Die Liste wird automatisch aktualisiert...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              <div className="timezone-note mb-3">
-                <small className="text-muted">
-                  All times are in Europe/Berlin timezone (CET/CEST)
-                </small>
-              </div>
-              
               <div className="form-group mb-3">
-                <label className="form-label">Select Date</label>
+                <label className="form-label">Datum auswählen</label>
                 <div className="input-group">
                   <span className="input-group-text">
                     <CalendarEvent />
@@ -590,9 +525,9 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                     selected={selectedDate}
                     onChange={(date) => setSelectedDate(date)}
                     minDate={new Date()}
-                    dateFormat="MM/dd/yyyy"
+                    dateFormat="dd.MM.yyyy"
                     className="form-control"
-                    placeholderText="Select date"
+                    placeholderText="Datum auswählen"
                     required
                   />
                 </div>
@@ -601,7 +536,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
               <div className="row mb-3">
                 <div className="col-md-6">
                   <div className="form-group">
-                    <label className="form-label">From</label>
+                    <label className="form-label">Von</label>
                     <div className="input-group">
                       <span className="input-group-text">
                         <Clock />
@@ -612,10 +547,11 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                         showTimeSelect
                         showTimeSelectOnly
                         timeIntervals={15}
-                        timeCaption="From"
-                        dateFormat="h:mm aa"
+                        timeCaption="Von"
+                        dateFormat="HH:mm"
+                        timeFormat="HH:mm"
                         className="form-control"
-                        placeholderText={selectedDate ? "Select start time" : "Select date first"}
+                        placeholderText={selectedDate ? "Zeit wählen" : "Zuerst Datum auswählen"}
                         minTime={getMinStartTime()}
                         maxTime={getMaxEndTime()}
                         disabled={!selectedDate}
@@ -626,7 +562,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                 </div>
                 <div className="col-md-6">
                   <div className="form-group">
-                    <label className="form-label">To</label>
+                    <label className="form-label">Bis</label>
                     <div className="input-group">
                       <span className="input-group-text">
                         <Clock />
@@ -637,10 +573,11 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                         showTimeSelect
                         showTimeSelectOnly
                         timeIntervals={15}
-                        timeCaption="To"
-                        dateFormat="h:mm aa"
+                        timeCaption="Bis"
+                        dateFormat="HH:mm"
+                        timeFormat="HH:mm"
                         className="form-control"
-                        placeholderText={startTimeInput ? "Select end time" : "Select start time first"}
+                        placeholderText={startTimeInput ? "Zeit wählen" : "Zuerst Startzeit auswählen"}
                         minTime={getMinEndTime()}
                         maxTime={getMaxEndTime()}
                         disabled={!startTimeInput}
@@ -649,50 +586,12 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                     </div>
                     {startTimeInput && endTimeInput && endTimeInput <= startTimeInput && (
                       <div className="text-danger small mt-1">
-                        End time must be after start time
+                        Endzeit muss nach der Startzeit liegen
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-
-              <div className="form-group mb-3">
-                <label className="form-label">Reason</label>
-                <div className="d-flex flex-wrap gap-2">
-                  {reasonOptions.map((option) => (
-                    <div key={option.value} className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="radio"
-                        name="reason"
-                        id={`reason-${option.value}`}
-                        value={option.value}
-                        checked={reason === option.value}
-                        onChange={() => setReason(option.value)}
-                        required
-                      />
-                      <label className="form-check-label d-flex align-items-center" htmlFor={`reason-${option.value}`}>
-                        <span className="me-2">{option.icon}</span>
-                        {option.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {reason === "other" && (
-                <div className="form-group mb-3">
-                  <label className="form-label">Details</label>
-                  <textarea
-                    className="form-control"
-                    placeholder="Specify reason..."
-                    value={customReason}
-                    onChange={(e) => setCustomReason(e.target.value)}
-                    required
-                    rows={3}
-                  />
-                </div>
-              )}
 
               <div className="d-flex justify-content-end">
                 <Button
@@ -704,7 +603,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                   }}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  Abbrechen
                 </Button>
                 <Button
                   variant="primary"
@@ -717,10 +616,10 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                   {isSubmitting ? (
                     <>
                       <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                      Saving...
+                      Speichern...
                     </>
                   ) : (
-                    "Save"
+                    "Speichern"
                   )}
                 </Button>
               </div>
@@ -735,15 +634,15 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         centered
       >
         <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
+          <Modal.Title>Löschen bestätigen</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Are you sure you want to delete the unavailability on{" "}
+          Möchten Sie den Sperrtermin am{" "}
           <strong>
             {selectedUnavailability && formatDate(selectedUnavailability.date)}
           </strong>{" "}
-          from <strong>{selectedUnavailability?.startTime}</strong> to{" "}
-          <strong>{selectedUnavailability?.endTime}</strong>?
+          von <strong>{selectedUnavailability?.startTime}</strong> bis{" "}
+          <strong>{selectedUnavailability?.endTime}</strong> wirklich löschen?
         </Modal.Body>
         <Modal.Footer>
           <Button
@@ -751,7 +650,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             onClick={() => setShowDeleteModal(false)}
             disabled={isDeleting}
           >
-            Cancel
+            Abbrechen
           </Button>
           <Button
             variant="danger"
@@ -761,10 +660,10 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             {isDeleting ? (
               <>
                 <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                Deleting...
+                Löschen...
               </>
             ) : (
-              "Delete"
+              "Löschen"
             )}
           </Button>
         </Modal.Footer>

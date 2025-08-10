@@ -130,7 +130,7 @@ function Navbar({ handleLogout }) {
                   active={location.pathname === '/unavailability-form'}
                   onClick={() => setExpanded(false)}
                 >
-                  Unavailability Form
+                  Sperrtermine
                 </Nav.Link>
               </>
             )}
