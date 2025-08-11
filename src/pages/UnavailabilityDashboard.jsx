@@ -5,10 +5,9 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  Clock,
-  Plus,
   CalendarEvent,
   ExclamationCircle,
+  Plus,
   Check,
 } from "react-bootstrap-icons";
 import DashboardLayout from "../components/DashboardLayout";
@@ -28,9 +27,8 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [startTimeInput, setStartTimeInput] = useState(null);
-  const [endTimeInput, setEndTimeInput] = useState(null);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
   const [selectedUnavailability, setSelectedUnavailability] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -40,12 +38,15 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
 
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
 
-  const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
-  const UNAVAILABLE_API_URL = "https://unavailable-events-754826373806.europe-west1.run.app";
+  const USER_API_URL =
+    "https://artist-crud-function-754826373806.europe-west10.run.app";
+  const UNAVAILABLE_API_URL =
+    "https://unavailable-events-754826373806.europe-west1.run.app";
 
-  // Convert a date to Berlin timezone
   const toBerlinTime = (date) => {
-    return new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+    return new Date(
+      date.toLocaleString("en-US", { timeZone: "Europe/Berlin" })
+    );
   };
 
   const fetchUnavailabilities = useCallback(async () => {
@@ -56,7 +57,9 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       const userRes = await authApi.getMe();
       setCurrentUser(userRes.data.user);
 
-      const userDataRes = await axios.get(`${USER_API_URL}/?id=${userRes.data.user._id}`);
+      const userDataRes = await axios.get(
+        `${USER_API_URL}/?id=${userRes.data.user._id}`
+      );
       const userFromApi = userDataRes.data;
       const calendars = userFromApi.joinedCalendars || [];
       setJoinedCalendars(calendars);
@@ -74,31 +77,22 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         `${UNAVAILABLE_API_URL}/getUnavailabilities`,
         payload
       );
-      console.log("Fetched unavailabilities:", unavailabilityRes.data);
+      console.log("Unavailability data fetched:", unavailabilityRes.data);
       const fetched = (unavailabilityRes.data || []).map((event) => {
-        const startDate = new Date(event.start.dateTime);
-        const endDate = new Date(event.end.dateTime);
+        const berlinStart = new Date(event.start.dateTime || event.start.date);
 
-        // Convert to Berlin time for display
-        const berlinStart = toBerlinTime(startDate);
-        const berlinEnd = toBerlinTime(endDate);
+        const berlinEnd = new Date(event.end.dateTime || event.end.date);
+        berlinEnd.setDate(berlinEnd.getDate() - 1); // ✅ subtract 1 day
 
         return {
-          id: event.id || event.iCalUID || event.uid || `${startDate.getTime()}-${Math.random()}`,
-          date: berlinStart.toISOString().split('T')[0],
-          startTime: berlinStart.toLocaleTimeString("de-DE", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-            timeZone: 'Europe/Berlin'
-          }),
-          endTime: berlinEnd.toLocaleTimeString("de-DE", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-            timeZone: 'Europe/Berlin'
-          }),
-          details: "Nicht verfügbar", // Default reason in German
+          id:
+            event.id ||
+            event.iCalUID ||
+            event.uid ||
+            `${berlinStart.getTime()}-${Math.random()}`,
+          startDate: berlinStart.toISOString().split("T")[0],
+          endDate: berlinEnd.toISOString().split("T")[0],
+          details: "Nicht verfügbar",
           uid: event.extendedProperties?.private?.uid || event.id || "",
         };
       });
@@ -106,7 +100,9 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       setUnavailabilities(fetched);
     } catch (err) {
       console.error("Error loading data:", err);
-      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      setError(
+        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
+      );
       toast.error("Fehler beim Laden der Sperrtermine");
       setUnavailabilities([]);
     } finally {
@@ -118,159 +114,86 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     fetchUnavailabilities();
   }, [fetchUnavailabilities]);
 
-  const roundToNext15Minutes = (date) => {
-    const rounded = new Date(date);
-    const minutes = rounded.getMinutes();
-    const remainder = minutes % 15;
-
-    if (remainder !== 0) {
-      rounded.setMinutes(minutes + (15 - remainder));
-      rounded.setSeconds(0);
-      rounded.setMilliseconds(0);
-    }
-
-    if (rounded.getMinutes() % 15 === 0 && remainder === 0) {
-      rounded.setMinutes(rounded.getMinutes() + 15);
-    }
-
-    return rounded;
-  };
-
-  const getMinStartTime = useCallback(() => {
-    if (!selectedDate) return null;
-
-    const today = new Date();
-    const isToday = selectedDate.toDateString() === today.toDateString();
-
-    if (isToday) {
-      return roundToNext15Minutes(today);
-    }
-
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(8, 0, 0, 0);
-    return startOfDay;
-  }, [selectedDate]);
-
-  const getMaxEndTime = useCallback(() => {
-    if (!selectedDate) return null;
-
-    const endOfDay = new Date(selectedDate);
-    endOfDay.setHours(23, 45, 0, 0);
-    return endOfDay;
-  }, [selectedDate]);
-
-  const getMinEndTime = useCallback(() => {
-    if (!startTimeInput) return null;
-
-    const minEndTime = new Date(startTimeInput);
-    minEndTime.setMinutes(minEndTime.getMinutes() + 15);
-    return minEndTime;
-  }, [startTimeInput]);
-
-  useEffect(() => {
-    if (selectedDate) {
-      const newMinStartTime = getMinStartTime();
-      setStartTimeInput(null);
-      setEndTimeInput(null);
-
-      if (newMinStartTime && newMinStartTime <= getMaxEndTime()) {
-        // Don't auto-set, let user choose
-      }
-    }
-  }, [selectedDate, getMinStartTime, getMaxEndTime]);
-
-  useEffect(() => {
-    if (startTimeInput) {
-      setEndTimeInput(null);
-    }
-  }, [startTimeInput]);
-
   const filteredUnavailabilities = useMemo(() => {
     if (!searchTerm.trim()) return unavailabilities;
 
     const searchLower = searchTerm.toLowerCase();
     return unavailabilities.filter((unavailability) => {
-      const dateText = new Date(unavailability.date)
-        .toLocaleDateString("de-DE", { timeZone: 'Europe/Berlin' })
+      const startDateText = new Date(unavailability.startDate)
+        .toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" })
         .toLowerCase();
-      const timeText = `${unavailability.startTime}-${unavailability.endTime}`.toLowerCase();
-
-      return dateText.includes(searchLower) || timeText.includes(searchLower);
+      const endDateText = new Date(unavailability.endDate)
+        .toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" })
+        .toLowerCase();
+      return (
+        startDateText.includes(searchLower) || endDateText.includes(searchLower)
+      );
     });
   }, [unavailabilities, searchTerm]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+const formatDateNoTZ = (date) => {
+  // Get YYYY-MM-DD from date without timezone shifts
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
-    if (!startTimeInput || !endTimeInput || startTimeInput >= endTimeInput) {
-      toast.error("Bitte wählen Sie einen gültigen Zeitraum.");
-      setIsSubmitting(false);
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      const calendarNames = joinedCalendars.map((c) => c.Calendar);
-      
-      // Convert times to Berlin time strings in 24-hour format
-      const berlinTimeOptions = { 
-        timeZone: 'Europe/Berlin', 
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit'
-      };
-      
-      const startTime = startTimeInput.toLocaleTimeString('de-DE', berlinTimeOptions);
-      const endTime = endTimeInput.toLocaleTimeString('de-DE', berlinTimeOptions);
+  if (!startDate || !endDate || startDate > endDate) {
+    toast.error("Bitte wählen Sie einen gültigen Datumsbereich.");
+    setIsSubmitting(false);
+    return;
+  }
 
-      // Format date in Berlin time
-      const berlinDate = toBerlinTime(selectedDate);
-      const formattedDate = [
-        berlinDate.getFullYear(),
-        String(berlinDate.getMonth() + 1).padStart(2, '0'),
-        String(berlinDate.getDate()).padStart(2, '0')
-      ].join('-');
+  try {
+    const calendarNames = joinedCalendars.map((c) => c.Calendar);
 
-      const unavailabilityData = {
-        user: {
-          name: currentUser.Name,
-          email: currentUser["E-Mail"],
-          calendars: calendarNames,
-        },
-        unavailability: {
-          date: formattedDate,
-          startTime,
-          endTime,
-          reason: "unavailable", // Default reason
-          details: "Nicht verfügbar", // Default reason in German
-        },
-      };
+    // ✅ Use timezone-independent formatting
+    const formattedStart = formatDateNoTZ(startDate);
+    const formattedEnd = formatDateNoTZ(endDate);
 
-      await axios.post(
-        `${UNAVAILABLE_API_URL}/unavailabilities`,
-        unavailabilityData
-      );
+    const unavailabilityData = {
+      user: {
+        name: currentUser.Name,
+        email: currentUser["E-Mail"],
+        calendars: calendarNames,
+      },
+      unavailability: {
+        startDate: formattedStart,
+        endDate: formattedEnd,
+        reason: "Nicht verfügbar",
+        details: "Nicht verfügbar",
+      },
+    };
 
-      setSubmitSuccess(true);
-      toast.success("Sperrtermin erfolgreich hinzugefügt");
+    await axios.post(
+      `${UNAVAILABLE_API_URL}/unavailabilities`,
+      unavailabilityData
+    );
 
-      setTimeout(() => {
-        setShowFormModal(false);
-        resetForm();
-        fetchUnavailabilities();
-      }, 1000);
-    } catch (error) {
-      console.error("Submission error:", error);
-      toast.error("Fehler beim Speichern des Sperrtermins");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    setSubmitSuccess(true);
+    toast.success("Sperrtermin erfolgreich hinzugefügt");
+
+    setTimeout(() => {
+      setShowFormModal(false);
+      resetForm();
+      fetchUnavailabilities();
+    }, 1000);
+  } catch (error) {
+    console.error("Submission error:", error);
+    toast.error("Fehler beim Speichern des Sperrtermins");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const resetForm = () => {
-    setStartTimeInput(null);
-    setEndTimeInput(null);
-    setSelectedDate(new Date());
+    setStartDate(null);
+    setEndDate(null);
     setSubmitSuccess(false);
   };
 
@@ -321,7 +244,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       month: "short",
       day: "numeric",
       year: "numeric",
-      timeZone: 'Europe/Berlin'
+      timeZone: "Europe/Berlin",
     });
   };
 
@@ -339,7 +262,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
               <SearchBox
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Nach Datum oder Zeit suchen..."
+                placeholder="Nach Datum suchen..."
               />
             </div>
           </div>
@@ -354,7 +277,10 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         <div className="d-flex justify-content-end mb-3">
           <Button
             variant="primary"
-            onClick={() => setShowFormModal(true)}
+            onClick={() => {
+              resetForm(); // reset when opening
+              setShowFormModal(true);
+            }}
             className="add-unavailability-btn"
           >
             <Plus className="me-2" />
@@ -372,16 +298,30 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                   <div className="title-with-icon">
                     <h5 className="calendar-title">Meine Sperrtermine</h5>
                     <div className="dropdown-toggle-icon">
-                      {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      {expanded ? (
+                        <ChevronUp size={14} />
+                      ) : (
+                        <ChevronDown size={14} />
+                      )}
                     </div>
-                    <Badge bg="primary" className="enhanced-badge capsule-badge">
-                      Gesamt <span className="badge-count">{filteredUnavailabilities.length}</span>
+                    <Badge
+                      bg="primary"
+                      className="enhanced-badge capsule-badge"
+                    >
+                      Gesamt{" "}
+                      <span className="badge-count">
+                        {filteredUnavailabilities.length}
+                      </span>
                     </Badge>
                   </div>
                   <span className="events-count">
-                    <span className="count-number">{filteredUnavailabilities.length}</span>
+                    <span className="count-number">
+                      {filteredUnavailabilities.length}
+                    </span>
                     <span className="count-label">
-                      {filteredUnavailabilities.length === 1 ? " Eintrag" : " Einträge"}
+                      {filteredUnavailabilities.length === 1
+                        ? " Eintrag"
+                        : " Einträge"}
                     </span>
                   </span>
                 </div>
@@ -395,10 +335,14 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                         <CalendarEvent size={48} />
                       </div>
                       <h4>
-                        {searchTerm ? "Keine passenden Sperrtermine gefunden" : "Keine Sperrtermine eingetragen"}
+                        {searchTerm
+                          ? "Keine passenden Sperrtermine gefunden"
+                          : "Keine Sperrtermine eingetragen"}
                       </h4>
                       <p>
-                        {searchTerm ? "Versuchen Sie einen anderen Suchbegriff" : "Klicken Sie oben auf den Button, um einen Sperrtermin hinzuzufügen"}
+                        {searchTerm
+                          ? "Versuchen Sie einen anderen Suchbegriff"
+                          : "Klicken Sie oben auf den Button, um einen Sperrtermin hinzuzufügen"}
                       </p>
                     </div>
                   ) : (
@@ -407,27 +351,70 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                         <Table className="events-table">
                           <thead>
                             <tr>
-                              <th>Datum (Berliner Zeit)</th>
-                              <th>Zeit (Berliner Zeit)</th>
+                              <th>Von (Berliner Zeit)</th>
+                              <th>Bis (Berliner Zeit)</th>
                               <th>Grund</th>
                               <th>Aktionen</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredUnavailabilities.map((unavailability, index) => (
-                              <tr key={index} className="event-row">
-                                <td className="event-time">
-                                  <div className="date">
-                                    {formatDate(unavailability.date)}
-                                  </div>
-                                </td>
-                                <td className="event-time">
-                                  <div className="time">
-                                    <Clock className="me-2" />
-                                    {unavailability.startTime} - {unavailability.endTime}
-                                  </div>
-                                </td>
-                                <td className="event-actions">
+                            {filteredUnavailabilities.map(
+                              (unavailability, index) => (
+                                <tr key={index} className="event-row">
+                                  <td className="event-time"></td>
+                                  <td className="event-time">
+                                    {formatDate(unavailability.startDate)}-
+                                    {formatDate(unavailability.endDate)}
+                                  </td>
+                                  <td>
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedUnavailability(
+                                          unavailability
+                                        );
+                                        setShowDeleteModal(true);
+                                      }}
+                                      className="delete-btn"
+                                    >
+                                      <X className="me-1" />
+                                      <span className="d-none d-md-inline">
+                                        Löschen
+                                      </span>
+                                    </Button>
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </Table>
+                      </div>
+
+                      <div className="event-cards-container d-md-none">
+                        {filteredUnavailabilities.map(
+                          (unavailability, index) => (
+                            <div key={index} className="event-mobile-card">
+                              <div className="event-mobile-header">
+                                <div className="event-mobile-title">
+                                  {formatDate(unavailability.startDate)} -{" "}
+                                  {formatDate(unavailability.endDate)}
+                                </div>
+                              </div>
+                              <div className="event-mobile-content">
+                                <div className="event-mobile-reason">
+                                  <Badge
+                                    bg="light"
+                                    text="dark"
+                                    className="role-badge"
+                                  >
+                                    {getReasonIcon()}
+                                    <span className="ms-2">
+                                      {unavailability.details}
+                                    </span>
+                                  </Badge>
+                                </div>
+                                <div className="event-mobile-actions">
                                   <Button
                                     variant="outline-danger"
                                     size="sm"
@@ -438,53 +425,13 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                     className="delete-btn"
                                   >
                                     <X className="me-1" />
-                                    <span className="d-none d-md-inline">Löschen</span>
+                                    Löschen
                                   </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </div>
-
-                      <div className="event-cards-container d-md-none">
-                        {filteredUnavailabilities.map((unavailability, index) => (
-                          <div key={index} className="event-mobile-card">
-                            <div className="event-mobile-header">
-                              <div className="event-mobile-title">
-                                {formatDate(unavailability.date)}
-                              </div>
-                            </div>
-                            <div className="event-mobile-content">
-                              <div className="event-mobile-details">
-                                <div className="event-mobile-time">
-                                  <Clock className="me-2" />
-                                  {unavailability.startTime} - {unavailability.endTime}
-                                </div>
-                                <div className="event-mobile-reason">
-                                  <Badge bg="light" text="dark" className="role-badge">
-                                    {getReasonIcon()}
-                                    <span className="ms-2">{unavailability.details}</span>
-                                  </Badge>
                                 </div>
                               </div>
-                              <div className="event-mobile-actions">
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedUnavailability(unavailability);
-                                    setShowDeleteModal(true);
-                                  }}
-                                  className="delete-btn"
-                                >
-                                  <X className="me-1" />
-                                  Löschen
-                                </Button>
-                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </>
                   )}
@@ -495,13 +442,21 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         </div>
       </div>
 
+      {/* Add Modal */}
       <Modal
         show={showFormModal}
-        onHide={() => !isSubmitting && setShowFormModal(false)}
+        onHide={() => {
+          if (!isSubmitting) {
+            setShowFormModal(false);
+            resetForm();
+          }
+        }}
         size="lg"
         centered
+        backdrop={isSubmitting ? "static" : true} // prevent close on overlay when submitting
+        keyboard={!isSubmitting} // prevent ESC close when submitting
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton={!isSubmitting}>
           <Modal.Title>Sperrtermin eintragen</Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -515,84 +470,59 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
+              {/* Start Date */}
               <div className="form-group mb-3">
-                <label className="form-label">Datum auswählen</label>
+                <label className="form-label">Von (Startdatum)</label>
                 <div className="input-group">
                   <span className="input-group-text">
                     <CalendarEvent />
                   </span>
                   <DatePicker
-                    selected={selectedDate}
-                    onChange={(date) => setSelectedDate(date)}
+                    selected={startDate}
+                    onChange={(date) => {
+                      setStartDate(date);
+                      setEndDate(null); // reset end date when start changes
+                    }}
+                    selectsStart
+                    startDate={startDate}
+                    endDate={endDate}
                     minDate={new Date()}
                     dateFormat="dd.MM.yyyy"
                     className="form-control"
-                    placeholderText="Datum auswählen"
+                    placeholderText="Startdatum auswählen"
                     required
                   />
                 </div>
               </div>
 
-              <div className="row mb-3">
-                <div className="col-md-6">
-                  <div className="form-group">
-                    <label className="form-label">Von</label>
-                    <div className="input-group">
-                      <span className="input-group-text">
-                        <Clock />
-                      </span>
-                      <DatePicker
-                        selected={startTimeInput}
-                        onChange={(time) => setStartTimeInput(time)}
-                        showTimeSelect
-                        showTimeSelectOnly
-                        timeIntervals={15}
-                        timeCaption="Von"
-                        dateFormat="HH:mm"
-                        timeFormat="HH:mm"
-                        className="form-control"
-                        placeholderText={selectedDate ? "Zeit wählen" : "Zuerst Datum auswählen"}
-                        minTime={getMinStartTime()}
-                        maxTime={getMaxEndTime()}
-                        disabled={!selectedDate}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-6">
-                  <div className="form-group">
-                    <label className="form-label">Bis</label>
-                    <div className="input-group">
-                      <span className="input-group-text">
-                        <Clock />
-                      </span>
-                      <DatePicker
-                        selected={endTimeInput}
-                        onChange={(time) => setEndTimeInput(time)}
-                        showTimeSelect
-                        showTimeSelectOnly
-                        timeIntervals={15}
-                        timeCaption="Bis"
-                        dateFormat="HH:mm"
-                        timeFormat="HH:mm"
-                        className="form-control"
-                        placeholderText={startTimeInput ? "Zeit wählen" : "Zuerst Startzeit auswählen"}
-                        minTime={getMinEndTime()}
-                        maxTime={getMaxEndTime()}
-                        disabled={!startTimeInput}
-                        required
-                      />
-                    </div>
-                    {startTimeInput && endTimeInput && endTimeInput <= startTimeInput && (
-                      <div className="text-danger small mt-1">
-                        Endzeit muss nach der Startzeit liegen
-                      </div>
-                    )}
-                  </div>
+              {/* End Date */}
+              <div className="form-group mb-3">
+                <label className="form-label">Bis (Enddatum)</label>
+                <div className="input-group">
+                  <span className="input-group-text">
+                    <CalendarEvent />
+                  </span>
+                  <DatePicker
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
+                    selectsEnd
+                    startDate={startDate}
+                    endDate={endDate}
+                    minDate={startDate}
+                    disabled={!startDate}
+                    dateFormat="dd.MM.yyyy"
+                    className="form-control"
+                    placeholderText={
+                      startDate
+                        ? "Enddatum auswählen"
+                        : "Bitte zuerst Startdatum wählen"
+                    }
+                    required
+                  />
                 </div>
               </div>
 
+              {/* Buttons */}
               <div className="d-flex justify-content-end">
                 <Button
                   variant="secondary"
@@ -605,17 +535,17 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                 >
                   Abbrechen
                 </Button>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  disabled={
-                    isSubmitting ||
-                    (endTimeInput && startTimeInput && endTimeInput <= startTimeInput)
-                  }
-                >
+                <Button variant="primary" type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
-                      <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                      <Spinner
+                        as="span"
+                        animation="border"
+                        size="sm"
+                        role="status"
+                        aria-hidden="true"
+                        className="me-2"
+                      />
                       Speichern...
                     </>
                   ) : (
@@ -628,21 +558,30 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         </Modal.Body>
       </Modal>
 
+      {/* Delete Modal */}
       <Modal
         show={showDeleteModal}
-        onHide={() => !isDeleting && setShowDeleteModal(false)}
+        onHide={() => {
+          if (!isDeleting) {
+            setShowDeleteModal(false);
+          }
+        }}
         centered
+        backdrop={isDeleting ? "static" : true} // prevent overlay close when deleting
+        keyboard={!isDeleting} // prevent ESC close when deleting
       >
-        <Modal.Header closeButton>
-          <Modal.Title>Löschen bestätigen</Modal.Title>
+        <Modal.Header closeButton={!isDeleting}>
+          <Modal.Title>Delete Unavailability</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Möchten Sie den Sperrtermin am{" "}
-          <strong>
-            {selectedUnavailability && formatDate(selectedUnavailability.date)}
-          </strong>{" "}
-          von <strong>{selectedUnavailability?.startTime}</strong> bis{" "}
-          <strong>{selectedUnavailability?.endTime}</strong> wirklich löschen?
+          {isDeleting ? (
+            <div className="text-center py-3">
+              <Spinner animation="border" role="status" className="me-2" />
+              Deleting event...
+            </div>
+          ) : (
+            <p>Are you sure you want to delete this unavailability?</p>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <Button
@@ -650,7 +589,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             onClick={() => setShowDeleteModal(false)}
             disabled={isDeleting}
           >
-            Abbrechen
+            Cancel
           </Button>
           <Button
             variant="danger"
@@ -659,11 +598,11 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
           >
             {isDeleting ? (
               <>
-                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                Löschen...
+                <Spinner animation="border" size="sm" className="me-2" />
+                Deleting...
               </>
             ) : (
-              "Löschen"
+              "Delete"
             )}
           </Button>
         </Modal.Footer>
