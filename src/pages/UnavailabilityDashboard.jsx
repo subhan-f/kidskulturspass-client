@@ -94,6 +94,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
           endDate: berlinEnd.toISOString().split("T")[0],
           details: "Nicht verfügbar",
           uid: event.extendedProperties?.private?.uid || event.id || "",
+          htmlLink: event.htmlLink || ""
         };
       });
 
@@ -131,65 +132,65 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     });
   }, [unavailabilities, searchTerm]);
 
-const formatDateNoTZ = (date) => {
-  // Get YYYY-MM-DD from date without timezone shifts
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+  const formatDateNoTZ = (date) => {
+    // Get YYYY-MM-DD from date without timezone shifts
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  if (!startDate || !endDate || startDate > endDate) {
-    toast.error("Bitte wählen Sie einen gültigen Datumsbereich.");
-    setIsSubmitting(false);
-    return;
-  }
+    if (!startDate || !endDate || startDate > endDate) {
+      toast.error("Bitte wählen Sie einen gültigen Datumsbereich.");
+      setIsSubmitting(false);
+      return;
+    }
 
-  try {
-    const calendarNames = joinedCalendars.map((c) => c.Calendar);
+    try {
+      const calendarNames = joinedCalendars.map((c) => c.Calendar);
 
-    // ✅ Use timezone-independent formatting
-    const formattedStart = formatDateNoTZ(startDate);
-    const formattedEnd = formatDateNoTZ(endDate);
+      // ✅ Use timezone-independent formatting
+      const formattedStart = formatDateNoTZ(startDate);
+      const formattedEnd = formatDateNoTZ(endDate);
 
-    const unavailabilityData = {
-      user: {
-        name: currentUser.Name,
-        email: currentUser["E-Mail"],
-        calendars: calendarNames,
-      },
-      unavailability: {
-        startDate: formattedStart,
-        endDate: formattedEnd,
-        reason: "Nicht verfügbar",
-        details: "Nicht verfügbar",
-      },
-    };
+      const unavailabilityData = {
+        user: {
+          name: currentUser.Name,
+          email: currentUser["E-Mail"],
+          calendars: calendarNames,
+        },
+        unavailability: {
+          startDate: formattedStart,
+          endDate: formattedEnd,
+          reason: "Nicht verfügbar",
+          details: "Nicht verfügbar",
+        },
+      };
 
-    await axios.post(
-      `${UNAVAILABLE_API_URL}/unavailabilities`,
-      unavailabilityData
-    );
+      await axios.post(
+        `${UNAVAILABLE_API_URL}/unavailabilities`,
+        unavailabilityData
+      );
 
-    setSubmitSuccess(true);
-    toast.success("Sperrtermin erfolgreich hinzugefügt");
+      setSubmitSuccess(true);
+      toast.success("Sperrtermin erfolgreich hinzugefügt");
 
-    setTimeout(() => {
-      setShowFormModal(false);
-      resetForm();
-      fetchUnavailabilities();
-    }, 1000);
-  } catch (error) {
-    console.error("Submission error:", error);
-    toast.error("Fehler beim Speichern des Sperrtermins");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      setTimeout(() => {
+        setShowFormModal(false);
+        resetForm();
+        fetchUnavailabilities();
+      }, 1000);
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error("Fehler beim Speichern des Sperrtermins");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const resetForm = () => {
     setStartDate(null);
@@ -368,6 +369,26 @@ const handleSubmit = async (e) => {
                                   </td>
                                   <td>
                                     <Button
+                                      variant="outline-info"
+                                      size="sm"
+                                      className="me-2"
+                                      onClick={() => {
+                                        if (unavailability.htmlLink) {
+                                          window.open(
+                                            `${unavailability.htmlLink}`,
+                                            "_blank"
+                                          );
+                                        } else {
+                                          toast.error(
+                                            "Kein Kalenderlink für dieses Ereignis verfügbar"
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      Details
+                                    </Button>
+
+                                    <Button
                                       variant="outline-danger"
                                       size="sm"
                                       onClick={() => {
@@ -415,6 +436,27 @@ const handleSubmit = async (e) => {
                                   </Badge>
                                 </div>
                                 <div className="event-mobile-actions">
+                                  <Button
+                                    variant="outline-info"
+                                    size="sm"
+                                    className="me-2"
+                                    onClick={() => {
+                                      console.log(unavailability.htmlLink);
+                                      if (unavailability.htmlLink) {
+                                        window.open(
+                                          `${unavailability.htmlLink}`,
+                                          "_blank"
+                                        );
+                                      } else {
+                                        toast.error(
+                                          "Kein Kalenderlink für dieses Ereignis verfügbar"
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    Details
+                                  </Button>
+
                                   <Button
                                     variant="outline-danger"
                                     size="sm"
