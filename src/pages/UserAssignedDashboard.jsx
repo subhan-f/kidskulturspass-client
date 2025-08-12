@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Table, Alert, Badge, Spinner } from "react-bootstrap";
+import { Modal, Button, Table, Alert, Badge, Spinner } from "react-bootstrap";
 import {
   ArrowClockwise,
   Calendar3,
@@ -16,38 +16,52 @@ import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal"; // Import the EventModal component
 
-function UserAssignedDashboard({ setAuth,handleLogout }) {
+function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Daten werden geladen..."
+  );
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
   const [searchFocused, setSearchFocused] = useState(false);
-  const [leavingEventId, setLeavingEventId] = useState(null);
-  const [isProcessingLeave, setIsProcessingLeave] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null); // State for selected event
   const [showEventModal, setShowEventModal] = useState(false); // State for modal visibility
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
+  const [eventToLeave, setEventToLeave] = useState(null);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [success, setSuccess] = useState(null);
 
   const CALENDAR_MAPPING = {
     "Klavier Mitmachkonzert": "info@kidskulturspass.de",
-    "Geigen Mitmachkonzert": "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
-    "Weihnachts Mitmachkonzert": "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
+    "Geigen Mitmachkonzert":
+      "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
+    "Weihnachts Mitmachkonzert":
+      "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
     "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
-    "Laternenumzug mit Musik": "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
-    "Puppentheater": "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
+    "Laternenumzug mit Musik":
+      "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
+    Puppentheater:
+      "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
   };
 
-  const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
-  const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
+  const API_URL =
+    "https://user-dashboard-data-754826373806.europe-west1.run.app";
+  const USER_API_URL =
+    "https://artist-crud-function-754826373806.europe-west10.run.app";
 
   // Sort events by date (most recent first)
   const sortEventsByDate = (eventsArray) => {
     return [...eventsArray].sort((a, b) => {
-      const dateA = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : 0;
-      const dateB = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+      const dateA = a.start?.dateTime
+        ? new Date(a.start.dateTime).getTime()
+        : 0;
+      const dateB = b.start?.dateTime
+        ? new Date(b.start.dateTime).getTime()
+        : 0;
       return dateA - dateB; // For ascending order (oldest first)
       // Use return dateB - dateA; for descending order (newest first)
     });
@@ -63,7 +77,9 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
       const res = await authApi.getMe();
       const currentUser = res.data.user;
       // Get complete user data including joined calendars
-      const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
+      const userData = await axios.get(
+        `${USER_API_URL}/?id=${currentUser._id}`
+      );
       setUser(userData.data);
 
       const joinedCalendars = userData.data.joinedCalendars || [];
@@ -81,13 +97,15 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
       });
 
       const responseData = eventsRes.data;
-      
+
       // Sort events for each calendar by date
       const sortedCategorizedEvents = {};
-      Object.keys(responseData.categorizedEvents || {}).forEach(calendar => {
-        sortedCategorizedEvents[calendar] = sortEventsByDate(responseData.categorizedEvents[calendar]);
+      Object.keys(responseData.categorizedEvents || {}).forEach((calendar) => {
+        sortedCategorizedEvents[calendar] = sortEventsByDate(
+          responseData.categorizedEvents[calendar]
+        );
       });
-      
+
       setEvents(sortedCategorizedEvents);
 
       // Initialize expanded state for calendars
@@ -100,7 +118,9 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
       setLoading(false);
     } catch (err) {
       console.error("Error loading data:", err);
-      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      setError(
+        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
+      );
       setLoading(false);
     }
   };
@@ -117,70 +137,80 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
   }, []);
 
   // Handle event details click
+
   const handleEventClick = useCallback((event) => {
     setSelectedEvent(event);
     setShowEventModal(true);
   }, []);
 
-  // Handle leave event button click
-  const handleLeaveEvent = useCallback(
-    async (event) => {
-      if (isProcessingLeave) return; // Prevent double click
+  const handleLeaveClick = useCallback((event) => {
+    setEventToLeave(event);
+    setShowLeaveConfirmModal(true);
+  }, []);
 
-      setIsProcessingLeave(true);
-      setLeavingEventId(event.id);
-      setLoadingMessage("Artist wird von der Veranstaltung entfernt...");
-      setLoading(true);
+  const handleLeaveConfirm = useCallback(async () => {
+    if (!eventToLeave || isLeaving) return;
 
-      try {
-        // Find the calendar ID by matching the calendar name
-        const calendarName = event.calendarName?.trim().toLowerCase();
-        let calendarId = null;
+    setIsLeaving(true);
+    setLoadingMessage("Artist wird von der Veranstaltung entfernt...");
+    setSuccess(null); // Reset success state
 
-        // Find matching calendar
-        for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
-          if (name.trim().toLowerCase() === calendarName) {
-            calendarId = id;
-            break;
-          }
+    try {
+      // Find the calendar ID by matching the calendar name
+      const calendarName = eventToLeave.calendarName?.trim().toLowerCase();
+      let calendarId = null;
+
+      for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
+        if (name.trim().toLowerCase() === calendarName) {
+          calendarId = id;
+          break;
         }
+      }
 
-        if (!calendarId) {
-          console.error("Calendar ID not found for:", event.calendar);
-          setWarning("Kalender-ID konnte nicht gefunden werden");
-          return;
-        }
+      if (!calendarId) {
+        console.error("Calendar ID not found for:", eventToLeave.calendarName);
+        setWarning("Kalender-ID konnte nicht gefunden werden");
+        setIsLeaving(false);
+        return;
+      }
 
-        // Prepare the request data
-        const requestData = {
-          calendarId,
-          eventId: event.id,
-          artistEmail: user["E-Mail"],
-        };
+      // Prepare request data
+      const requestData = {
+        calendarId,
+        eventId: eventToLeave.id,
+        artistEmail: user["E-Mail"],
+      };
 
-        // Add 7 second delay before making the API call
+      // API call
+      const response = await axios.post(
+        `${API_URL}/remove-artist`,
+        requestData
+      );
+
+      if (response.data.success) {
+        // Wait before refreshing
         await new Promise((resolve) => setTimeout(resolve, 20000));
 
-        const response = await axios.post(`${API_URL}/remove-artist`, requestData);
+        setSuccess("Artist erfolgreich von der Veranstaltung entfernt!");
+        setTimeout(() => {
+          setSuccess(null);
+        }, 5000);
 
-        if (response.data.success) {
-          setWarning("Artist erfolgreich entfernt!");
-          // Refresh events
-          fetchData();
-        } else {
-          setWarning(response.data.message);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        setError("Fehler beim Entfernen des Artists");
-      } finally {
-        setIsProcessingLeave(false);
-        setLeavingEventId(null);
-        setLoading(false);
+        await fetchData();
+        setShowLeaveConfirmModal(false);
+        setEventToLeave(null);
+      } else {
+        setWarning(
+          response.data.message || "Fehler beim Entfernen des Artists"
+        );
       }
-    },
-    [user, fetchData, isProcessingLeave]
-  );
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Fehler beim Entfernen des Artists");
+    } finally {
+      setIsLeaving(false);
+    }
+  }, [eventToLeave, user, fetchData]);
 
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
@@ -189,10 +219,16 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
     Object.keys(events).forEach((calendar) => {
       filtered[calendar] = (events[calendar] || []).filter(
         (event) =>
-          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (event.summary || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           (event.role || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
+          (event.location || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     });
 
@@ -240,46 +276,59 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
   }
 
   return (
-    <DashboardLayout handleLogout={handleLogout}  setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout
+      handleLogout={handleLogout}
+      setAuth={setAuth}
+      onRefresh={handleRefresh}
+    >
       <div className="user-assigned-dashboard">
         {/* Header section with welcome message and search box */}
         {!loading && (
-        <div className="transparent-header-container">
-          <div className="header-welcome-content">
-            <h1 className="dashboard-main-title">
-              Willkommen, {user?.Name || "Benutzer"}!
-            </h1>
-            {user?.joinedCalendars?.length > 0 && (
-              <div style={{ margin: "15px 0px" }} className="joined-calendars-badges">
-                Deine beigetretenen Kalender:
-                {user.joinedCalendars.map((calendar, index) => (
-                  <Badge
-                    key={index}
-                    bg="primary"
-                    style={{ margin: "0px 2px" }}
-                    className="calendar-badge"
-                  >
-                    {calendar.Calendar}
-                  </Badge>
-                ))}
-              </div>
-            )}
+          <div className="transparent-header-container">
+            <div className="header-welcome-content">
+              <h1 className="dashboard-main-title">
+                Willkommen, {user?.Name || "Benutzer"}!
+              </h1>
+              {user?.joinedCalendars?.length > 0 && (
+                <div
+                  style={{ margin: "15px 0px" }}
+                  className="joined-calendars-badges"
+                >
+                  Deine beigetretenen Kalender:
+                  {user.joinedCalendars.map((calendar, index) => (
+                    <Badge
+                      key={index}
+                      bg="primary"
+                      style={{ margin: "0px 2px" }}
+                      className="calendar-badge"
+                    >
+                      {calendar.Calendar}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="header-search-box">
+              <SearchBox
+                value={searchTerm}
+                onChange={handleSearchChange}
+                placeholder="Veranstaltungen suchen..."
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+              />
+            </div>
           </div>
-          
-          <div className="header-search-box">
-            <SearchBox
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Veranstaltungen suchen..."
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-            />
-          </div>
-        </div>
         )}
         {warning && (
           <Alert variant="warning" className="dashboard-alert">
             {warning}
+          </Alert>
+        )}
+        {/* Add this with the other alerts */}
+        {success && (
+          <Alert variant="success" className="dashboard-alert">
+            {success}
           </Alert>
         )}
         {error && (
@@ -330,7 +379,9 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
                       </div>
                       <span className="events-count">
                         <span className="count-number">
-                          {hasEvents ? filteredEventsByCalendar[calendar].length : 0}
+                          {hasEvents
+                            ? filteredEventsByCalendar[calendar].length
+                            : 0}
                         </span>
                         <span className="count-label">
                           {hasEvents
@@ -352,9 +403,15 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
                             <Table className="events-table">
                               <thead>
                                 <tr>
-                                  <th style={{ minWidth: "200px" }}>Veranstaltung</th>
-                                  <th style={{ minWidth: "150px" }}>Meine Rolle(n)</th>
-                                  <th style={{ minWidth: "120px" }}>Datum/Uhrzeit</th>
+                                  <th style={{ minWidth: "200px" }}>
+                                    Veranstaltung
+                                  </th>
+                                  <th style={{ minWidth: "150px" }}>
+                                    Meine Rolle(n)
+                                  </th>
+                                  <th style={{ minWidth: "120px" }}>
+                                    Datum/Uhrzeit
+                                  </th>
                                   <th className="actions-column">Aktion</th>
                                   <th className="leave-column">Verlassen</th>
                                 </tr>
@@ -415,7 +472,9 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
                                         <Button
                                           variant="outline-primary"
                                           size="sm"
-                                          onClick={() => handleEventClick(event)}
+                                          onClick={() =>
+                                            handleEventClick(event)
+                                          }
                                           className="open-calendar-button"
                                         >
                                           <i className="bi bi-info-circle me-1"></i>
@@ -428,36 +487,15 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
                                         <Button
                                           variant="danger"
                                           size="sm"
-                                          onClick={() => handleLeaveEvent(event)}
-                                          className="leave-event-button"
-                                          disabled={
-                                            isProcessingLeave &&
-                                            leavingEventId === event.id
+                                          onClick={() =>
+                                            handleLeaveClick(event)
                                           }
+                                          className="leave-event-button"
                                         >
-                                          {isProcessingLeave &&
-                                          leavingEventId === event.id ? (
-                                            <>
-                                              <Spinner
-                                                as="span"
-                                                animation="border"
-                                                size="sm"
-                                                role="status"
-                                                aria-hidden="true"
-                                                className="me-2"
-                                              />
-                                              <span className="button-text">
-                                                Wird entfernt...
-                                              </span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <PersonDash className="button-icon" />
-                                              <span className="button-text">
-                                                Verlassen
-                                              </span>
-                                            </>
-                                          )}
+                                          <PersonDash className="button-icon" />
+                                          <span className="button-text">
+                                            Verlassen
+                                          </span>
                                         </Button>
                                       </td>
                                     </tr>
@@ -533,7 +571,7 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
                                       <Button
                                         variant="danger"
                                         size="sm"
-                                        onClick={() => handleLeaveEvent(event)}
+                                        onClick={() => handleLeaveClick(event)}
                                         className="leave-event-button"
                                       >
                                         <PersonDash className="me-1" />
@@ -561,12 +599,56 @@ function UserAssignedDashboard({ setAuth,handleLogout }) {
 
         {/* Event Modal */}
         {showEventModal && (
-          <EventModal 
-            event={selectedEvent} 
-            onClose={() => setShowEventModal(false)} 
+          <EventModal
+            event={selectedEvent}
+            onClose={() => setShowEventModal(false)}
           />
         )}
       </div>
+      {/* Leave Event Confirmation Modal */}
+      <Modal
+        show={showLeaveConfirmModal}
+        onHide={() => !isLeaving && setShowLeaveConfirmModal(false)}
+        backdrop={isLeaving ? "static" : true}
+        keyboard={!isLeaving}
+      >
+        <Modal.Header closeButton={!isLeaving}>
+          <Modal.Title>Verlassen bestätigen</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Sind Sie sicher, dass Sie die Veranstaltung "{eventToLeave?.summary}"
+          verlassen möchten?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowLeaveConfirmModal(false)}
+            disabled={isLeaving}
+          >
+            Abbrechen
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleLeaveConfirm}
+            disabled={isLeaving}
+          >
+            {isLeaving ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+                <span className="ms-2">Wird entfernt...</span>
+              </>
+            ) : (
+              "Verlassen"
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </DashboardLayout>
   );
 }

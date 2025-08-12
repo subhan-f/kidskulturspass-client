@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Table, Alert, Badge, Spinner } from "react-bootstrap";
+import { Modal, Button, Table, Alert, Badge, Spinner } from "react-bootstrap";
 import {
   ArrowClockwise,
   Calendar3,
@@ -14,11 +14,13 @@ import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal";
 
-function UserUnassignedDashboard({ setAuth,handleLogout }) {
+function UserUnassignedDashboard({ setAuth, handleLogout }) {
   const [user, setUser] = useState(null);
   const [categorizedEvents, setCategorizedEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Daten werden geladen..."
+  );
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,24 +30,38 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
   const [isProcessingJoin, setIsProcessingJoin] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showJoinConfirmModal, setShowJoinConfirmModal] = useState(false);
+  const [eventToJoin, setEventToJoin] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [isJoining, setIsJoining] = useState(false);
 
-  const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
-  const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
+  const API_URL =
+    "https://user-dashboard-data-754826373806.europe-west1.run.app";
+  const USER_API_URL =
+    "https://artist-crud-function-754826373806.europe-west10.run.app";
 
   const CALENDAR_MAPPING = {
     "Klavier Mitmachkonzert": "info@kidskulturspass.de",
-    "Geigen Mitmachkonzert": "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
-    "Weihnachts Mitmachkonzert": "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
+    "Geigen Mitmachkonzert":
+      "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
+    "Weihnachts Mitmachkonzert":
+      "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
     "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
-    "Laternenumzug mit Musik": "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
-    "Puppentheater": "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
+    "Laternenumzug mit Musik":
+      "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
+    Puppentheater:
+      "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
   };
 
   // Sort events by date (most recent first)
   const sortEventsByDate = (eventsArray) => {
     return [...eventsArray].sort((a, b) => {
-      const dateA = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : 0;
-      const dateB = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+      const dateA = a.start?.dateTime
+        ? new Date(a.start.dateTime).getTime()
+        : 0;
+      const dateB = b.start?.dateTime
+        ? new Date(b.start.dateTime).getTime()
+        : 0;
       return dateA - dateB; // For ascending order (oldest first)
       // Use return dateB - dateA; for descending order (newest first)
     });
@@ -59,24 +75,30 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
 
       const res = await authApi.getMe();
       const currentUser = res.data.user;
-      const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
+      const userData = await axios.get(
+        `${USER_API_URL}/?id=${currentUser._id}`
+      );
       setUser(userData.data);
 
       const joinedCalendars = userData.data.joinedCalendars || [];
-      const joinedCalendarsEncoded = encodeURIComponent(JSON.stringify(joinedCalendars));
+      const joinedCalendarsEncoded = encodeURIComponent(
+        JSON.stringify(joinedCalendars)
+      );
 
       setLoadingMessage("Nicht zugewiesene Veranstaltungen werden geladen...");
       const unassignedRes = await axios.get(
         `${API_URL}/unassigned?joinedCalendars=${joinedCalendarsEncoded}`
       );
       const responseData = unassignedRes.data;
-      
+
       // Sort events for each calendar by date
       const sortedCategorizedEvents = {};
-      Object.keys(responseData.categorizedEvents || {}).forEach(calendar => {
-        sortedCategorizedEvents[calendar] = sortEventsByDate(responseData.categorizedEvents[calendar]);
+      Object.keys(responseData.categorizedEvents || {}).forEach((calendar) => {
+        sortedCategorizedEvents[calendar] = sortEventsByDate(
+          responseData.categorizedEvents[calendar]
+        );
       });
-      
+
       setCategorizedEvents(sortedCategorizedEvents);
 
       const initialExpandState = {};
@@ -88,7 +110,9 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
       setLoading(false);
     } catch (err) {
       console.error("Fehler beim Laden der Daten:", err);
-      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      setError(
+        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
+      );
       setLoading(false);
     }
   };
@@ -111,64 +135,68 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
   }, []);
 
   // Handle join event button click
-  const handleJoinEvent = useCallback(
-    async (event) => {
-      if (isProcessingJoin) return;
+  const handleJoinClick = useCallback((event) => {
+    setEventToJoin(event);
+    setShowJoinConfirmModal(true);
+  }, []);
 
-      setIsProcessingJoin(true);
-      setJoiningEventId(event.id);
-      setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
-      setLoading(true);
+  const handleJoinConfirm = useCallback(async () => {
+    if (!eventToJoin || isJoining) return;
 
-      try {
-        const calendarName = event.calendarName?.trim().toLowerCase();
-        let calendarId = null;
+    setIsJoining(true);
+    setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
+    setSuccess(null); // Reset success state
+    setWarning(null); // Reset warning state
 
-        for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
-          if (name.trim().toLowerCase() === calendarName) {
-            calendarId = id;
-            break;
-          }
+    try {
+      const calendarName = eventToJoin.calendarName?.trim().toLowerCase();
+      let calendarId = null;
+
+      for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
+        if (name.trim().toLowerCase() === calendarName) {
+          calendarId = id;
+          break;
         }
-
-        if (!calendarId) {
-          console.error("Calendar ID not found for:", event.calendarName);
-          setWarning("Kalender-ID konnte nicht gefunden werden");
-          setLoading(false);
-          setIsProcessingJoin(false);
-          setJoiningEventId(null);
-          return;
-        }
-
-        const requestData = {
-          calendarId,
-          eventId: event.id,
-          artistEmail: user["E-Mail"],
-        };
-
-        const response = await axios.post(`${API_URL}/add-artist`, requestData);
-
-        if (response.data.success) {
-          setWarning("Artist erfolgreich hinzugefügt!");
-        } else {
-          setWarning(response.data.message || "Fehler beim Hinzufügen des Artists");
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 20000));
-        await fetchData();
-
-      } catch (error) {
-        console.error("Error:", error);
-        setError("Fehler beim Hinzufügen des Artists");
-      } finally {
-        setIsProcessingJoin(false);
-        setJoiningEventId(null);
-        setLoading(false);
       }
-    },
-    [user, fetchData, isProcessingJoin]
-  );
 
+      if (!calendarId) {
+        console.error("Calendar ID not found for:", eventToJoin.calendarName);
+        setWarning("Kalender-ID konnte nicht gefunden werden");
+        setIsJoining(false);
+        return;
+      }
+
+      const requestData = {
+        calendarId,
+        eventId: eventToJoin.id,
+        artistEmail: user["E-Mail"],
+      };
+
+      const response = await axios.post(`${API_URL}/add-artist`, requestData);
+
+      if (response.data.success) {
+        // Wait before refreshing
+        await new Promise((resolve) => setTimeout(resolve, 20000));
+
+        setSuccess("Artist erfolgreich zur Veranstaltung hinzugefügt!");
+        setTimeout(() => {
+          setSuccess(null);
+        }, 5000);
+
+        await fetchData();
+        setShowJoinConfirmModal(false);
+      } else {
+        setWarning(
+          response.data.message || "Fehler beim Hinzufügen des Artists"
+        );
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setError("Fehler beim Hinzufügen des Artists");
+    } finally {
+      setIsJoining(false);
+    }
+  }, [eventToJoin, user, fetchData]);
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
     const filtered = {};
@@ -176,9 +204,15 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
     Object.keys(categorizedEvents).forEach((calendar) => {
       filtered[calendar] = (categorizedEvents[calendar] || []).filter(
         (event) =>
-          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
+          (event.summary || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (event.location || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     });
 
@@ -226,47 +260,60 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
   }
 
   return (
-    <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout
+      handleLogout={handleLogout}
+      setAuth={setAuth}
+      onRefresh={handleRefresh}
+    >
       <div className="user-unassigned-dashboard">
         {/* Header section with welcome message and search box */}
         {!loading && (
-        <div className="transparent-header-container">
-          <div className="header-welcome-content">
-            <h1 className="dashboard-main-title">
-              Willkommen, {user?.Name || "Benutzer"}!
-            </h1>
-            {user?.joinedCalendars?.length > 0 && (
-              <div style={{ margin: "15px 0px" }} className="joined-calendars-badges">
-                Deine beigetretenen Kalender:
-                {user.joinedCalendars.map((calendar, index) => (
-                  <Badge
-                    key={index}
-                    bg="primary"
-                    style={{ margin: "0px 2px" }}
-                    className="calendar-badge"
-                  >
-                    {calendar.Calendar}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
+          <div className="transparent-header-container">
+            <div className="header-welcome-content">
+              <h1 className="dashboard-main-title">
+                Willkommen, {user?.Name || "Benutzer"}!
+              </h1>
+              {user?.joinedCalendars?.length > 0 && (
+                <div
+                  style={{ margin: "15px 0px" }}
+                  className="joined-calendars-badges"
+                >
+                  Deine beigetretenen Kalender:
+                  {user.joinedCalendars.map((calendar, index) => (
+                    <Badge
+                      key={index}
+                      bg="primary"
+                      style={{ margin: "0px 2px" }}
+                      className="calendar-badge"
+                    >
+                      {calendar.Calendar}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="header-search-box">
-            <SearchBox
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Veranstaltungen suchen..."
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-            />
+            <div className="header-search-box">
+              <SearchBox
+                value={searchTerm}
+                onChange={handleSearchChange}
+                placeholder="Veranstaltungen suchen..."
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+              />
+            </div>
           </div>
-        </div>
         )}
 
         {warning && (
           <Alert variant="warning" className="dashboard-alert">
             {warning}
+          </Alert>
+        )}
+        {/* Add this with the other alerts */}
+        {success && (
+          <Alert variant="success" className="dashboard-alert">
+            {success}
           </Alert>
         )}
         {error && (
@@ -319,7 +366,9 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
                       </div>
                       <span className="events-count">
                         <span className="count-number">
-                          {hasEvents ? filteredEventsByCalendar[calendar].length : 0}
+                          {hasEvents
+                            ? filteredEventsByCalendar[calendar].length
+                            : 0}
                         </span>
                         <span className="count-label">
                           {hasEvents
@@ -341,8 +390,12 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
                             <Table className="events-table">
                               <thead>
                                 <tr>
-                                  <th style={{ minWidth: "200px" }}>Veranstaltung</th>
-                                  <th style={{ minWidth: "120px" }}>Datum/Uhrzeit</th>
+                                  <th style={{ minWidth: "200px" }}>
+                                    Veranstaltung
+                                  </th>
+                                  <th style={{ minWidth: "120px" }}>
+                                    Datum/Uhrzeit
+                                  </th>
                                   <th style={{ minWidth: "150px" }}>Ort</th>
                                   <th className="actions-column">Aktion</th>
                                   <th className="join-column">Beitreten</th>
@@ -391,7 +444,9 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
                                         <Button
                                           variant="outline-primary"
                                           size="sm"
-                                          onClick={() => handleEventClick(event)}
+                                          onClick={() =>
+                                            handleEventClick(event)
+                                          }
                                           className="open-calendar-button"
                                         >
                                           <i className="bi bi-info-circle me-1"></i>
@@ -404,36 +459,13 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
                                         <Button
                                           variant="success"
                                           size="sm"
-                                          onClick={() => handleJoinEvent(event)}
+                                          onClick={() => handleJoinClick(event)}
                                           className="join-event-button"
-                                          disabled={
-                                            isProcessingJoin &&
-                                            joiningEventId === event.id
-                                          }
                                         >
-                                          {isProcessingJoin &&
-                                          joiningEventId === event.id ? (
-                                            <>
-                                              <Spinner
-                                                as="span"
-                                                animation="border"
-                                                size="sm"
-                                                role="status"
-                                                aria-hidden="true"
-                                                className="me-2"
-                                              />
-                                              <span className="d-none d-md-inline">
-                                                Wird hinzugefügt...
-                                              </span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <PersonCircle className="button-icon" />
-                                              <span className="d-none d-md-inline">
-                                                Beitreten
-                                              </span>
-                                            </>
-                                          )}
+                                          <PersonCircle className="button-icon" />
+                                          <span className="d-none d-md-inline">
+                                            Beitreten
+                                          </span>
                                         </Button>
                                       </td>
                                     </tr>
@@ -495,31 +527,10 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
                                       <Button
                                         variant="success"
                                         size="sm"
-                                        onClick={() => handleJoinEvent(event)}
-                                        disabled={
-                                          isProcessingJoin &&
-                                          joiningEventId === event.id
-                                        }
+                                        onClick={() => handleJoinClick(event)}
                                       >
-                                        {isProcessingJoin &&
-                                        joiningEventId === event.id ? (
-                                          <>
-                                            <Spinner
-                                              as="span"
-                                              animation="border"
-                                              size="sm"
-                                              role="status"
-                                              aria-hidden="true"
-                                              className="me-2"
-                                            />
-                                            Wird hinzugefügt...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <PersonCircle className="me-1" />
-                                            Beitreten
-                                          </>
-                                        )}
+                                        <PersonCircle className="me-1" />
+                                        Beitreten
                                       </Button>
                                     </div>
                                   </div>
@@ -544,12 +555,57 @@ function UserUnassignedDashboard({ setAuth,handleLogout }) {
 
         {/* Event Modal */}
         {showEventModal && (
-          <EventModal 
-            event={selectedEvent} 
-            onClose={() => setShowEventModal(false)} 
+          <EventModal
+            event={selectedEvent}
+            onClose={() => setShowEventModal(false)}
           />
         )}
       </div>
+      {/* Join Event Confirmation Modal */}
+      {/* Join Event Confirmation Modal */}
+      <Modal
+        show={showJoinConfirmModal}
+        onHide={() => !isJoining && setShowJoinConfirmModal(false)}
+        backdrop={isJoining ? "static" : true}
+        keyboard={!isJoining}
+      >
+        <Modal.Header closeButton={!isJoining}>
+          <Modal.Title>Beitreten bestätigen</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Sind Sie sicher, dass Sie der Veranstaltung "{eventToJoin?.summary}"
+          beitreten möchten?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowJoinConfirmModal(false)}
+            disabled={isJoining}
+          >
+            Abbrechen
+          </Button>
+          <Button
+            variant="success"
+            onClick={handleJoinConfirm}
+            disabled={isJoining}
+          >
+            {isJoining ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+                <span className="ms-2">Wird hinzugefügt...</span>
+              </>
+            ) : (
+              "Beitreten"
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </DashboardLayout>
   );
 }
