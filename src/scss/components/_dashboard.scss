@@ -1047,3 +1047,147 @@
 .event-mobile-actions .btn:last-child {
   margin-right: 0;
 }
+/* Busy Artist Modal Styles */
+.add-busy-btn {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+.add-busy-btn:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
+  color: #212529;
+}
+
+/* Days Selection Container */
+.days-selection-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.day-button {
+  flex: 1 0 calc(33.333% - 8px);
+  min-width: 100px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.day-button:hover {
+  transform: translateY(-2px);
+}
+
+/* Busy Artist Form Styles */
+.busy-artist-form .form-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.busy-artist-form .form-select {
+  padding: 10px 12px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.busy-artist-form .form-select:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .days-selection-container {
+    gap: 6px;
+  }
+  
+  .day-button {
+    flex: 1 0 calc(50% - 6px);
+    padding: 6px 8px;
+    font-size: 0.9rem;
+  }
+  
+  .add-busy-btn, .add-unavailability-btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .d-flex.justify-content-end.mb-3.gap-2 {
+    flex-direction: column;
+  }
+}
+
+/* Modal Header for Busy Artist */
+.modal-header.busy-artist-header {
+  background-color: #fff3cd;
+  border-bottom: 1px solid #ffeeba;
+}
+
+.modal-header.busy-artist-header .modal-title {
+  color: #856404;
+  font-weight: 600;
+}
+
+/* Active Day State */
+.day-button.active, 
+.day-button:active, 
+.day-button[aria-pressed="true"] {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+/* Warning Button Styles for Busy Artist */
+.btn-warning.busy-submit-btn {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+  font-weight: 500;
+}
+
+.btn-warning.busy-submit-btn:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
+  color: #212529;
+}
+
+.btn-warning.busy-submit-btn:disabled {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  opacity: 0.65;
+}
+
+/* Month Selection Styles */
+.month-select-container {
+  margin-bottom: 20px;
+}
+
+.month-select-container label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  color: #495057;
+}
+
+/* Busy Artist Modal Content */
+.busy-artist-modal-content {
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+}
+
+/* Instructions Text */
+.busy-artist-instructions {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #ffc107;
+}

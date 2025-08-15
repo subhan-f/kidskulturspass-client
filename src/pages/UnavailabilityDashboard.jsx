@@ -1,6 +1,14 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
-import { Table, Button, Modal, Badge, Spinner, Alert } from "react-bootstrap";
+import {
+  Table,
+  Button,
+  Modal,
+  Badge,
+  Spinner,
+  Alert,
+  Form,
+} from "react-bootstrap";
 import {
   ChevronDown,
   ChevronUp,
@@ -9,6 +17,7 @@ import {
   ExclamationCircle,
   Plus,
   Check,
+  Clock,
 } from "react-bootstrap-icons";
 import DashboardLayout from "../components/DashboardLayout";
 import SearchBox from "../components/SearchBox";
@@ -25,6 +34,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFormModal, setShowFormModal] = useState(false);
+  const [showBusyArtistModal, setShowBusyArtistModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [startDate, setStartDate] = useState(null);
@@ -36,6 +46,11 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [joinedCalendars, setJoinedCalendars] = useState([]);
 
+  // Busy artist state
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedDays, setSelectedDays] = useState([]);
+  const [isBusySubmitting, setIsBusySubmitting] = useState(false);
+
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
 
   const USER_API_URL =
@@ -43,73 +58,117 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const UNAVAILABLE_API_URL =
     "https://unavailable-events-754826373806.europe-west1.run.app";
 
+  const currentMonthIndex = new Date().getMonth();
+  const currentMonthName = [
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember",
+  ][currentMonthIndex];
+
+  const monthsFromCurrent = [
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember",
+  ].slice(currentMonthIndex);
+
+  const daysOfWeek = [
+    { id: "monday", label: "Montag" },
+    { id: "tuesday", label: "Dienstag" },
+    { id: "wednesday", label: "Mittwoch" },
+    { id: "thursday", label: "Donnerstag" },
+    { id: "friday", label: "Freitag" },
+    { id: "saturday", label: "Samstag" },
+    { id: "sunday", label: "Sonntag" },
+  ];
+
   const toBerlinTime = (date) => {
     return new Date(
       date.toLocaleString("en-US", { timeZone: "Europe/Berlin" })
     );
   };
 
-  const fetchUnavailabilities = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+const fetchUnavailabilities = useCallback(async () => {
+  setLoading(true);
+  setError(null);
 
-    try {
-      const userRes = await authApi.getMe();
-      setCurrentUser(userRes.data.user);
+  try {
+    const userRes = await authApi.getMe();
+    setCurrentUser(userRes.data.user);
 
-      const userDataRes = await axios.get(
-        `${USER_API_URL}/?id=${userRes.data.user._id}`
-      );
-      const userFromApi = userDataRes.data;
-      const calendars = userFromApi.joinedCalendars || [];
-      setJoinedCalendars(calendars);
+    const userDataRes = await axios.get(
+      `${USER_API_URL}/?id=${userRes.data.user._id}`
+    );
+    const userFromApi = userDataRes.data;
 
-      const calendarNames = calendars.map((c) => c.Calendar);
-      const payload = {
-        user: {
-          name: userFromApi.Name,
-          email: userFromApi["E-Mail"],
-          calendars: calendarNames,
-        },
+    // ✅ Always use only "Sperrtermine" calendar as a string
+    const calendarName = "Sperrtermine";
+    setJoinedCalendars([{ Calendar: calendarName }]);
+
+    const payload = {
+      user: {
+        name: userFromApi.Name,
+        email: userFromApi["E-Mail"],
+        calendars: calendarName, // ✅ now a string, not array
+      },
+    };
+    console.log("Fetching unavailabilities with payload:", payload);
+
+    const unavailabilityRes = await axios.post(
+      `${UNAVAILABLE_API_URL}/getUnavailabilities`,
+      payload
+    );
+    console.log("Unavailability data fetched:", unavailabilityRes.data);
+
+    const fetched = (unavailabilityRes.data || []).map((event) => {
+      const berlinStart = new Date(event.start.dateTime || event.start.date);
+      const berlinEnd = new Date(event.end.dateTime || event.end.date);
+      berlinEnd.setDate(berlinEnd.getDate() - 1);
+
+      return {
+        id:
+          event.id ||
+          event.iCalUID ||
+          event.uid ||
+          `${berlinStart.getTime()}-${Math.random()}`,
+        startDate: berlinStart.toISOString().split("T")[0],
+        endDate: berlinEnd.toISOString().split("T")[0],
+        details: "Nicht verfügbar",
+        uid: event.extendedProperties?.private?.uid || event.id || "",
+        htmlLink: event.htmlLink || "",
       };
+    });
 
-      const unavailabilityRes = await axios.post(
-        `${UNAVAILABLE_API_URL}/getUnavailabilities`,
-        payload
-      );
-      console.log("Unavailability data fetched:", unavailabilityRes.data);
-      const fetched = (unavailabilityRes.data || []).map((event) => {
-        const berlinStart = new Date(event.start.dateTime || event.start.date);
+    setUnavailabilities(fetched);
+  } catch (err) {
+    console.error("Error loading data:", err);
+    setError(
+      "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
+    );
+    toast.error("Fehler beim Laden der Sperrtermine");
+    setUnavailabilities([]);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
-        const berlinEnd = new Date(event.end.dateTime || event.end.date);
-        berlinEnd.setDate(berlinEnd.getDate() - 1); // ✅ subtract 1 day
-
-        return {
-          id:
-            event.id ||
-            event.iCalUID ||
-            event.uid ||
-            `${berlinStart.getTime()}-${Math.random()}`,
-          startDate: berlinStart.toISOString().split("T")[0],
-          endDate: berlinEnd.toISOString().split("T")[0],
-          details: "Nicht verfügbar",
-          uid: event.extendedProperties?.private?.uid || event.id || "",
-          htmlLink: event.htmlLink || ""
-        };
-      });
-
-      setUnavailabilities(fetched);
-    } catch (err) {
-      console.error("Error loading data:", err);
-      setError(
-        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
-      );
-      toast.error("Fehler beim Laden der Sperrtermine");
-      setUnavailabilities([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     fetchUnavailabilities();
@@ -133,7 +192,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   }, [unavailabilities, searchTerm]);
 
   const formatDateNoTZ = (date) => {
-    // Get YYYY-MM-DD from date without timezone shifts
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -151,9 +209,8 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     }
 
     try {
-      const calendarNames = joinedCalendars.map((c) => c.Calendar);
+      const calendarNames = "Sperrtermine"; // Only use Sperrtermine calendar
 
-      // ✅ Use timezone-independent formatting
       const formattedStart = formatDateNoTZ(startDate);
       const formattedEnd = formatDateNoTZ(endDate);
 
@@ -166,17 +223,19 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         unavailability: {
           startDate: formattedStart,
           endDate: formattedEnd,
+          veryBusy: false,
           reason: "Nicht verfügbar",
           details: "Nicht verfügbar",
         },
       };
+      console.log("Unavailability data to submit:", unavailabilityData);
 
       await axios.post(
         `${UNAVAILABLE_API_URL}/unavailabilities`,
         unavailabilityData
       );
 
-      setSubmitSuccess(true);
+      // setSubmitSuccess(true);
       toast.success("Sperrtermin erfolgreich hinzugefügt");
 
       setTimeout(() => {
@@ -190,6 +249,86 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleBusyArtistSubmit = async (e) => {
+    e.preventDefault();
+    setIsBusySubmitting(true);
+
+    if (!selectedMonth || selectedDays.length === 0) {
+      toast.error(
+        "Bitte wählen Sie einen Monat und mindestens einen Wochentag aus."
+      );
+      setIsBusySubmitting(false);
+      return;
+    }
+
+    try {
+      const calendarNames = "Sperrtermine"; // Only use Sperrtermine calendar
+
+      // Get current year
+      const currentYear = new Date().getFullYear();
+      // Get month index (0-11)
+      const monthIndex =
+        monthsFromCurrent.indexOf(selectedMonth) + currentMonthIndex;
+
+      // Get current date
+      const today = new Date();
+
+      // Create start date - if current month, use today's date, otherwise first of month
+      const startDate =
+        monthIndex === today.getMonth()
+          ? new Date(today)
+          : new Date(currentYear, monthIndex, 1);
+
+      // Create end date (last day of month)
+      const endDate = new Date(currentYear, monthIndex + 1, 0);
+
+      // Format dates
+      const formattedStart = formatDateNoTZ(startDate);
+      const formattedEnd = formatDateNoTZ(endDate);
+
+      const unavailabilityData = {
+        user: {
+          name: currentUser.Name,
+          email: currentUser["E-Mail"],
+          calendars: calendarNames,
+        },
+        unavailability: {
+          startDate: formattedStart,
+          endDate: formattedEnd,
+          reason: "Ausgebucht",
+          veryBusy: true,
+          details: `Ausgebucht an folgenden Wochentagen: ${selectedDays.join(
+            ", "
+          )}`,
+          daysOfWeek: selectedDays,
+        },
+      };
+      console.log("Unavailability data to submit:", unavailabilityData);
+
+      await axios.post(
+       `${UNAVAILABLE_API_URL}/busy-unavailabilities`,
+        unavailabilityData
+      ); 
+
+      toast.success("Ausbuchung erfolgreich hinzugefügt");
+      setShowBusyArtistModal(false);
+      setSelectedMonth("");
+      setSelectedDays([]);
+      fetchUnavailabilities();
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error("Fehler beim Speichern der Ausbuchung");
+    } finally {
+      setIsBusySubmitting(false);
+    }
+  };
+
+  const toggleDaySelection = (dayId) => {
+    setSelectedDays((prev) =>
+      prev.includes(dayId) ? prev.filter((d) => d !== dayId) : [...prev, dayId]
+    );
   };
 
   const resetForm = () => {
@@ -206,7 +345,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
 
     setIsDeleting(true);
     try {
-      const calendarNames = joinedCalendars.map((c) => c.Calendar);
+      const calendarNames = "Sperrtermine"; // Only use Sperrtermine calendar
 
       const deletePayload = {
         user: {
@@ -275,17 +414,26 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
           </Alert>
         )}
 
-        <div className="d-flex justify-content-end mb-3">
+        <div className="d-flex justify-content-end mb-3 gap-2">
           <Button
             variant="primary"
             onClick={() => {
-              resetForm(); // reset when opening
+              resetForm();
               setShowFormModal(true);
             }}
             className="add-unavailability-btn"
           >
             <Plus className="me-2" />
             Sperrtermin hinzufügen
+          </Button>
+
+          <Button
+            variant="warning"
+            onClick={() => setShowBusyArtistModal(true)}
+            className="add-busy-btn"
+          >
+            <Clock className="me-2" />
+            Ausgebucht eintragen
           </Button>
         </div>
 
@@ -495,8 +643,8 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         }}
         size="lg"
         centered
-        backdrop={isSubmitting ? "static" : true} // prevent close on overlay when submitting
-        keyboard={!isSubmitting} // prevent ESC close when submitting
+        backdrop={isSubmitting ? "static" : true}
+        keyboard={!isSubmitting}
       >
         <Modal.Header closeButton={!isSubmitting}>
           <Modal.Title>Sperrtermin eintragen</Modal.Title>
@@ -523,7 +671,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                     selected={startDate}
                     onChange={(date) => {
                       setStartDate(date);
-                      setEndDate(null); // reset end date when start changes
+                      setEndDate(null);
                     }}
                     selectsStart
                     startDate={startDate}
@@ -600,6 +748,116 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         </Modal.Body>
       </Modal>
 
+      {/* Busy Artist Modal */}
+      <Modal
+        show={showBusyArtistModal}
+        onHide={() => {
+          if (!isBusySubmitting) {
+            setShowBusyArtistModal(false);
+            setSelectedMonth("");
+            setSelectedDays([]);
+          }
+        }}
+        size="lg"
+        centered
+        backdrop={isBusySubmitting ? "static" : true}
+        keyboard={!isBusySubmitting}
+      >
+        <Modal.Header closeButton={!isBusySubmitting}>
+          <Modal.Title>Ausgebucht eintragen</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleBusyArtistSubmit}>
+            {/* Month Selection */}
+            <div className="form-group mb-3">
+              <label className="form-label">Monat auswählen</label>
+              {selectedMonth === currentMonthName && (
+                <div className="alert alert-info small mb-2">
+                  Für den aktuellen Monat ({currentMonthName}) beginnt die
+                  Sperrung ab heute.
+                </div>
+              )}
+              <Form.Select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                required
+              >
+                <option value="">-- Monat auswählen --</option>
+                {monthsFromCurrent.map((month) => (
+                  <option key={month} value={month}>
+                    {month}{" "}
+                    {month === currentMonthName ? "(Aktueller Monat)" : ""}
+                  </option>
+                ))}
+              </Form.Select>
+            </div>
+
+            {/* Days of Week Selection */}
+            <div className="form-group mb-3">
+              <label className="form-label">Wochentage auswählen</label>
+              <div className="days-selection-container">
+                {daysOfWeek.map((day) => (
+                  <Button
+                    key={day.id}
+                    variant={
+                      selectedDays.includes(day.id)
+                        ? "primary"
+                        : "outline-primary"
+                    }
+                    onClick={() => toggleDaySelection(day.id)}
+                    className="day-button"
+                    type="button"
+                  >
+                    {day.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="d-flex justify-content-end">
+              <Button
+                variant="secondary"
+                className="me-2"
+                onClick={() => {
+                  setShowBusyArtistModal(false);
+                  setSelectedMonth("");
+                  setSelectedDays([]);
+                }}
+                disabled={isBusySubmitting}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                variant="warning"
+                type="submit"
+                disabled={
+                  isBusySubmitting ||
+                  !selectedMonth ||
+                  selectedDays.length === 0
+                }
+              >
+                {isBusySubmitting ? (
+                  <>
+                    <Spinner
+                      as="span"
+                      animation="border"
+                      size="sm"
+                      role="status"
+                      aria-hidden="true"
+                      className="me-2"
+                    />
+                    Speichern...
+                  </>
+                ) : (
+                  "Ausgebucht eintragen"
+                )}
+              </Button>
+            </div>
+          </form>
+        </Modal.Body>
+      </Modal>
+
       {/* Delete Modal */}
       <Modal
         show={showDeleteModal}
@@ -609,8 +867,8 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
           }
         }}
         centered
-        backdrop={isDeleting ? "static" : true} // prevent overlay close when deleting
-        keyboard={!isDeleting} // prevent ESC close when deleting
+        backdrop={isDeleting ? "static" : true}
+        keyboard={!isDeleting}
       >
         <Modal.Header closeButton={!isDeleting}>
           <Modal.Title>Delete Unavailability</Modal.Title>
