@@ -383,7 +383,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFormModal, setShowFormModal] = useState(false);
-  const [showBusyArtistModal, setShowBusyArtistModal] = useState(false);
   const [showCustomRepeatModal, setShowCustomRepeatModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -891,15 +890,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
           >
             <Plus className="me-2" />
             Sperrtermin hinzufügen
-          </Button>
-
-          <Button
-            variant="warning"
-            onClick={() => setShowBusyArtistModal(true)}
-            className="add-busy-btn"
-          >
-            <Clock className="me-2" />
-            Ausgebucht eintragen
           </Button>
         </div>
 
@@ -1502,115 +1492,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         </Modal.Body>
       </Modal>
 
-      {/* Busy Artist Modal */}
-      <Modal
-        show={showBusyArtistModal}
-        onHide={() => {
-          if (!isBusySubmitting) {
-            setShowBusyArtistModal(false);
-            setSelectedMonth("");
-            setBusySelectedDays([]);
-          }
-        }}
-        size="lg"
-        centered
-        backdrop={isBusySubmitting ? "static" : true}
-        keyboard={!isBusySubmitting}
-      >
-        <Modal.Header closeButton={!isBusySubmitting}>
-          <Modal.Title>Ausgebucht eintragen</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <form onSubmit={handleBusyArtistSubmit}>
-            {/* Month Selection */}
-            <div className="form-group mb-3">
-              <label className="form-label">Monat auswählen</label>
-              {selectedMonth === currentMonthName && (
-                <div className="alert alert-info small mb-2">
-                  Für den aktuellen Monat ({currentMonthName}) beginnt die
-                  Sperrung ab heute.
-                </div>
-              )}
-              <Form.Select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                required
-              >
-                <option value="">-- Monat auswählen --</option>
-                {monthsFromCurrent.map((month) => (
-                  <option key={month} value={month}>
-                    {month}{" "}
-                    {month === currentMonthName ? "(Aktueller Monat)" : ""}
-                  </option>
-                ))}
-              </Form.Select>
-            </div>
-
-            {/* Days of Week Selection */}
-            <div className="form-group mb-3">
-              <label className="form-label">Wochentage auswählen</label>
-              <div className="days-selection-container">
-                {daysOfWeek.map((day) => (
-                  <Button
-                    key={day.id}
-                    variant={
-                      busySelectedDays.includes(day.id)
-                        ? "primary"
-                        : "outline-primary"
-                    }
-                    onClick={() => toggleBusyDaySelection(day.id)}
-                    className="day-button"
-                    type="button"
-                  >
-                    {day.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div className="d-flex justify-content-end">
-              <Button
-                variant="secondary"
-                className="me-2"
-                onClick={() => {
-                  setShowBusyArtistModal(false);
-                  setSelectedMonth("");
-                  setBusySelectedDays([]);
-                }}
-                disabled={isBusySubmitting}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                variant="warning"
-                type="submit"
-                disabled={
-                  isBusySubmitting ||
-                  !selectedMonth ||
-                  busySelectedDays.length === 0
-                }
-              >
-                {isBusySubmitting ? (
-                  <>
-                    <Spinner
-                      as="span"
-                      animation="border"
-                      size="sm"
-                      role="status"
-                      aria-hidden="true"
-                      className="me-2"
-                    />
-                    Speichern...
-                  </>
-                ) : (
-                  "Ausgebucht eintragen"
-                )}
-              </Button>
-            </div>
-          </form>
-        </Modal.Body>
-      </Modal>
 
       {/* Delete Modal */}
       <Modal
