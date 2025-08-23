@@ -94,6 +94,7 @@ const mockApi = {
     };
   }
 };
+
  const artistService = {
   getArtists:async  () => await apiArtist.get('/'),
   getCalendars: () => apiArtist.get('/calendars'),
@@ -264,7 +265,18 @@ export const authApi = {
   forgotPassword: async (data) => {
     return await axiosAuth.post('/forgotPassword', { email: data.email });
   },
-
+ trackVisit: async (userId) => {
+    try {
+      const response = await axios.post(
+        `https://artist-crud-function-754826373806.europe-west10.run.app/track-visit`,
+        { userId }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error tracking visit:", error.response?.data || error.message);
+      throw error;
+    }
+  },
   resetPassword: (token, data) =>
     axiosAuth.patch(`/resetPassword/${token}`, data)
 };

@@ -286,20 +286,6 @@ const formatRecurrenceLabel = (rrule, locale = "de-DE") => {
   return label;
 };
 
-const buildEventPayload = (form) => {
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  return {
-    title: form.title || "Sperrtermin",
-    calendarName: "Sperrtermine",
-    allDay: true,
-    timezone: timezone,
-    startDate: dateToYMD(form.startDate),
-    endDate: dateToYMD(form.endDate),
-    recurrence: form.recurrence,
-  };
-};
-
 const parseRRuleToCustomState = (rrule, startDate) => {
   // Default state
   const defaultState = {
@@ -394,6 +380,9 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const [expanded, setExpanded] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [joinedCalendars, setJoinedCalendars] = useState([]);
+  const [showDeleteOptionsModal, setShowDeleteOptionsModal] = useState(false);
+  const [deleteOption, setDeleteOption] = useState("all");
+  const [recurrenceId, setRecurrenceId] = useState(null);
 
   // Recurrence state
   const [recurrencePreset, setRecurrencePreset] = useState("NONE");
@@ -411,16 +400,19 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
   const [endDateCustom, setEndDateCustom] = useState("");
   const [occurrences, setOccurrences] = useState(1);
 
+  // New state for time and all-day
+  const [startTime, setStartTime] = useState("00:00");
+  const [endTime, setEndTime] = useState("23:59");
+  const [isAllDay, setIsAllDay] = useState(true);
+
   // Busy artist state
   const [selectedMonth, setSelectedMonth] = useState("");
   const [busySelectedDays, setBusySelectedDays] = useState([]);
   const [isBusySubmitting, setIsBusySubmitting] = useState(false);
 
+  const [activeModal, setActiveModal] = useState(null);
+
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
-
-  // Add these state variables
-
-  // Add to resetForm function
 
   const USER_API_URL =
     "https://artist-crud-function-754826373806.europe-west10.run.app";
@@ -467,6 +459,79 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     { id: "saturday", label: "Samstag" },
     { id: "sunday", label: "Sonntag" },
   ];
+
+  // Generate time options in 15-minute intervals
+  const generateTimeOptions = () => {
+    const options = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const timeValue = `${String(hour).padStart(2, "0")}:${String(
+          minute
+        ).padStart(2, "0")}`;
+        options.push(timeValue);
+      }
+    }
+    return options;
+  };
+
+  const timeOptions = useMemo(() => generateTimeOptions(), []);
+
+  // Function to filter time options based on current time for today's date
+  const getFilteredTimeOptions = (isStartTime) => {
+    const now = new Date();
+
+    // Add proper null/undefined check - return all options if startDate is null
+    if (!startDate) {
+      return timeOptions;
+    }
+
+    try {
+      const isToday = startDate.toDateString() === now.toDateString();
+
+      if (!isToday || !isStartTime) return timeOptions;
+
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const roundedMinute = Math.ceil(currentMinute / 15) * 15;
+      const currentTimeValue = `${String(currentHour).padStart(
+        2,
+        "0"
+      )}:${String(roundedMinute).padStart(2, "0")}`;
+
+      return timeOptions.filter((time) => time >= currentTimeValue);
+    } catch (error) {
+      console.error("Error filtering time options:", error);
+      return timeOptions; // Return all options as fallback
+    }
+  };
+
+  const buildEventPayload = (form) => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    if (isAllDay) {
+      return {
+        title: form.title || "Sperrtermin",
+        calendarName: "Sperrtermine",
+        allDay: true,
+        timezone: timezone,
+        startDate: dateToYMD(form.startDate),
+        endDate: dateToYMD(form.endDate),
+        recurrence: form.recurrence,
+      };
+    } else {
+      return {
+        title: form.title || "Sperrtermin",
+        calendarName: "Sperrtermine",
+        allDay: false,
+        timezone: timezone,
+        startDate: dateToYMD(form.startDate),
+        endDate: dateToYMD(form.endDate),
+        startTime: startTime,
+        endTime: endTime,
+        recurrence: form.recurrence,
+      };
+    }
+  };
 
   const toBerlinTime = (date) => {
     return new Date(
@@ -524,10 +589,12 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
           startDate: berlinStart.toISOString().split("T")[0],
           endDate: berlinEnd.toISOString().split("T")[0],
           details: event.description || "Nicht verfügbar",
-          uid: event.extendedProperties?.private?.uid || event.id || "",
           htmlLink: event.htmlLink || "",
           isRecurring: event.isRecurring || false,
           recurrenceSummary: event.recurrenceSummary || "",
+          recurrenceId: event.recurringEventId || null,
+          recurrenceRule: event.recurrenceRule || null,
+          originalStartTime: event.originalStartTime || null,
         };
       });
 
@@ -565,18 +632,20 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     });
   }, [unavailabilities, searchTerm]);
 
+  // Keep the existing formatDateNoTZ function for backend:
   const formatDateNoTZ = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
-
   const handleRecurrencePresetChange = (preset) => {
     setRecurrencePreset(preset);
 
     if (preset === "CUSTOM") {
+      setActiveModal("custom");
       setShowCustomRepeatModal(true);
+      setShowFormModal(false); // Hide the add modal
       return;
     }
 
@@ -598,7 +667,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       summary,
     });
   };
-
   const handleCustomRepeatSubmit = (e) => {
     e.preventDefault();
 
@@ -639,7 +707,18 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       summary,
     });
     setRecurrencePreset("CUSTOM");
+
+    // Close custom modal and reopen add modal
     setShowCustomRepeatModal(false);
+    setActiveModal("add");
+    setShowFormModal(true);
+  };
+
+  const handleCustomModalClose = () => {
+    setShowCustomRepeatModal(false);
+    setActiveModal("add");
+    setShowFormModal(true);
+    resetCustomRepeatForm();
   };
 
   const resetCustomRepeatForm = () => {
@@ -668,6 +747,15 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       return;
     }
 
+    // Time validation for non-all-day events
+    if (!isAllDay) {
+      // If it's the same day, check that end time is after start time
+      if (startDate.getTime() === endDate.getTime() && startTime >= endTime) {
+        toast.error("Endzeit muss nach der Startzeit liegen.");
+        setIsSubmitting(false);
+      }
+    }
+
     try {
       const calendarNames = "Sperrtermine";
 
@@ -683,10 +771,13 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         unavailability: {
           startDate: formattedStart,
           endDate: formattedEnd,
+          startTime: isAllDay ? undefined : startTime,
+          endTime: isAllDay ? undefined : endTime,
+          allDay: isAllDay,
           veryBusy: false,
           reason: "Nicht verfügbar",
           details: "Nicht verfügbar",
-          recurrence: recurrenceObj, // Add recurrence object
+          recurrence: recurrenceObj,
         },
       };
 
@@ -713,113 +804,163 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     }
   };
 
-  const handleBusyArtistSubmit = async (e) => {
-    e.preventDefault();
-    setIsBusySubmitting(true);
+  const handleDeleteClick = (unavailability) => {
+    setSelectedUnavailability(unavailability);
+    setRecurrenceId(unavailability.recurrenceId || null);
 
-    if (!selectedMonth || busySelectedDays.length === 0) {
-      toast.error(
-        "Bitte wählen Sie einen Monat und mindestens einen Wochentag aus."
-      );
-      setIsBusySubmitting(false);
-      return;
-    }
-
-    try {
-      const calendarNames = "Sperrtermine"; // Only use Sperrtermine calendar
-
-      // Get current year
-      const currentYear = new Date().getFullYear();
-      // Get month index (0-11)
-      const monthIndex =
-        monthsFromCurrent.indexOf(selectedMonth) + currentMonthIndex;
-
-      // Get current date
-      const today = new Date();
-
-      // Create start date - if current month, use today's date, otherwise first of month
-      const startDate =
-        monthIndex === today.getMonth()
-          ? new Date(today)
-          : new Date(currentYear, monthIndex, 1);
-
-      // Create end date (last day of month)
-      const endDate = new Date(currentYear, monthIndex + 1, 0);
-
-      // Format dates
-      const formattedStart = formatDateNoTZ(startDate);
-      const formattedEnd = formatDateNoTZ(endDate);
-
-      const unavailabilityData = {
-        user: {
-          name: currentUser.Name,
-          email: currentUser["E-Mail"],
-          calendars: calendarNames,
-        },
-        unavailability: {
-          startDate: formattedStart,
-          endDate: formattedEnd,
-          reason: "Ausgebucht",
-          veryBusy: true,
-          details: `Ausgebucht an folgenden Wochentagen: ${busySelectedDays.join(
-            ", "
-          )}`,
-          daysOfWeek: busySelectedDays,
-        },
-      };
-      console.log("Unavailability data to submit:", unavailabilityData);
-
-      // await axios.post(
-      //   `${UNAVAILABLE_API_URL}/busy-unavailabilities`,
-      //   unavailabilityData
-      // );
-
-      toast.success("Ausbuchung erfolgreich hinzugefügt");
-      setShowBusyArtistModal(false);
-      setSelectedMonth("");
-      setBusySelectedDays([]);
-      fetchUnavailabilities();
-    } catch (error) {
-      console.error("Submission error:", error);
-      toast.error("Fehler beim Speichern der Ausbuchung");
-    } finally {
-      setIsBusySubmitting(false);
+    if (unavailability.isRecurring) {
+      setShowDeleteOptionsModal(true);
+    } else {
+      setShowDeleteModal(true);
     }
   };
 
-  const toggleBusyDaySelection = (dayId) => {
-    setBusySelectedDays((prev) =>
-      prev.includes(dayId) ? prev.filter((d) => d !== dayId) : [...prev, dayId]
-    );
-  };
+  // Add this new modal for recurrence deletion options
+  const DeleteOptionsModal = () => (
+    <Modal
+      show={showDeleteOptionsModal}
+      onHide={() => {
+        if (!isDeleting) {
+          setShowDeleteOptionsModal(false);
+        }
+      }}
+      centered
+      backdrop={isDeleting ? "static" : true}
+      keyboard={!isDeleting}
+    >
+      <Modal.Header closeButton={!isDeleting}>
+        <Modal.Title>Wiederkehrenden Termin löschen</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {isDeleting ? (
+          <div className="text-center py-3">
+            <Spinner animation="border" role="status" className="me-2" />
+            Termin wird gelöscht...
+          </div>
+        ) : (
+          <>
+            <p>Wie möchten Sie diesen wiederkehrenden Termin löschen?</p>
+            <Form>
+              <Form.Check
+                type="radio"
+                id="delete-all"
+                name="deleteOption"
+                label="Alle Termine in der Serie löschen"
+                checked={deleteOption === "all"}
+                onChange={() => setDeleteOption("all")}
+                className="mb-2"
+              />
+              <Form.Check
+                type="radio"
+                id="delete-this"
+                name="deleteOption"
+                label="Nur diesen Termin löschen"
+                checked={deleteOption === "this"}
+                onChange={() => setDeleteOption("this")}
+                className="mb-2"
+              />
+              <Form.Check
+                type="radio"
+                id="delete-following"
+                name="deleteOption"
+                label="Diesen und alle folgenden Termine löschen"
+                checked={deleteOption === "following"}
+                onChange={() => setDeleteOption("following")}
+              />
+            </Form>
+          </>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button
+          variant="secondary"
+          onClick={() => setShowDeleteOptionsModal(false)}
+          disabled={isDeleting}
+        >
+          Abbrechen
+        </Button>
+        <Button
+          variant="danger"
+          onClick={() => {
+            setShowDeleteOptionsModal(false);
+            setShowDeleteModal(true);
+          }}
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <>
+              <Spinner animation="border" size="sm" className="me-2" />
+              Löschen...
+            </>
+          ) : (
+            "Fortfahren"
+          )}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
 
   const resetForm = () => {
     setStartDate(null);
     setEndDate(null);
+    setStartTime("00:00");
+    setEndTime("23:59");
+    setIsAllDay(true);
     setSubmitSuccess(false);
     setRecurrencePreset("NONE");
     setRecurrenceObj(null);
     setRecurrenceEndChoice({ kind: "never" });
   };
-
   const handleDeleteConfirm = async () => {
-    if (!selectedUnavailability || !selectedUnavailability.uid) {
+    if (!selectedUnavailability) {
       toast.error("Ungültiger Sperrtermin ausgewählt");
       return;
     }
 
     setIsDeleting(true);
     try {
-      const calendarNames = ["Sperrtermine"]; // Only use Sperrtermine calendar
+      // Decide IDs properly
+      const parentId =
+        selectedUnavailability.recurrenceId || selectedUnavailability.id;
+      const instanceId = selectedUnavailability.id; // always has suffix if recurring
+
+      let eventIdToSend = instanceId;
+      let recurrenceIdToSend = parentId;
+
+      if (selectedUnavailability.isRecurring) {
+        if (deleteOption === "this") {
+          // ✅ single occurrence
+          eventIdToSend = instanceId;
+        } else if (deleteOption === "all" || deleteOption === "following") {
+          // ✅ parent event
+          eventIdToSend = parentId;
+        }
+      }
 
       const deletePayload = {
         user: {
           name: currentUser.Name,
           email: currentUser["E-Mail"],
-          calendars: calendarNames,
+          calendars: ["Sperrtermine"],
         },
-        uid: selectedUnavailability.uid,
+        eventId: eventIdToSend,
+        recurrenceId: recurrenceIdToSend,
+        deleteOption, // "this" | "all" | "following"
+        originalStartTime: selectedUnavailability.originalStartTime,
       };
+
+      // Add extra fields for recurring
+      if (selectedUnavailability.isRecurring) {
+        if (deleteOption === "this") {
+          deletePayload.singleInstance = true;
+          deletePayload.instanceStartDate = selectedUnavailability.startDate;
+        } else if (deleteOption === "following") {
+          deletePayload.exception = true;
+          deletePayload.exceptionStartDate = selectedUnavailability.startDate;
+        }
+      }
+
+      console.log("Delete payload:", deletePayload);
 
       await axios.delete(`${UNAVAILABLE_API_URL}/unavailabilities`, {
         data: deletePayload,
@@ -827,6 +968,9 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
 
       toast.success("Sperrtermin erfolgreich gelöscht");
       setShowDeleteModal(false);
+      setShowDeleteOptionsModal(false);
+      setDeleteOption("all");
+      setRecurrenceId(null);
       fetchUnavailabilities();
     } catch (error) {
       console.error("Delete error:", error);
@@ -884,6 +1028,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             variant="primary"
             onClick={() => {
               resetForm();
+              setActiveModal("add");
               setShowFormModal(true);
             }}
             className="add-unavailability-btn"
@@ -968,11 +1113,10 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                 <tr key={index} className="event-row">
                                   <td className="event-time"></td>
                                   <td className="event-time">
-                                    {formatDate(unavailability.startDate)}-
+                                    {formatDate(unavailability.startDate)} -{" "}
                                     {formatDate(unavailability.endDate)}
                                   </td>
                                   <td>
-                                    {console.log(unavailability)}
                                     {unavailability.isRecurring && (
                                       <Badge bg="info" className="ms-2">
                                         <ArrowRepeat
@@ -1007,12 +1151,9 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                     <Button
                                       variant="outline-danger"
                                       size="sm"
-                                      onClick={() => {
-                                        setSelectedUnavailability(
-                                          unavailability
-                                        );
-                                        setShowDeleteModal(true);
-                                      }}
+                                      onClick={() =>
+                                        handleDeleteClick(unavailability)
+                                      }
                                       className="delete-btn"
                                     >
                                       <X className="me-1" />
@@ -1063,7 +1204,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                     size="sm"
                                     className="me-2"
                                     onClick={() => {
-                                      console.log(unavailability.htmlLink);
                                       if (unavailability.htmlLink) {
                                         window.open(
                                           `${unavailability.htmlLink}`,
@@ -1082,10 +1222,9 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                   <Button
                                     variant="outline-danger"
                                     size="sm"
-                                    onClick={() => {
-                                      setSelectedUnavailability(unavailability);
-                                      setShowDeleteModal(true);
-                                    }}
+                                    onClick={() =>
+                                      handleDeleteClick(unavailability)
+                                    }
                                     className="delete-btn"
                                   >
                                     <X className="me-1" />
@@ -1108,11 +1247,12 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
 
       {/* Add Modal */}
       <Modal
-        show={showFormModal}
+        show={showFormModal && activeModal !== "custom"}
         onHide={() => {
           if (!isSubmitting) {
             setShowFormModal(false);
             resetForm();
+            setActiveModal(null);
           }
         }}
         size="lg"
@@ -1134,6 +1274,17 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
+              {/* All Day Checkbox */}
+              <div className="form-group mb-3">
+                <Form.Check
+                  type="checkbox"
+                  id="allDayCheckbox"
+                  label="Ganztägig"
+                  checked={isAllDay}
+                  onChange={(e) => setIsAllDay(e.target.checked)}
+                />
+              </div>
+
               {/* Start Date */}
               <div className="form-group mb-3">
                 <label className="form-label">Von (Startdatum)</label>
@@ -1146,6 +1297,31 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                     onChange={(date) => {
                       setStartDate(date);
                       setEndDate(null);
+                      // Reset times when date changes
+                      if (!isAllDay) {
+                        const now = new Date();
+                        if (date.toDateString() === now.toDateString()) {
+                          const currentHour = now.getHours();
+                          const currentMinute = now.getMinutes();
+                          const roundedMinute =
+                            Math.ceil(currentMinute / 15) * 15;
+                          setStartTime(
+                            `${String(currentHour).padStart(2, "0")}:${String(
+                              roundedMinute
+                            ).padStart(2, "0")}`
+                          );
+                          // Set end time to 1 hour after start
+                          const endHour = (currentHour + 1) % 24;
+                          setEndTime(
+                            `${String(endHour).padStart(2, "0")}:${String(
+                              roundedMinute
+                            ).padStart(2, "0")}`
+                          );
+                        } else {
+                          setStartTime("00:00");
+                          setEndTime("01:00");
+                        }
+                      }
                     }}
                     selectsStart
                     startDate={startDate}
@@ -1158,6 +1334,44 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                   />
                 </div>
               </div>
+
+              {/* Start Time (only show if not all day) */}
+              {!isAllDay && (
+                <div className="form-group mb-3">
+                  <label className="form-label">Startzeit</label>
+                  <Form.Select
+                    value={startTime}
+                    onChange={(e) => {
+                      setStartTime(e.target.value);
+                      // If end time is before or equal to start time, adjust it
+                      if (e.target.value >= endTime) {
+                        const [hours, minutes] = e.target.value
+                          .split(":")
+                          .map(Number);
+                        let newHours = (hours + 1) % 24;
+                        setEndTime(
+                          `${String(newHours).padStart(2, "0")}:${String(
+                            minutes
+                          ).padStart(2, "0")}`
+                        );
+                      }
+                    }}
+                  >
+                    {/* Add a null check before calling getFilteredTimeOptions */}
+                    {startDate
+                      ? getFilteredTimeOptions(true).map((time) => (
+                          <option key={`start-${time}`} value={time}>
+                            {time}
+                          </option>
+                        ))
+                      : timeOptions.map((time) => (
+                          <option key={`start-${time}`} value={time}>
+                            {time}
+                          </option>
+                        ))}
+                  </Form.Select>
+                </div>
+              )}
 
               {/* End Date */}
               <div className="form-group mb-3">
@@ -1186,7 +1400,33 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                 </div>
               </div>
 
-              {/* Recurrence Dropdown */}
+              {/* End Time (only show if not all day) */}
+              {!isAllDay && (
+                <div className="form-group mb-3">
+                  <label className="form-label">Endzeit</label>
+                  <Form.Select
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    disabled={!startDate}
+                  >
+                    {timeOptions.map((time) => (
+                      <option
+                        key={`end-${time}`}
+                        value={time}
+                        disabled={
+                          startDate &&
+                          endDate &&
+                          startDate.toDateString() === endDate.toDateString() &&
+                          time <= startTime
+                        }
+                      >
+                        {time}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </div>
+              )}
+              {/* Recurrence Dropdown - Updated to include DAILY option */}
               <div className="form-group mb-3">
                 <label className="form-label">Wiederholung</label>
                 <Dropdown>
@@ -1230,6 +1470,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                     >
                       Wiederholt sich nicht
                     </Dropdown.Item>
+                    {/* Added DAILY option */}
                     <Dropdown.Item
                       onClick={() => handleRecurrencePresetChange("DAILY")}
                     >
@@ -1340,12 +1581,10 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       {/* Custom Repeat Modal */}
       <Modal
         show={showCustomRepeatModal}
-        onHide={() => {
-          setShowCustomRepeatModal(false);
-          resetCustomRepeatForm();
-        }}
+        onHide={handleCustomModalClose}
         size="lg"
         centered
+        backdrop="static" // Prevent closing by clicking outside
       >
         <Modal.Header closeButton>
           <Modal.Title>Benutzerdefinierte Wiederholung</Modal.Title>
@@ -1492,7 +1731,6 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         </Modal.Body>
       </Modal>
 
-
       {/* Delete Modal */}
       <Modal
         show={showDeleteModal}
@@ -1506,16 +1744,32 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
         keyboard={!isDeleting}
       >
         <Modal.Header closeButton={!isDeleting}>
-          <Modal.Title>Delete Unavailability</Modal.Title>
+          <Modal.Title>
+            {selectedUnavailability?.isRecurring
+              ? deleteOption === "this"
+                ? "Nur diesen Termin löschen"
+                : deleteOption === "following"
+                ? "Diesen und alle folgenden Termine löschen"
+                : "Alle Termine löschen"
+              : "Sperrtermin löschen"}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {isDeleting ? (
             <div className="text-center py-3">
               <Spinner animation="border" role="status" className="me-2" />
-              Deleting event...
+              Termin wird gelöscht...
             </div>
           ) : (
-            <p>Are you sure you want to delete this unavailability?</p>
+            <p>
+              {selectedUnavailability?.isRecurring
+                ? deleteOption === "this"
+                  ? "Möchten Sie wirklich nur diesen einzelnen Termin aus der Serie löschen?"
+                  : deleteOption === "following"
+                  ? "Möchten Sie wirklich diesen und alle folgenden Termine aus der Serie löschen?"
+                  : "Möchten Sie wirklich alle Termine in dieser Serie löschen?"
+                : "Möchten Sie diesen Sperrtermin wirklich löschen?"}
+            </p>
           )}
         </Modal.Body>
         <Modal.Footer>
@@ -1524,7 +1778,7 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             onClick={() => setShowDeleteModal(false)}
             disabled={isDeleting}
           >
-            Cancel
+            Abbrechen
           </Button>
           <Button
             variant="danger"
@@ -1534,14 +1788,16 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
             {isDeleting ? (
               <>
                 <Spinner animation="border" size="sm" className="me-2" />
-                Deleting...
+                Löschen...
               </>
             ) : (
-              "Delete"
+              "Löschen"
             )}
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <DeleteOptionsModal />
     </DashboardLayout>
   );
 };

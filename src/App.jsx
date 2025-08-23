@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -17,7 +17,7 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Navbar from './components/Navbar';
-import UnavailabilityDashboard from './pages/UnavailabilityDashboard'; // Add this import
+import UnavailabilityDashboard from './pages/UnavailabilityDashboard';
 
 import { authApi } from './utils/api';
 import { initDebug } from './utils/debug';
@@ -30,19 +30,49 @@ import UserUnassignedDashboard from './pages/UserUnassignedDashboard';
 // Init debug
 initDebug();
 
-// Define artist roles in a constant for easier maintenance
+// Artist/Admin roles
 const ARTIST_ROLES = [
-  "Geiger*in", 
-  "Moderator*in", 
-  "Pianist*in", 
-  "Instrumentalist*in", 
-  "Nikolaus", 
-  "Puppenspieler*in", 
-  "Detlef", 
-  "Sängerin*in"
+  "Geiger*in", "Moderator*in", "Pianist*in", "Instrumentalist*in",
+  "Nikolaus", "Puppenspieler*in", "Detlef", "Sängerin*in"
 ];
 
-// AuthRoute wrapper component - prevents logged-in users from accessing auth routes
+const ARTIST_DASHBOARD_ROUTES = [
+  "/user-assigned-dashboard",
+  "/user-unassigned-dashboard",
+  "/unavailability-form"
+];
+
+const ADMIN_DASHBOARD_ROUTES = [
+  "/artists",
+  "/emails",
+  "/whatsapp",
+  "/unassigned-events",
+  "/emails"
+];
+
+// 🔹 Component that tracks first dashboard visit
+function DashboardVisitTracker({ user }) {
+  const location = useLocation();
+  const visitTracked = useRef(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const path = location.pathname;
+
+    const isArtistDashboard = ARTIST_DASHBOARD_ROUTES.some(route => path.startsWith(route));
+    const isAdminDashboard = ADMIN_DASHBOARD_ROUTES.some(route => path.startsWith(route));
+
+    if ((isArtistDashboard || isAdminDashboard) && !visitTracked.current) {
+      authApi.trackVisit(user._id); // ✅ send userId
+      visitTracked.current = true;
+    }
+  }, [location.pathname, user]);
+
+  return null;
+}
+
+// AuthRoute wrapper
 function AuthRoute({ children }) {
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
@@ -52,7 +82,6 @@ function AuthRoute({ children }) {
     const checkAuth = async () => {
       try {
         const res = await authApi.getMe();
-        console.log(res.data.user);
         setUser(res.data.user);
       } catch {
         setUser(null);
@@ -60,7 +89,6 @@ function AuthRoute({ children }) {
         setAuthChecked(true);
       }
     };
-
     checkAuth();
   }, [location.pathname]);
 
@@ -69,7 +97,6 @@ function AuthRoute({ children }) {
   }
 
   if (user) {
-    // Redirect based on user role
     const redirectPath = user.Role === 'Admin' ? '/artists' : '/user-assigned-dashboard';
     return <Navigate to={redirectPath} replace />;
   }
@@ -77,7 +104,7 @@ function AuthRoute({ children }) {
   return children;
 }
 
-// ProtectedRoute wrapper component
+// ProtectedRoute wrapper
 function ProtectedRoute({ children, allowedRoles }) {
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
@@ -88,10 +115,9 @@ function ProtectedRoute({ children, allowedRoles }) {
       try {
         const res = await authApi.getMe();
         const currentUser = res.data.user;
-        console.log(res.data.user);
-        setUser(currentUser);
-
-        if (!allowedRoles.includes(currentUser.Role)) {
+        if (allowedRoles.includes(currentUser.Role)) {
+          setUser(currentUser);
+        } else {
           setUser(null);
         }
       } catch {
@@ -100,7 +126,6 @@ function ProtectedRoute({ children, allowedRoles }) {
         setAuthChecked(true);
       }
     };
-
     checkAuth();
   }, [location.pathname, allowedRoles]);
 
@@ -112,10 +137,15 @@ function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children;
+  return (
+    <>
+      <DashboardVisitTracker user={user} /> {/* 🔹 Track visit here */}
+      {children}
+    </>
+  );
 }
 
-// ArtistOnlyRoute wrapper component - specifically for artist-only routes
+// ArtistOnlyRoute wrapper
 function ArtistOnlyRoute({ children }) {
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
@@ -126,11 +156,10 @@ function ArtistOnlyRoute({ children }) {
       try {
         const res = await authApi.getMe();
         const currentUser = res.data.user;
-        setUser(currentUser);
-
-        // Explicitly check if the user is an admin
-        if (currentUser.Role === 'Admin') {
-          setUser(null); // Treat admin as unauthorized for artist-only routes
+        if (currentUser.Role !== 'Admin') {
+          setUser(currentUser);
+        } else {
+          setUser(null);
         }
       } catch {
         setUser(null);
@@ -138,7 +167,6 @@ function ArtistOnlyRoute({ children }) {
         setAuthChecked(true);
       }
     };
-
     checkAuth();
   }, [location.pathname]);
 
@@ -150,10 +178,15 @@ function ArtistOnlyRoute({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children;
+  return (
+    <>
+      <DashboardVisitTracker user={user} /> {/* 🔹 Track visit here */}
+      {children}
+    </>
+  );
 }
 
-// Role-based default redirect component
+// Role-based redirect
 function RoleBasedRedirect() {
   const [authChecked, setAuthChecked] = useState(false);
   const [redirectPath, setRedirectPath] = useState('/login');
@@ -163,19 +196,13 @@ function RoleBasedRedirect() {
       try {
         const res = await authApi.getMe();
         const role = res.data.user.Role;
-        console.log(res.data.user);
-        if (role === 'Admin') {
-          setRedirectPath('/artists');
-        } else {
-          setRedirectPath('/user-assigned-dashboard');
-        }
+        setRedirectPath(role === 'Admin' ? '/artists' : '/user-assigned-dashboard');
       } catch {
         setRedirectPath('/login');
       } finally {
         setAuthChecked(true);
       }
     };
-
     checkUser();
   }, []);
 
@@ -198,102 +225,38 @@ function App() {
       localStorage.clear();
       setLoggedInUser(null);
       document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      window.location.href = '/login'; // Full reload to clear all state
+      window.location.href = '/login';
     }
   };
 
   return (
     <Router>
       <Routes>
-        {/* Auth routes - only accessible when NOT logged in */}
+        {/* Auth routes */}
         <Route path="/login" element={
           <AuthRoute>
             <Login onLogin={setLoggedInUser} />
           </AuthRoute>
         } />
-        <Route path="/forgot-password" element={
-          <AuthRoute>
-            <ForgotPassword />
-          </AuthRoute>
-        } />
-        <Route path="/reset-password/:resetToken" element={
-          <AuthRoute>
-            <ResetPassword />
-          </AuthRoute>
-        } />
+        <Route path="/forgot-password" element={<AuthRoute><ForgotPassword /></AuthRoute>} />
+        <Route path="/reset-password/:resetToken" element={<AuthRoute><ResetPassword /></AuthRoute>} />
 
-        {/* Default route (role-based redirect) */}
+        {/* Default route */}
         <Route path="/" element={<RoleBasedRedirect />} />
 
         {/* Admin-only routes */}
-        <Route
-          path="/artists"
-          element={
-            <ProtectedRoute allowedRoles={['Admin']}>
-              <ArtistsDashboard handleLogout={handleLogout}/>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/emails"
-          element={
-            <ProtectedRoute allowedRoles={['Admin']}>
-              <EmailListDashboard handleLogout={handleLogout}/>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/whatsapp"
-          element={
-            <ProtectedRoute allowedRoles={['Admin']}>
-              <WhatsAppListDashboard handleLogout={handleLogout}/>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/unassigned-events"
-          element={
-            <ProtectedRoute allowedRoles={['Admin']}>
-              <UnassignedEventsDashboard handleLogout={handleLogout}/>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/emails/:id"
-          element={
-            <ProtectedRoute allowedRoles={['Admin']}>
-              <EmailModal />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/artists" element={<ProtectedRoute allowedRoles={['Admin']}><ArtistsDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
+        <Route path="/emails" element={<ProtectedRoute allowedRoles={['Admin']}><EmailListDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
+        <Route path="/whatsapp" element={<ProtectedRoute allowedRoles={['Admin']}><WhatsAppListDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
+        <Route path="/unassigned-events" element={<ProtectedRoute allowedRoles={['Admin']}><UnassignedEventsDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
+        <Route path="/emails/:id" element={<ProtectedRoute allowedRoles={['Admin']}><EmailModal /></ProtectedRoute>} />
 
         {/* Artist-only routes */}
-        <Route
-          path="/user-assigned-dashboard"
-          element={
-            <ProtectedRoute allowedRoles={ARTIST_ROLES}>
-              <UserAssignedDashboard handleLogout={handleLogout}/>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/user-unassigned-dashboard"
-          element={
-            <ProtectedRoute allowedRoles={ARTIST_ROLES}>
-              <UserUnassignedDashboard handleLogout={handleLogout}/>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/unavailability-form"
-          element={
-            <ArtistOnlyRoute>
-              <UnavailabilityDashboard handleLogout={handleLogout} artistName={loggedInUser?.name} />
-            </ArtistOnlyRoute>
-          }
-        />
+        <Route path="/user-assigned-dashboard" element={<ProtectedRoute allowedRoles={ARTIST_ROLES}><UserAssignedDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
+        <Route path="/user-unassigned-dashboard" element={<ProtectedRoute allowedRoles={ARTIST_ROLES}><UserUnassignedDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
+        <Route path="/unavailability-form" element={<ArtistOnlyRoute><UnavailabilityDashboard handleLogout={handleLogout} artistName={loggedInUser?.name} /></ArtistOnlyRoute>} />
 
-        {/* Catch-all redirect */}
+        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

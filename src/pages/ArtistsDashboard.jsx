@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { toast } from "react-toastify";
 import { Table, Button, Modal, Form, Spinner, Badge } from "react-bootstrap";
 import {
@@ -39,7 +45,9 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const [newArtistForms, setNewArtistForms] = useState({});
   const [isDeleting, setIsDeleting] = useState(false);
   const [loggingIn, setLoggingIn] = useState({});
+  const [showTooltip, setShowTooltip] = useState({});
   const [showPasswords, setShowPasswords] = useState({});
+  const [openTooltips, setOpenTooltips] = useState({});
 
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
 
@@ -64,7 +72,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       setRoleOptions([]);
     }
   }, []);
-
   const fetchArtists = useCallback(async (refresh = false) => {
     setLoading(true);
     setError(null);
@@ -77,6 +84,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         email: artist["E-Mail"],
         role: artist.Role,
         password: artist.password,
+        dashboardVisits: artist.dashboardVisits || [], // Add this line
       }));
 
       if (response.data.error) {
@@ -124,6 +132,21 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     }
   }, []);
 
+  const useClickOutside = (ref, callback) => {
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (ref.current && !ref.current.contains(event.target)) {
+          callback();
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [ref, callback]);
+  };
+
   useEffect(() => {
     fetchArtists();
     fetchCalendars();
@@ -136,6 +159,85 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       [calendar]: !prev[calendar],
     }));
   }, []);
+  const toggleTooltip = (email, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    setOpenTooltips((prev) => ({
+      ...prev,
+      [email]: !prev[email],
+    }));
+  };
+
+  const closeAllTooltips = () => {
+    setOpenTooltips({});
+  };
+
+  const TooltipComponent = ({ artist, onClose }) => {
+    const tooltipRef = useRef(null);
+
+    useClickOutside(tooltipRef, () => {
+      onClose(artist.email);
+    });
+
+    return (
+      <div ref={tooltipRef} className="visits-tooltip">
+        <div className="tooltip-header">
+          <h6>Dashboard-Besuche</h6>
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => onClose(artist.email)}
+            className="tooltip-close"
+          >
+            <X size={12} />
+          </Button>
+        </div>
+        {artist.dashboardVisits.length === 0 ? (
+          <p className="text-muted">Keine Besuche</p>
+        ) : (
+          <ul className="visits-list">
+            {artist.dashboardVisits.map((visit, idx) => (
+              <li key={idx}>{new Date(visit).toLocaleString("de-DE")}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  };
+
+  const MobileTooltipComponent = ({ artist, onClose }) => {
+    const tooltipRef = useRef(null);
+
+    useClickOutside(tooltipRef, () => {
+      onClose(artist.email);
+    });
+
+    return (
+      <div ref={tooltipRef} className="mobile-visits-tooltip">
+        <div className="tooltip-header">
+          <h6>Dashboard-Besuche</h6>
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => onClose(artist.email)}
+            className="tooltip-close"
+          >
+            <X size={12} />
+          </Button>
+        </div>
+        {artist.dashboardVisits.length === 0 ? (
+          <p className="text-muted">Keine Besuche</p>
+        ) : (
+          <ul className="visits-list">
+            {artist.dashboardVisits.map((visit, idx) => (
+              <li key={idx}>{new Date(visit).toLocaleString("de-DE")}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  };
 
   const togglePasswordVisibility = (email) => {
     setShowPasswords((prev) => ({
@@ -296,6 +398,16 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     }
   };
 
+  const handleDeleteClick = (artist) => {
+    setSelectedArtist(artist);
+    setShowDeleteModal(true);
+    closeAllTooltips(); // Close tooltips when opening modal
+  };
+
+  const handleLoginClick = (artist) => {
+    closeAllTooltips(); // Close tooltips when logging in
+    handleAdminLoginAsArtist(artist);
+  };
   const handleDeleteConfirm = async () => {
     try {
       if (!selectedArtist || isDeleting) return;
@@ -538,49 +650,54 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                       </Button>
                                     </div>
                                   </td>
-                                  <td className="artist-actions d-flex gap-2">
+                                  <td className="artist-visits">
+                                    <div className="visits-container">
+                                      <Button
+                                        variant="link"
+                                        className="visits-icon"
+                                        onClick={(e) =>
+                                          toggleTooltip(artist.email, e)
+                                        }
+                                        title="Dashboard-Besuche anzeigen"
+                                      >
+                                        <i className="bi bi-bar-chart-fill"></i>
+                                        {artist.dashboardVisits.length > 0 && (
+                                          <span className="visits-count">
+                                            {artist.dashboardVisits.length}
+                                          </span>
+                                        )}
+                                      </Button>
+                                      {openTooltips[artist.email] && (
+                                        <TooltipComponent
+                                          artist={artist}
+                                          onClose={toggleTooltip}
+                                        />
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="artist-actions d-flex gap-1">
                                     <Button
                                       variant="outline-danger"
                                       size="sm"
-                                      onClick={() => {
-                                        setSelectedArtist(artist);
-                                        setShowDeleteModal(true);
-                                      }}
+                                      onClick={() => handleDeleteClick(artist)}
                                       className="delete-btn"
+                                      title="Künstler löschen"
                                     >
-                                      <Trash className="me-1" />
-                                      <span className="d-none d-lg-inline">
-                                        Entfernen
-                                      </span>
+                                      <Trash size={16} />
                                     </Button>
 
                                     <Button
                                       variant="outline-success"
                                       size="sm"
-                                      onClick={() =>
-                                        handleAdminLoginAsArtist(artist)
-                                      }
+                                      onClick={() => handleLoginClick(artist)}
                                       className="login-btn"
                                       disabled={loggingIn[artist.email]}
+                                      title="Als Künstler einloggen"
                                     >
                                       {loggingIn[artist.email] ? (
-                                        <>
-                                          <Spinner
-                                            animation="border"
-                                            size="sm"
-                                            className="me-1"
-                                          />
-                                          <span className="d-none d-lg-inline">
-                                            Login läuft
-                                          </span>
-                                        </>
+                                        <Spinner animation="border" size="sm" />
                                       ) : (
-                                        <>
-                                          <i className="bi bi-box-arrow-in-right me-1"></i>
-                                          <span className="d-none d-lg-inline">
-                                            Login
-                                          </span>
-                                        </>
+                                        <i className="bi bi-box-arrow-in-right"></i>
                                       )}
                                     </Button>
                                   </td>
@@ -642,43 +759,62 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   </Button>
                                 </div>
                               </div>
+                              <div className="artist-mobile-visits">
+                                <Button
+                                  variant="link"
+                                  className="visits-icon p-1"
+                                  onClick={(e) =>
+                                    toggleTooltip(artist.email, e)
+                                  }
+                                  title="Dashboard-Besuche anzeigen"
+                                >
+                                  <i
+                                    className="bi bi-bar-chart-fill"
+                                    style={{ fontSize: "1.1rem" }}
+                                  ></i>
+                                  {artist.dashboardVisits.length > 0 && (
+                                    <span
+                                      className="visits-count"
+                                      style={{
+                                        fontSize: "0.6rem",
+                                        width: "16px",
+                                        height: "16px",
+                                      }}
+                                    >
+                                      {artist.dashboardVisits.length}
+                                    </span>
+                                  )}
+                                </Button>
+                              </div>
 
+                              {openTooltips[artist.email] && (
+                                <MobileTooltipComponent
+                                  artist={artist}
+                                  onClose={toggleTooltip}
+                                />
+                              )}
                               <div className="artist-mobile-actions">
                                 <Button
                                   variant="outline-danger"
                                   size="sm"
-                                  onClick={() => {
-                                    setSelectedArtist(artist);
-                                    setShowDeleteModal(true);
-                                  }}
-                                  className="w-100"
+                                  onClick={() => handleDeleteClick(artist)}
+                                  className="w-auto"
+                                  title="Künstler löschen"
                                 >
-                                  <Trash className="me-2" />
-                                  Entfernen
+                                  <Trash size={16} />
                                 </Button>
                                 <Button
                                   variant="outline-success"
                                   size="sm"
-                                  className="w-100 mb-2"
-                                  onClick={() =>
-                                    handleAdminLoginAsArtist(artist)
-                                  }
+                                  className="w-auto"
+                                  onClick={() => handleLoginClick(artist)}
                                   disabled={loggingIn[artist.email]}
+                                  title="Als Künstler einloggen"
                                 >
                                   {loggingIn[artist.email] ? (
-                                    <>
-                                      <Spinner
-                                        animation="border"
-                                        size="sm"
-                                        className="me-2"
-                                      />
-                                      Login läuft
-                                    </>
+                                    <Spinner animation="border" size="sm" />
                                   ) : (
-                                    <>
-                                      <i className="bi bi-box-arrow-in-right me-2" />
-                                      Login
-                                    </>
+                                    <i className="bi bi-box-arrow-in-right"></i>
                                   )}
                                 </Button>
                               </div>
