@@ -140,3 +140,60 @@
     }
   }
 }
+/* ===== Custom Mobile Card Styles (to avoid conflicts) ===== */
+.custom-mobile-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+}
+
+.custom-mobile-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 14px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-mobile-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.custom-mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.custom-mobile-date {
+  font-weight: 600;
+  font-size: 15px;
+  color: #333;
+}
+
+.custom-badge {
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.custom-mobile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.custom-mobile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.custom-btn {
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  padding: 5px 10px !important;
+}

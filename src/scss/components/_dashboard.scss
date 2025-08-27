@@ -411,6 +411,8 @@
   box-shadow: $box-shadow-sm;
 }
 
+
+
 // Events Container - Specific to unassigned events dashboard
 .events-container {
   display: flex;
@@ -797,6 +799,8 @@
   .events-container {
     margin-left: -$spacing-sm;
     margin-right: -$spacing-sm;
+    padding: 14px;
+
     
     .event-calendar-card {
       border-radius: 0;

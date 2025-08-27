@@ -1014,20 +1014,55 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     setExpanded(!expanded);
   };
 
-  const formatDateTime = (dateString, timeString = null, isAllDay = false) => {
-    const date = new Date(dateString);
-    const formattedDate = date.toLocaleDateString("de-DE", {
-      month: "short",
+  // 🔹 Updated format function
+  const formatDateTimeRange = (
+    startDate,
+    startTime,
+    endDate,
+    endTime,
+    isAllDay = false
+  ) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Format only day + month (short in German, like "12 Aug")
+    const startDateFormatted = start.toLocaleDateString("de-DE", {
       day: "numeric",
-      year: "numeric",
+      month: "short",
       timeZone: "Europe/Berlin",
     });
 
-    if (isAllDay || !timeString) {
-      return formattedDate;
+    const endDateFormatted = end.toLocaleDateString("de-DE", {
+      day: "numeric",
+      month: "short",
+      timeZone: "Europe/Berlin",
+    });
+
+    // If all-day, only show dates
+    if (isAllDay) {
+      return `${startDateFormatted} - ${endDateFormatted}`;
     }
 
-    return `${formattedDate} : : ${timeString}`;
+    // Format times (24h format)
+    const startTimeFormatted = startTime
+      ? new Date(`${startDate}T${startTime}`).toLocaleTimeString("de-DE", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: "Europe/Berlin",
+        })
+      : "";
+
+    const endTimeFormatted = endTime
+      ? new Date(`${endDate}T${endTime}`).toLocaleTimeString("de-DE", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: "Europe/Berlin",
+        })
+      : "";
+
+    return `${startDateFormatted} - ${endDateFormatted} | ${startTimeFormatted} - ${endTimeFormatted}`;
   };
 
   return (
@@ -1087,7 +1122,9 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                         <ChevronDown size={14} />
                       )}
                     </div>
-                    <Badge
+                  </div>
+                  <span className="events-count">
+                     <Badge
                       bg="primary"
                       className="enhanced-badge capsule-badge"
                     >
@@ -1096,16 +1133,14 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                         {filteredUnavailabilities.length}
                       </span>
                     </Badge>
-                  </div>
-                  <span className="events-count">
-                    <span className="count-number">
+                    {/* <span className="count-number">
                       {filteredUnavailabilities.length}
                     </span>
                     <span className="count-label">
                       {filteredUnavailabilities.length === 1
                         ? " Eintrag"
                         : " Einträge"}
-                    </span>
+                    </span> */}
                   </span>
                 </div>
               </div>
@@ -1146,17 +1181,15 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                 <tr key={index} className="event-row">
                                   <td></td>
                                   <td className="event-time">
-                                    {formatDateTime(
+                                    {formatDateTimeRange(
                                       unavailability.startDate,
                                       unavailability.startTime,
-                                      unavailability.isAllDay
-                                    )} {" — "}
-                                    {formatDateTime(
                                       unavailability.endDate,
                                       unavailability.endTime,
                                       unavailability.isAllDay
                                     )}
-                                  </td>   
+                                  </td>
+
                                   <td>
                                     {unavailability.isRecurring && (
                                       <Badge bg="info" className="ms-2">
@@ -1209,43 +1242,40 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                           </tbody>
                         </Table>
                       </div>
-                      <div className="event-mobile-cards-container d-md-none">
+
+                      {/* 📱 Mobile Cards View */}
+                      <div className="custom-mobile-cards-container d-md-none">
                         {filteredUnavailabilities.map(
                           (unavailability, index) => (
-                            <div key={index} className="event-mobile-card">
-                              <div className="event-mobile-header">
-                                <div style={{"paddingLeft":"5px"}} className="event-mobile-title">
-                                  {formatDateTime(
+                            <div key={index} className="custom-mobile-card">
+                              <div className="custom-mobile-header">
+                                <span className="custom-mobile-date">
+                                  {formatDateTimeRange(
                                     unavailability.startDate,
                                     unavailability.startTime,
-                                    unavailability.isAllDay
-                                  )}{" "}
-                                  -{" "}
-                                  {formatDateTime(
                                     unavailability.endDate,
                                     unavailability.endTime,
                                     unavailability.isAllDay
                                   )}
-                                </div>
+                                </span>
+                                {unavailability.isRecurring && (
+                                  <Badge bg="info" className="custom-badge">
+                                    <ArrowRepeat size={12} className="me-1" />
+                                    Wiederholend
+                                  </Badge>
+                                )}
                               </div>
-                              <div className="event-mobile-content">
-                                <div className="event-mobile-reason">
-                                  {unavailability.isRecurring && (
-                                    <Badge bg="info" className="ms-2">
-                                      <ArrowRepeat size={12} className="me-1" />
-                                      Wiederholend
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="event-mobile-actions">
+
+                              <div className="custom-mobile-body">
+                                <div className="custom-mobile-actions">
                                   <Button
                                     variant="outline-info"
                                     size="sm"
-                                    className="me-2"
+                                    className="custom-btn me-2"
                                     onClick={() => {
                                       if (unavailability.htmlLink) {
                                         window.open(
-                                          `${unavailability.htmlLink}`,
+                                          unavailability.htmlLink,
                                           "_blank"
                                         );
                                       } else {
@@ -1261,10 +1291,10 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                                   <Button
                                     variant="outline-danger"
                                     size="sm"
+                                    className="custom-btn"
                                     onClick={() =>
                                       handleDeleteClick(unavailability)
                                     }
-                                    className="delete-btn"
                                   >
                                     <X className="me-1" />
                                     Löschen
