@@ -572,7 +572,8 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
       console.log("Unavailability data fetched:", unavailabilityRes.data);
 
       const fetched = (unavailabilityRes.data || []).map((event) => {
-        // Handle both single and recurring events
+        // Handle both all-day and timed events
+        const isAllDay = !!event.start.date;
         const startDate = event.start.date || event.start.dateTime;
         const endDate = event.end.date || event.end.dateTime;
 
@@ -584,10 +585,35 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
           berlinEnd.setDate(berlinEnd.getDate() - 1);
         }
 
+        // Extract time information
+        let startTime = null;
+        let endTime = null;
+
+        if (!isAllDay) {
+          startTime = event.start.dateTime
+            ? new Date(event.start.dateTime).toLocaleTimeString("de-DE", {
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: "Europe/Berlin",
+              })
+            : null;
+
+          endTime = event.end.dateTime
+            ? new Date(event.end.dateTime).toLocaleTimeString("de-DE", {
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: "Europe/Berlin",
+              })
+            : null;
+        }
+
         return {
           id: event.id,
           startDate: berlinStart.toISOString().split("T")[0],
           endDate: berlinEnd.toISOString().split("T")[0],
+          startTime: startTime,
+          endTime: endTime,
+          isAllDay: isAllDay,
           details: event.description || "Nicht verfügbar",
           htmlLink: event.htmlLink || "",
           isRecurring: event.isRecurring || false,
@@ -988,13 +1014,20 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
     setExpanded(!expanded);
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("de-DE", {
+  const formatDateTime = (dateString, timeString = null, isAllDay = false) => {
+    const date = new Date(dateString);
+    const formattedDate = date.toLocaleDateString("de-DE", {
       month: "short",
       day: "numeric",
       year: "numeric",
       timeZone: "Europe/Berlin",
     });
+
+    if (isAllDay || !timeString) {
+      return formattedDate;
+    }
+
+    return `${formattedDate} : : ${timeString}`;
   };
 
   return (
@@ -1111,11 +1144,19 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                             {filteredUnavailabilities.map(
                               (unavailability, index) => (
                                 <tr key={index} className="event-row">
-                                  <td className="event-time"></td>
+                                  <td></td>
                                   <td className="event-time">
-                                    {formatDate(unavailability.startDate)} -{" "}
-                                    {formatDate(unavailability.endDate)}
-                                  </td>
+                                    {formatDateTime(
+                                      unavailability.startDate,
+                                      unavailability.startTime,
+                                      unavailability.isAllDay
+                                    )} {" — "}
+                                    {formatDateTime(
+                                      unavailability.endDate,
+                                      unavailability.endTime,
+                                      unavailability.isAllDay
+                                    )}
+                                  </td>   
                                   <td>
                                     {unavailability.isRecurring && (
                                       <Badge bg="info" className="ms-2">
@@ -1168,29 +1209,27 @@ const UnavailabilityDashboard = ({ setAuth, handleLogout }) => {
                           </tbody>
                         </Table>
                       </div>
-
-                      <div className="event-cards-container d-md-none">
+                      <div className="event-mobile-cards-container d-md-none">
                         {filteredUnavailabilities.map(
                           (unavailability, index) => (
                             <div key={index} className="event-mobile-card">
                               <div className="event-mobile-header">
-                                <div className="event-mobile-title">
-                                  {formatDate(unavailability.startDate)} -{" "}
-                                  {formatDate(unavailability.endDate)}
+                                <div style={{"paddingLeft":"5px"}} className="event-mobile-title">
+                                  {formatDateTime(
+                                    unavailability.startDate,
+                                    unavailability.startTime,
+                                    unavailability.isAllDay
+                                  )}{" "}
+                                  -{" "}
+                                  {formatDateTime(
+                                    unavailability.endDate,
+                                    unavailability.endTime,
+                                    unavailability.isAllDay
+                                  )}
                                 </div>
                               </div>
                               <div className="event-mobile-content">
                                 <div className="event-mobile-reason">
-                                  <Badge
-                                    bg="light"
-                                    text="dark"
-                                    className="role-badge"
-                                  >
-                                    {getReasonIcon()}
-                                    <span className="ms-2">
-                                      {unavailability.details}
-                                    </span>
-                                  </Badge>
                                   {unavailability.isRecurring && (
                                     <Badge bg="info" className="ms-2">
                                       <ArrowRepeat size={12} className="me-1" />
