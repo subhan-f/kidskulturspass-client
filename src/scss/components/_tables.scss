@@ -285,12 +285,12 @@
 /* Fixed column widths */
 .artists-table th:nth-child(1),
 .artists-table td:nth-child(1) {
-  width: 20%; /* Name column */
+  width: 15%; /* Name column */
 }
 
 .artists-table th:nth-child(2),
 .artists-table td:nth-child(2) {
-  width: 25%; /* Email column */
+  width: 20%; /* Email column */
 }
 
 .artists-table th:nth-child(3),

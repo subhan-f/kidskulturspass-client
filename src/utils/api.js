@@ -100,6 +100,7 @@ const mockApi = {
   getCalendars: () => apiArtist.get('/calendars'),
   getRoleOptions: () => apiArtist.get('/roleOptions'),
   addArtist:async (data) => await apiArtistCreate.post('/',  data ),
+  updateArtist: async (data) => await apiArtist.put('/',  data ),
  
 // await apiArtistCreateCloud.post('/',  {Calendar:data.calendar,Name:data.name,Role:data.role,email:data.email} )
   deleteArtist: async (data) =>
@@ -210,7 +211,13 @@ export default {
     console.warn(`Unhandled mock POST request to: ${url}`);
     return { data: {} };
   },
-  
+  put:async (url, data) =>{
+    if (url === '/artist') {
+      console.log('Updating artist with data:', data);
+      return await artistService.updateArtist(data);
+    }
+    
+  },
   delete: async (url, config) => {
     console.log(`Mock API DELETE request to: ${url}`, config?.data);
     

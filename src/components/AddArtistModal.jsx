@@ -16,7 +16,8 @@ function AddArtistModal({
     calendar: selectedCalendar || '',
     name: '',
     role: '',
-    email: ''
+    email: '',
+    hourlyRate: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -64,7 +65,8 @@ function AddArtistModal({
       calendar: selectedCalendar || '',
       name: '',
       role: '',
-      email: ''
+      email: '',
+      hourlyRate: ''
     });
     setValidated(false);
   };
@@ -127,7 +129,7 @@ function AddArtistModal({
             </Form.Control.Feedback>
           </Form.Group>
           
-          <Form.Group controlId="artistEmail" className="mb-4">
+          <Form.Group controlId="artistEmail" className="mb-3">
             <Form.Label>E-Mail <span className="text-danger">*</span></Form.Label>
             <Form.Control 
               type="email" 
@@ -141,6 +143,21 @@ function AddArtistModal({
             </Form.Control.Feedback>
             <Form.Text className="text-muted">
               Die E-Mail wird für Benachrichtigungen über Veranstaltungen verwendet.
+            </Form.Text>
+          </Form.Group>
+          
+          <Form.Group controlId="artistHourlyRate" className="mb-4">
+            <Form.Label>Stundensatz (€)</Form.Label>
+            <Form.Control 
+              type="number" 
+              min="0"
+              step="0.01"
+              value={artistData.hourlyRate} 
+              onChange={(e) => handleFieldChange('hourlyRate', e.target.value)}
+              placeholder="Stundensatz eingeben (optional)" 
+            />
+            <Form.Text className="text-muted">
+              Der Stundensatz kann später auch aktualisiert werden.
             </Form.Text>
           </Form.Group>
           

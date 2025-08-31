@@ -3,7 +3,7 @@
 
 // Main Dashboard Layout Components - Generalized for all dashboards
 .dashboard-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: $spacing-lg;
   background-color: $color-white;
@@ -1494,4 +1494,240 @@
 .event-mobile-title {
   font-weight: 500;
   margin-bottom: 8px;
+}
+
+/* ✅ Summary Box */
+.summary-box-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+  gap: 15px;
+}
+
+.summary-box {
+  flex: 1;
+  text-align: center;
+  border-radius: 12px;
+  padding: 20px;
+  color: #fff;
+  font-weight: bold;
+}
+
+.open-box {
+  background: #007bff;
+}
+.completed-box {
+  background: #fd7e14;
+}
+.paid-box {
+  background: #28a745;
+}
+
+.summary-box h5 {
+  margin-bottom: 10px;
+}
+
+/* ✅ Tabs */
+.nav-tabs .nav-link {
+  font-weight: bold;
+  color: #555;
+}
+.nav-tabs .nav-link.active {
+  color: #000;
+  border-bottom: 2px solid #007bff;
+}
+
+/* ✅ Mobile Cards */
+.custom-mobile-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.custom-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.custom-mobile-date {
+  font-weight: bold;
+}
+
+.custom-mobile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+/* ✅ Summary Box */
+.summary-box-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+  gap: 15px;
+  flex-wrap: wrap; /* allow wrapping on smaller screens */
+}
+
+.summary-box {
+  flex: 1;
+  text-align: center;
+  border-radius: 12px;
+  padding: 20px;
+  color: #fff;
+  font-weight: bold;
+  min-width: 150px;
+}
+
+.open-box {
+  background: #007bff;
+}
+.completed-box {
+  background: #fd7e14;
+}
+.paid-box {
+  background: #28a745;
+}
+
+.summary-box h5 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+.summary-box p {
+  font-size: 18px;
+  margin: 0;
+}
+
+/* ✅ Tabs */
+.nav-tabs {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #ddd;
+
+  /* remove unnecessary scroll behavior */
+  overflow-x: visible; 
+  white-space: normal; 
+  flex-wrap: wrap; /* let tabs wrap instead of scrolling */
+}
+
+.nav-tabs .nav-item {
+  flex-shrink: 0;
+}
+
+.nav-tabs .nav-link {
+  font-weight: bold;
+  color: #555;
+}
+
+.nav-tabs .nav-link.active {
+  color: #000;
+  border-bottom: 2px solid #007bff;
+}
+
+
+/* ✅ Mobile Cards */
+.custom-mobile-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.custom-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.custom-mobile-date {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.custom-mobile-body h6 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.custom-mobile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* ✅ RESPONSIVENESS */
+
+/* Small devices (phones <576px) */
+@media (max-width: 575.98px) {
+  .summary-box-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .summary-box {
+    padding: 15px;
+    font-size: 14px;
+  }
+
+  .summary-box h5 {
+    font-size: 14px;
+  }
+
+  .summary-box p {
+    font-size: 16px;
+  }
+
+  .nav-tabs .nav-link {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+
+  .custom-mobile-card {
+    padding: 10px;
+  }
+
+  .custom-mobile-body h6 {
+    font-size: 14px;
+  }
+}
+
+/* Medium devices (tablets ≥576px and <768px) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .summary-box-container {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .summary-box {
+    flex: 1 1 45%;
+    min-width: 45%;
+  }
+}
+
+/* Large tablets (≥768px and <992px) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .summary-box-container {
+    gap: 15px;
+  }
+
+  .summary-box {
+    flex: 1 1 30%;
+  }
+}
+
+/* Large desktops (≥992px) */
+@media (min-width: 992px) {
+  .summary-box-container {
+    flex-wrap: nowrap;
+  }
+
+  .summary-box {
+    flex: 1;
+  }
 }

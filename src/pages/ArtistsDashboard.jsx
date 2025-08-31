@@ -1,3 +1,4 @@
+//artist dashboard
 import React, {
   useEffect,
   useState,
@@ -15,6 +16,7 @@ import {
   X,
   Eye,
   EyeSlash,
+  Pencil,
 } from "react-bootstrap-icons";
 import DashboardLayout from "../components/DashboardLayout";
 import PullToRefresh from "../components/PullToRefresh";
@@ -23,6 +25,7 @@ import { useMediaQuery } from "react-responsive";
 import api, { authApi } from "../utils/api";
 import DashboardLoader from "../components/DashboardLoader";
 import AddArtistModal from "../components/AddArtistModal";
+import UpdateHourlyRateModal from "../components/UpdateHourlyRateModal";
 import { useNavigate } from "react-router-dom";
 
 const ArtistsDashboard = ({ setAuth, handleLogout }) => {
@@ -31,6 +34,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const [filteredArtists, setFilteredArtists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedArtist, setSelectedArtist] = useState(null);
@@ -44,6 +48,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const [roleOptions, setRoleOptions] = useState([]);
   const [newArtistForms, setNewArtistForms] = useState({});
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [loggingIn, setLoggingIn] = useState({});
   const [showTooltip, setShowTooltip] = useState({});
   const [showPasswords, setShowPasswords] = useState({});
@@ -72,6 +77,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       setRoleOptions([]);
     }
   }, []);
+
   const fetchArtists = useCallback(async (refresh = false) => {
     setLoading(true);
     setError(null);
@@ -79,12 +85,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     try {
       const response = await api.get("/artists");
       response.data = response.data.map((artist) => ({
+        _id: artist._id,
         name: artist.Name,
         calendar: artist.Calendar,
         email: artist["E-Mail"],
         role: artist.Role,
+        hourlyRate: artist.hourlyRate,
         password: artist.password,
-        dashboardVisits: artist.dashboardVisits || [], // Add this line
+        dashboardVisits: artist.dashboardVisits || [],
       }));
 
       if (response.data.error) {
@@ -115,6 +123,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
               role: "",
               email: "",
               password: "",
+              hourlyRate: "",
             };
           });
           setNewArtistForms(initialFormState);
@@ -159,6 +168,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       [calendar]: !prev[calendar],
     }));
   }, []);
+
   const toggleTooltip = (email, event) => {
     if (event) {
       event.stopPropagation();
@@ -266,9 +276,11 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                 .includes(searchTerm.toLowerCase()) ||
               (artist.password || "")
                 .toLowerCase()
+                .includes(searchTerm.toLowerCase()) ||
+              (artist.hourlyRate || "")
+                .toString()
                 .includes(searchTerm.toLowerCase())
           );
-    console.log("Filtered artists:", filtered);
     return filtered.reduce((acc, artist) => {
       const calendar = artist.calendar || "Unbekannt";
       if (!acc[calendar]) {
@@ -344,6 +356,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         Role: artistData.role,
         email: artistData.email,
         password: artistData.password,
+        hourlyRate: artistData.hourlyRate,
       };
 
       const response = await api.post("/artist", artistData);
@@ -352,23 +365,58 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       fetchArtists(true);
 
       if (response.data.status === "success") {
-        console.success("Künstler erfolgreich hinzugefügt");
+        toast.success("Künstler erfolgreich hinzugefügt");
       } else {
-        console.error(
+        toast.error(
           response.data.message || "Fehler beim Hinzufügen des Künstlers"
         );
       }
     } catch (error) {
       console.error("Error adding artist:", error);
-      console.error(
+      toast.error(
         "Fehler beim Hinzufügen des Künstlers: " +
           (error.response?.data?.message || error.message)
       );
     }
   };
 
+  const handleUpdateHourlyRate = async (artistId, calendar, newHourlyRate) => {
+    try {
+      setIsUpdating(true);
+      const response = await api.put("/artist", {
+        id: artistId,
+        Calendar: calendar,
+        hourlyRate: newHourlyRate,
+      });
+
+      if (response.data.status === "success") {
+        toast.success("Stundensatz erfolgreich aktualisiert");
+        fetchArtists(true);
+        setShowUpdateModal(false);
+      } else {
+        toast.error(
+          response.data.message || "Fehler beim Aktualisieren des Stundensatzes"
+        );
+      }
+    } catch (error) {
+      console.error("Error updating hourly rate:", error);
+      toast.error(
+        "Fehler beim Aktualisieren des Stundensatzes: " +
+          (error.response?.data?.message || error.message)
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleUpdateClick = (artist) => {
+    setSelectedArtist(artist);
+    setShowUpdateModal(true);
+    closeAllTooltips();
+  };
+
   const handleAdminLoginAsArtist = async (artist) => {
-    if (loggingIn[artist.email]) return; // prevent duplicate clicks
+    if (loggingIn[artist.email]) return;
 
     setLoggingIn((prev) => ({ ...prev, [artist.email]: true }));
 
@@ -401,13 +449,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const handleDeleteClick = (artist) => {
     setSelectedArtist(artist);
     setShowDeleteModal(true);
-    closeAllTooltips(); // Close tooltips when opening modal
+    closeAllTooltips();
   };
 
   const handleLoginClick = (artist) => {
-    closeAllTooltips(); // Close tooltips when logging in
+    closeAllTooltips();
     handleAdminLoginAsArtist(artist);
   };
+
   const handleDeleteConfirm = async () => {
     try {
       if (!selectedArtist || isDeleting) return;
@@ -424,15 +473,15 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       setShowDeleteModal(false);
       setSelectedArtist(null);
       if (response.data.status === "success") {
-        console.success("Künstler erfolgreich gelöscht");
+        toast.success("Künstler erfolgreich gelöscht");
       } else {
-        console.error(
+        toast.error(
           response.data.message || "Fehler beim Löschen des Künstlers"
         );
       }
     } catch (error) {
       console.error("Error deleting artist:", error);
-      console.error(
+      toast.error(
         "Fehler beim Löschen des Künstlers: " +
           (error.response?.data?.message || error.message)
       );
@@ -452,7 +501,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       handleLogout={handleLogout}
     >
       <div className="artists-dashboard">
-        {/* Only show header when not loading */}
         {!loading && (
           <div className="transparent-header-container">
             <h1 className="dashboard-main-title">Künstler Management</h1>
@@ -460,7 +508,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
               <SearchBox
                 value={searchTerm}
                 onChange={handleSearchChange}
-                placeholder="Name, E-Mail, Rolle, Passwort oder Kalender suchen..."
+                placeholder="Name, E-Mail, Rolle, Stundensatz oder Kalender suchen..."
               />
             </div>
           </div>
@@ -602,8 +650,10 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                               <th>Name</th>
                               <th>E-Mail</th>
                               <th>Rolle</th>
+                              <th>Stundensatz (€)</th>
                               <th>Passwort</th>
-                              <th>Aktion</th>
+                              <th>Besuche</th>
+                              <th>Aktionen</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -623,7 +673,22 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                       {artist.role}
                                     </Badge>
                                   </td>
-
+                                  <td className="artist-hourly-rate">
+                                    <div className="hourly-rate-display">
+                                      {artist.hourlyRate || "N/A"} €
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        className="ms-2 update-rate-btn"
+                                        onClick={() =>
+                                          handleUpdateClick(artist)
+                                        }
+                                        title="Stundensatz aktualisieren"
+                                      >
+                                        <Pencil size={12} />
+                                      </Button>
+                                    </div>
+                                  </td>
                                   <td className="artist-password">
                                     <div className="password-display">
                                       {showPasswords[artist.email]
@@ -733,6 +798,19 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   <i className="bi bi-envelope"></i>{" "}
                                   {artist.email}
                                 </div>
+                                <div className="artist-mobile-hourly-rate">
+                                  <i className="bi bi-currency-euro"></i>{" "}
+                                  {artist.hourlyRate || "N/A"} €
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    className="ms-2 update-rate-btn"
+                                    onClick={() => handleUpdateClick(artist)}
+                                    title="Stundensatz aktualisieren"
+                                  >
+                                    <Pencil size={12} />
+                                  </Button>
+                                </div>
                                 <div className="artist-mobile-password">
                                   <i className="bi bi-key"></i>{" "}
                                   {showPasswords[artist.email]
@@ -840,6 +918,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         selectedCalendar={selectedCalendarForModal}
         handleAddArtist={handleAddArtistFromModal}
         roleOptions={roleOptions}
+      />
+
+      <UpdateHourlyRateModal
+        showModal={showUpdateModal}
+        setShowModal={setShowUpdateModal}
+        artist={selectedArtist}
+        handleUpdateHourlyRate={handleUpdateHourlyRate}
+        isUpdating={isUpdating}
       />
 
       <Modal
