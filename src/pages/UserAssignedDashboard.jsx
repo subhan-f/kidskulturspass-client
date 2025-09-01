@@ -80,6 +80,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       const userData = await axios.get(
         `${USER_API_URL}/?id=${currentUser._id}`
       );
+      console.log("User Data:", userData.data);
       setUser(userData.data);
 
       const joinedCalendars = userData.data.joinedCalendars || [];

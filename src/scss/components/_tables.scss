@@ -285,7 +285,7 @@
 /* Fixed column widths */
 .artists-table th:nth-child(1),
 .artists-table td:nth-child(1) {
-  width: 15%; /* Name column */
+  width: 20%; /* Name column */
 }
 
 .artists-table th:nth-child(2),
@@ -295,7 +295,7 @@
 
 .artists-table th:nth-child(3),
 .artists-table td:nth-child(3) {
-  width: 15%; /* Role column */
+  width: 20%; /* Role column */
 }
 
 .artists-table th:nth-child(4),
@@ -305,7 +305,7 @@
 
 .artists-table th:nth-child(5),
 .artists-table td:nth-child(5) {
-  width: 10%; /* Actions column */
+  width: 15%; /* Actions column */
 }
 
 /* Password display styling */
