@@ -7,6 +7,7 @@ import {
   ChevronUp,
   PersonCircle,
   PersonDash,
+  Receipt,
 } from "react-bootstrap-icons";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBox from "../components/SearchBox";
@@ -14,7 +15,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import DashboardLoader from "../components/DashboardLoader";
 import { authApi } from "../utils/api";
 import axios from "axios";
-import EventModal from "../components/EventModal"; // Import the EventModal component
+import EventModal from "../components/EventModal";
 
 function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [user, setUser] = useState(null);
@@ -28,12 +29,15 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
   const [searchFocused, setSearchFocused] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null); // State for selected event
-  const [showEventModal, setShowEventModal] = useState(false); // State for modal visibility
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showEventModal, setShowEventModal] = useState(false);
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
   const [eventToLeave, setEventToLeave] = useState(null);
   const [isLeaving, setIsLeaving] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [activeTab, setActiveTab] = useState("myEvents");
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
 
   const CALENDAR_MAPPING = {
     "Klavier Mitmachkonzert": "info@kidskulturspass.de",
@@ -62,10 +66,39 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       const dateB = b.start?.dateTime
         ? new Date(b.start.dateTime).getTime()
         : 0;
-      return dateA - dateB; // For ascending order (oldest first)
-      // Use return dateB - dateA; for descending order (newest first)
+      return dateA - dateB;
     });
   };
+
+  // Generate dummy data for completed and paid events
+  const generateDummyEvents = useCallback((eventsData, type) => {
+    const dummyEvents = JSON.parse(JSON.stringify(eventsData));
+
+    Object.keys(dummyEvents).forEach((calendar) => {
+      dummyEvents[calendar] = dummyEvents[calendar].map((event) => {
+        // Add dummy data based on type
+        if (type === "completed") {
+          event.status = "completed";
+          event.totalCost = `€${(Math.random() * 500 + 100).toFixed(2)}`;
+        } else if (type === "paid") {
+          event.status = "paid";
+          event.totalCost = `€${(Math.random() * 500 + 100).toFixed(2)}`;
+          event.paymentDate = new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ).toLocaleDateString("de-DE");
+          event.receiptId = `RCPT-${Math.floor(Math.random() * 10000)
+            .toString()
+            .padStart(4, "0")}`;
+        }
+        return event;
+      });
+    });
+
+    return dummyEvents;
+  }, []);
+
+  const [completedEvents, setCompletedEvents] = useState({});
+  const [paidEvents, setPaidEvents] = useState({});
 
   // Fetch user data and events
   const fetchData = async () => {
@@ -92,7 +125,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       const eventsRes = await axios.get(`${API_URL}/assigned`, {
         params: {
           email: userData.data["E-Mail"],
-          calendars: calendarNames.join(","), // Send joined calendars to filter
+          calendars: calendarNames.join(","),
           categorize: true,
         },
       });
@@ -108,6 +141,12 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       });
 
       setEvents(sortedCategorizedEvents);
+
+      // Generate dummy data for completed and paid events
+      setCompletedEvents(
+        generateDummyEvents(sortedCategorizedEvents, "completed")
+      );
+      setPaidEvents(generateDummyEvents(sortedCategorizedEvents, "paid"));
 
       // Initialize expanded state for calendars
       const initialExpandState = {};
@@ -138,7 +177,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   }, []);
 
   // Handle event details click
-
   const handleEventClick = useCallback((event) => {
     setSelectedEvent(event);
     setShowEventModal(true);
@@ -154,7 +192,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
 
     setIsLeaving(true);
     setLoadingMessage("Artist wird von der Veranstaltung entfernt...");
-    setSuccess(null); // Reset success state
+    setSuccess(null);
 
     try {
       // Find the calendar ID by matching the calendar name
@@ -213,47 +251,95 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     }
   }, [eventToLeave, user, fetchData]);
 
-  // Filter events based on search term
-  const filteredEventsByCalendar = useMemo(() => {
-    const filtered = {};
-
-    Object.keys(events).forEach((calendar) => {
-      filtered[calendar] = (events[calendar] || []).filter(
-        (event) =>
-          (event.summary || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          (event.role || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.location || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-      );
+  // Handle receipt view
+  const handleViewReceipt = useCallback((event) => {
+    setSelectedReceipt({
+      eventName: event.summary,
+      receiptId:
+        event.receiptId ||
+        `RCPT-${Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, "0")}`,
+      amount: event.totalCost,
+      date: event.paymentDate || new Date().toLocaleDateString("de-DE"),
+      status: "Paid",
     });
+    setShowReceiptModal(true);
+  }, []);
 
-    return filtered;
-  }, [events, searchTerm]);
+  // Filter events based on search term
+  const filterEvents = useCallback(
+    (eventsObj) => {
+      const filtered = {};
+
+      Object.keys(eventsObj).forEach((calendar) => {
+        filtered[calendar] = (eventsObj[calendar] || []).filter(
+          (event) =>
+            (event.summary || "")
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            (event.calendar || "")
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            (event.role || "")
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            (event.location || "")
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+        );
+      });
+
+      return filtered;
+    },
+    [searchTerm]
+  );
+
+  const filteredEventsByCalendar = useMemo(
+    () => filterEvents(events),
+    [events, filterEvents]
+  );
+  const filteredCompletedEvents = useMemo(
+    () => filterEvents(completedEvents),
+    [completedEvents, filterEvents]
+  );
+  const filteredPaidEvents = useMemo(
+    () => filterEvents(paidEvents),
+    [paidEvents, filterEvents]
+  );
+
+  const getEventsForActiveTab = useCallback(() => {
+    switch (activeTab) {
+      case "completedEvents":
+        return filteredCompletedEvents;
+      case "paidEvents":
+        return filteredPaidEvents;
+      default:
+        return filteredEventsByCalendar;
+    }
+  }, [
+    activeTab,
+    filteredEventsByCalendar,
+    filteredCompletedEvents,
+    filteredPaidEvents,
+  ]);
 
   const calendars = useMemo(
-    () => Object.keys(filteredEventsByCalendar).sort(),
-    [filteredEventsByCalendar]
+    () => Object.keys(getEventsForActiveTab()).sort(),
+    [getEventsForActiveTab]
   );
 
   const totalFilteredEvents = useMemo(
-    () => Object.values(filteredEventsByCalendar).flat().length,
-    [filteredEventsByCalendar]
+    () => Object.values(getEventsForActiveTab()).flat().length,
+    [getEventsForActiveTab]
   );
 
   const calendarHasMatch = useCallback(
     (calendar) => {
-      return (
-        filteredEventsByCalendar[calendar] &&
-        filteredEventsByCalendar[calendar].length > 0
-      );
+      const currentEvents = getEventsForActiveTab();
+      return currentEvents[calendar] && currentEvents[calendar].length > 0;
     },
-    [filteredEventsByCalendar]
+    [getEventsForActiveTab]
   );
 
   // Force refresh button handler
@@ -275,6 +361,321 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       </DashboardLayout>
     );
   }
+
+  // Render events table for a specific tab
+  const renderEventsTable = (eventsData) => {
+    return (
+      <>
+        {calendars.map((calendar) => {
+          const hasEvents = eventsData[calendar]?.length > 0;
+          const isFilteredOut = searchTerm && !calendarHasMatch(calendar);
+
+          return (
+            <div
+              key={calendar}
+              className={`event-calendar-card ${
+                isFilteredOut ? "filtered-out" : ""
+              }`}
+            >
+              <div
+                className="calendar-header"
+                onClick={() => toggleCalendarExpand(calendar)}
+              >
+                <div className="header-content">
+                  <div className="title-with-icon">
+                    <h5 className="calendar-title">{calendar}</h5>
+                    <div className="dropdown-toggle-icon">
+                      {expandedCalendars[calendar] ? (
+                        <ChevronUp size={14} />
+                      ) : (
+                        <ChevronDown size={14} />
+                      )}
+                    </div>
+                  </div>
+                  <span className="events-count">
+                    <span className="count-number">
+                      {hasEvents ? eventsData[calendar].length : 0}
+                    </span>
+                    <span className="count-label">
+                      {hasEvents
+                        ? eventsData[calendar].length === 1
+                          ? " Veranstaltung"
+                          : " Veranstaltungen"
+                        : " Veranstaltungen"}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              {expandedCalendars[calendar] && (
+                <div className="calendar-content">
+                  {hasEvents ? (
+                    <>
+                      {/* Regular table for desktop */}
+                      <div className="table-responsive d-none d-md-block">
+                       
+                        <Table
+                          className={`events-table ${
+                            activeTab === "myEvents"
+                              ? "six-columns"
+                              : "five-columns"
+                          }`}
+                        >
+                          {/* Table headers for My Events (6 columns) */}
+                          {activeTab === "myEvents" && (
+                            <thead>
+                              <tr>
+                                <th>Veranstaltung</th>
+                                <th>Meine Rolle(n)</th>
+                                <th>Datum/Uhrzeit</th>
+                                <th>Status</th>
+                                <th>Gesamtkosten</th>
+                                <th>Aktion</th>
+                                {/* Note: The "Verlassen" column is in a separate column group */}
+                              </tr>
+                            </thead>
+                          )}
+
+                          {/* Table headers for Completed/Paid Events (5 columns) */}
+                          {(activeTab === "completedEvents" ||
+                            activeTab === "paidEvents") && (
+                            <thead>
+                              <tr>
+                                <th>Veranstaltung</th>
+                                <th>Meine Rolle(n)</th>
+                                <th>Datum/Uhrzeit</th>
+                                <th>Status</th>
+                                <th>Gesamtkosten</th>
+                                {/* Note: The "Aktion" column is in a separate column group */}
+                              </tr>
+                            </thead>
+                          )}
+                          <tbody>
+                            {eventsData[calendar].map((event, index) => (
+                              <tr key={index} className="event-row">
+                                <td className="event-details">
+                                  <div className="event-title">
+                                    {event.summary}
+                                  </div>
+                                  <div className="event-location">
+                                    {event.location}
+                                  </div>
+                                </td>
+                                <td className="event-roles">
+                                  {event.role?.split(", ").map((role, i) => (
+                                    <Badge
+                                      key={i}
+                                      className="role-badge"
+                                      bg="success"
+                                    >
+                                      {role.trim()}
+                                    </Badge>
+                                  ))}
+                                </td>
+                                <td className="event-time date-time-column">
+                                  {event?.start?.dateTime ? (
+                                    <div className="date-time">
+                                      <div className="date">
+                                        {new Date(
+                                          event.start.dateTime
+                                        ).toLocaleDateString("de-DE", {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric",
+                                          timeZone: event.start.timeZone,
+                                        })}
+                                      </div>
+                                      <div className="time">
+                                        {new Date(
+                                          event.start.dateTime
+                                        ).toLocaleTimeString("de-DE", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                          timeZone: event.start.timeZone,
+                                        })}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span>Datum unbekannt</span>
+                                  )}
+                                </td>
+                                <td className="event-status">
+                                  {activeTab === "myEvents" && (
+                                    <Badge bg="primary">Open</Badge>
+                                  )}
+                                  {activeTab === "completedEvents" && (
+                                    <Badge bg="success">Completed</Badge>
+                                  )}
+                                  {activeTab === "paidEvents" && (
+                                    <Badge bg="info">Paid</Badge>
+                                  )}
+                                </td>
+                                <td className="event-cost">
+                                  {event.totalCost || "N/A"}
+                                </td>
+                                <td className="event-actions actions-column">
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={() => handleEventClick(event)}
+                                    className="open-calendar-button me-1"
+                                  >
+                                    <i className="bi bi-info-circle me-1"></i>
+                                  </Button>
+                                  {activeTab === "paidEvents" && (
+                                    <Button
+                                      variant="outline-info"
+                                      size="sm"
+                                      onClick={() => handleViewReceipt(event)}
+                                      className="view-receipt-button"
+                                    >
+                                      <Receipt className="button-icon" />
+                                    </Button>
+                                  )}
+                                </td>
+                                <td className="leave-event-column leave-column">
+                                  {activeTab === "myEvents" && (
+                                    <Button
+                                      variant="danger"
+                                      size="sm"
+                                      onClick={() => handleLeaveClick(event)}
+                                      className="leave-event-button"
+                                    >
+                                      <PersonDash className="button-icon" />
+                                    </Button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      </div>
+
+                      {/* Mobile-friendly cards for small screens */}
+                      <div className="event-cards-container d-md-none">
+                        {eventsData[calendar].map((event, index) => (
+                          <div key={index} className="event-mobile-card">
+                            <div className="event-mobile-header">
+                              <div className="event-mobile-title">
+                                {event.summary}
+                              </div>
+                              <div className="event-mobile-status">
+                                {activeTab === "myEvents" && (
+                                  <Badge bg="primary">Open</Badge>
+                                )}
+                                {activeTab === "completedEvents" && (
+                                  <Badge bg="success">Completed</Badge>
+                                )}
+                                {activeTab === "paidEvents" && (
+                                  <Badge bg="info">Paid</Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="event-mobile-content">
+                              <div className="event-mobile-roles">
+                                {event.role?.split(", ").map((role, i) => (
+                                  <Badge
+                                    key={i}
+                                    className="role-badge"
+                                    bg="success"
+                                  >
+                                    {role.trim()}
+                                  </Badge>
+                                ))}
+                              </div>
+
+                              <div className="event-mobile-details">
+                                {event.location && (
+                                  <div className="event-mobile-location">
+                                    <i className="bi bi-geo-alt"></i>{" "}
+                                    {event.location}
+                                  </div>
+                                )}
+                                {/* Add this to event-mobile-details */}
+                                {event.totalCost && (
+                                  <div className="event-mobile-cost">
+                                    <i className="bi bi-currency-euro"></i>
+                                    Gesamtkosten: {event.totalCost}
+                                  </div>
+                                )}
+                                {event.start?.dateTime && (
+                                  <div className="event-mobile-datetime">
+                                    <i className="bi bi-calendar-event"></i>{" "}
+                                    {new Date(
+                                      event.start.dateTime
+                                    ).toLocaleDateString("de-DE")}
+                                    <span className="mobile-time">
+                                      {" "}
+                                      {new Date(
+                                        event.start.dateTime
+                                      ).toLocaleTimeString("de-DE", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {event.totalCost && (
+                                  <div className="event-mobile-cost">
+                                    <i className="bi bi-currency-euro"></i>{" "}
+                                    Gesamtkosten: {event.totalCost}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="event-mobile-actions">
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => handleEventClick(event)}
+                                  className="me-2"
+                                >
+                                  <i className="bi bi-info-circle me-1"></i>
+                                  Details
+                                </Button>
+                                {activeTab === "paidEvents" && (
+                                  <Button
+                                    variant="outline-info"
+                                    size="sm"
+                                    onClick={() => handleViewReceipt(event)}
+                                    className="me-2"
+                                  >
+                                    <Receipt className="me-1" />
+                                    Beleg
+                                  </Button>
+                                )}
+                                {activeTab === "myEvents" && (
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleLeaveClick(event)}
+                                    className="leave-event-button"
+                                  >
+                                    <PersonDash className="me-1" />
+                                    Verlassen
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="no-events-message">
+                      Keine zugewiesenen Veranstaltungen in diesem Kalender.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </>
+    );
+  };
 
   return (
     <DashboardLayout
@@ -326,7 +727,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
             {warning}
           </Alert>
         )}
-        {/* Add this with the other alerts */}
         {success && (
           <Alert variant="success" className="dashboard-alert">
             {success}
@@ -338,264 +738,79 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           </Alert>
         )}
 
-        {/* Events Container */}
+        {/* Events Container with Tabs */}
         <div className="events-container">
-          <h2 className="assigned-events-heading">Meine kommenden Events</h2>
+          <div className="chrome-tabs-container">
+            <div className="chrome-tabs">
+              <button
+                className={`chrome-tab ${
+                  activeTab === "myEvents" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("myEvents")}
+              >
+                Meine Events
+              </button>
+              <button
+                className={`chrome-tab ${
+                  activeTab === "completedEvents" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("completedEvents")}
+              >
+                Abgeschlossene Events
+              </button>
+              <button
+                className={`chrome-tab ${
+                  activeTab === "paidEvents" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("paidEvents")}
+              >
+                Bezahlte Events
+              </button>
+            </div>
+          </div>
 
-          {totalFilteredEvents === 0 && !searchTerm ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">
-                <Calendar3 size={48} />
-              </div>
-              <p className="empty-state-message">
-                Keine zugewiesenen Veranstaltungen gefunden.
+          <div className="tab-content">
+            {/* Summary Box */}
+            <div className="summary-box mb-4">
+              <h4>
+                {activeTab === "myEvents" && "Meine Events"}
+                {activeTab === "completedEvents" && "Abgeschlossene Events"}
+                {activeTab === "paidEvents" && "Bezahlte Events"}
+              </h4>
+              <p>
+                {activeTab === "myEvents" &&
+                  "Hier finden Sie alle Ihre aktuellen und bevorstehenden Veranstaltungen."}
+                {activeTab === "completedEvents" &&
+                  "Diese Veranstaltungen wurden bereits abgeschlossen."}
+                {activeTab === "paidEvents" &&
+                  "Diese Veranstaltungen wurden bereits abgerechnet und bezahlt."}
               </p>
             </div>
-          ) : (
-            calendars.map((calendar) => {
-              const hasEvents = filteredEventsByCalendar[calendar]?.length > 0;
-              const isFilteredOut = searchTerm && !calendarHasMatch(calendar);
 
-              return (
-                <div
-                  key={calendar}
-                  className={`event-calendar-card ${
-                    isFilteredOut ? "filtered-out" : ""
-                  }`}
-                >
-                  <div
-                    className="calendar-header"
-                    onClick={() => toggleCalendarExpand(calendar)}
-                  >
-                    <div className="header-content">
-                      <div className="title-with-icon">
-                        <h5 className="calendar-title">{calendar}</h5>
-                        <div className="dropdown-toggle-icon">
-                          {expandedCalendars[calendar] ? (
-                            <ChevronUp size={14} />
-                          ) : (
-                            <ChevronDown size={14} />
-                          )}
-                        </div>
-                      </div>
-                      <span className="events-count">
-                        <span className="count-number">
-                          {hasEvents
-                            ? filteredEventsByCalendar[calendar].length
-                            : 0}
-                        </span>
-                        <span className="count-label">
-                          {hasEvents
-                            ? filteredEventsByCalendar[calendar].length === 1
-                              ? " Veranstaltung"
-                              : " Veranstaltungen"
-                            : " Veranstaltungen"}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
+            <h2 className="assigned-events-heading">
+              {activeTab === "myEvents" && "Meine kommenden Events"}
+              {activeTab === "completedEvents" && "Abgeschlossene Events"}
+              {activeTab === "paidEvents" && "Bezahlte Events"}
+            </h2>
 
-                  {expandedCalendars[calendar] && (
-                    <div className="calendar-content">
-                      {hasEvents ? (
-                        <>
-                          {/* Regular table for desktop */}
-                          <div className="table-responsive d-none d-md-block">
-                            <Table className="events-table">
-                              <thead>
-                                <tr>
-                                  <th style={{ minWidth: "200px" }}>
-                                    Veranstaltung
-                                  </th>
-                                  <th style={{ minWidth: "150px" }}>
-                                    Meine Rolle(n)
-                                  </th>
-                                  <th style={{ minWidth: "120px" }}>
-                                    Datum/Uhrzeit
-                                  </th>
-                                  <th className="actions-column">Aktion</th>
-                                  <th className="leave-column">Verlassen</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {filteredEventsByCalendar[calendar].map(
-                                  (event, index) => (
-                                    <tr key={index} className="event-row">
-                                      <td className="event-details">
-                                        <div className="event-title">
-                                          {event.summary}
-                                        </div>
-                                        <div className="event-location">
-                                          {event.location}
-                                        </div>
-                                      </td>
-                                      <td className="event-roles">
-                                        {event.role
-                                          ?.split(", ")
-                                          .map((role, i) => (
-                                            <Badge
-                                              key={i}
-                                              className="role-badge"
-                                              bg="success"
-                                            >
-                                              {role.trim()}
-                                            </Badge>
-                                          ))}
-                                      </td>
-                                      <td className="event-time date-time-column">
-                                        {event?.start?.dateTime ? (
-                                          <div className="date-time">
-                                            <div className="date">
-                                              {new Date(
-                                                event.start.dateTime
-                                              ).toLocaleDateString("de-DE", {
-                                                day: "2-digit",
-                                                month: "2-digit",
-                                                year: "numeric",
-                                                timeZone: event.start.timeZone,
-                                              })}
-                                            </div>
-                                            <div className="time">
-                                              {new Date(
-                                                event.start.dateTime
-                                              ).toLocaleTimeString("de-DE", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                                timeZone: event.start.timeZone,
-                                              })}
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <span>Datum unbekannt</span>
-                                        )}
-                                      </td>
-                                      <td className="event-actions actions-column">
-                                        <Button
-                                          variant="outline-primary"
-                                          size="sm"
-                                          onClick={() =>
-                                            handleEventClick(event)
-                                          }
-                                          className="open-calendar-button"
-                                        >
-                                          <i className="bi bi-info-circle me-1"></i>
-                                          <span className="d-none d-md-inline">
-                                            Details
-                                          </span>
-                                        </Button>
-                                      </td>
-                                      <td className="leave-event-column leave-column">
-                                        <Button
-                                          variant="danger"
-                                          size="sm"
-                                          onClick={() =>
-                                            handleLeaveClick(event)
-                                          }
-                                          className="leave-event-button"
-                                        >
-                                          <PersonDash className="button-icon" />
-                                          <span className="button-text">
-                                            Verlassen
-                                          </span>
-                                        </Button>
-                                      </td>
-                                    </tr>
-                                  )
-                                )}
-                              </tbody>
-                            </Table>
-                          </div>
-
-                          {/* Mobile-friendly cards for small screens */}
-                          <div className="event-cards-container d-md-none">
-                            {filteredEventsByCalendar[calendar].map(
-                              (event, index) => (
-                                <div key={index} className="event-mobile-card">
-                                  <div className="event-mobile-header">
-                                    <div className="event-mobile-title">
-                                      {event.summary}
-                                    </div>
-                                  </div>
-
-                                  <div className="event-mobile-content">
-                                    <div className="event-mobile-roles">
-                                      {event.role
-                                        ?.split(", ")
-                                        .map((role, i) => (
-                                          <Badge
-                                            key={i}
-                                            className="role-badge"
-                                            bg="success"
-                                          >
-                                            {role.trim()}
-                                          </Badge>
-                                        ))}
-                                    </div>
-
-                                    <div className="event-mobile-details">
-                                      {event.location && (
-                                        <div className="event-mobile-location">
-                                          <i className="bi bi-geo-alt"></i>{" "}
-                                          {event.location}
-                                        </div>
-                                      )}
-
-                                      {event.start?.dateTime && (
-                                        <div className="event-mobile-datetime">
-                                          <i className="bi bi-calendar-event"></i>{" "}
-                                          {new Date(
-                                            event.start.dateTime
-                                          ).toLocaleDateString("de-DE")}
-                                          <span className="mobile-time">
-                                            {" "}
-                                            {new Date(
-                                              event.start.dateTime
-                                            ).toLocaleTimeString("de-DE", {
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="event-mobile-actions">
-                                      <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        onClick={() => handleEventClick(event)}
-                                        className="me-2"
-                                      >
-                                        <i className="bi bi-info-circle me-1"></i>
-                                        Details
-                                      </Button>
-                                      <Button
-                                        variant="danger"
-                                        size="sm"
-                                        onClick={() => handleLeaveClick(event)}
-                                        className="leave-event-button"
-                                      >
-                                        <PersonDash className="me-1" />
-                                        Verlassen
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="no-events-message">
-                          Keine zugewiesenen Veranstaltungen in diesem Kalender.
-                        </div>
-                      )}
-                    </div>
-                  )}
+            {totalFilteredEvents === 0 && !searchTerm ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">
+                  <Calendar3 size={48} />
                 </div>
-              );
-            })
-          )}
+                <p className="empty-state-message">
+                  {activeTab === "myEvents" &&
+                    "Keine zugewiesenen Veranstaltungen gefunden."}
+                  {activeTab === "completedEvents" &&
+                    "Keine abgeschlossenen Veranstaltungen gefunden."}
+                  {activeTab === "paidEvents" &&
+                    "Keine bezahlten Veranstaltungen gefunden."}
+                </p>
+              </div>
+            ) : (
+              renderEventsTable(getEventsForActiveTab())
+            )}
+          </div>
         </div>
 
         {/* Event Modal */}
@@ -605,6 +820,53 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
             onClose={() => setShowEventModal(false)}
           />
         )}
+
+        {/* Receipt Modal */}
+        <Modal
+          show={showReceiptModal}
+          onHide={() => setShowReceiptModal(false)}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Zahlungsbeleg</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {selectedReceipt && (
+              <div className="receipt-details">
+                <div className="receipt-field">
+                  <strong>Belegnummer:</strong> {selectedReceipt.receiptId}
+                </div>
+                <div className="receipt-field">
+                  <strong>Veranstaltung:</strong> {selectedReceipt.eventName}
+                </div>
+                <div className="receipt-field">
+                  <strong>Betrag:</strong> {selectedReceipt.amount}
+                </div>
+                <div className="receipt-field">
+                  <strong>Datum:</strong> {selectedReceipt.date}
+                </div>
+                <div className="receipt-field">
+                  <strong>Status:</strong>{" "}
+                  <Badge bg="success">{selectedReceipt.status}</Badge>
+                </div>
+                <hr />
+                <p className="receipt-note">
+                  Dies ist ein Beispiel-Beleg für Demonstrationszwecke.
+                </p>
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => setShowReceiptModal(false)}
+            >
+              Schließen
+            </Button>
+            <Button variant="primary" onClick={() => window.print()}>
+              Beleg drucken
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </div>
       {/* Leave Event Confirmation Modal */}
       <Modal
