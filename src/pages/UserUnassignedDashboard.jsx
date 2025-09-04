@@ -6,6 +6,8 @@ import {
   ChevronDown,
   ChevronUp,
   PersonCircle,
+  InfoCircle,
+  PlusCircle,
 } from "react-bootstrap-icons";
 import SearchBox from "../components/SearchBox";
 import DashboardLayout from "../components/DashboardLayout";
@@ -13,6 +15,51 @@ import DashboardLoader from "../components/DashboardLoader";
 import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal";
+import ReactDOM from "react-dom";
+
+// Custom Tooltip Component that renders outside the main DOM tree
+const CustomTooltip = ({ show, target, children, placement = "top", variant = "dark" }) => {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const tooltipRef = React.useRef();
+
+  useEffect(() => {
+    if (show && target) {
+      const rect = target.getBoundingClientRect();
+      const tooltipHeight = tooltipRef.current ? tooltipRef.current.offsetHeight : 0;
+      
+      let top = 0;
+      let left = rect.left + rect.width / 2;
+      
+      if (placement === "top") {
+        top = rect.top - tooltipHeight - 8;
+      } else if (placement === "bottom") {
+        top = rect.bottom + 8;
+      }
+      
+      setPosition({ top, left });
+    }
+  }, [show, target, placement]);
+
+  if (!show) return null;
+
+  return ReactDOM.createPortal(
+    <div
+      ref={tooltipRef}
+      className={`custom-tooltip custom-tooltip-${variant}`}
+      style={{
+        position: 'fixed',
+        top: position.top,
+        left: position.left,
+        transform: 'translateX(-50%)',
+        zIndex: 9999,
+      }}
+    >
+      {children}
+      <div className="custom-tooltip-arrow"></div>
+    </div>,
+    document.body
+  );
+};
 
 function UserUnassignedDashboard({ setAuth, handleLogout }) {
   const [user, setUser] = useState(null);
@@ -34,6 +81,10 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
   const [eventToJoin, setEventToJoin] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isJoining, setIsJoining] = useState(false);
+  
+  // Tooltip state
+  const [tooltipShow, setTooltipShow] = useState({});
+  const [tooltipTargets, setTooltipTargets] = useState({});
 
   const API_URL =
     "https://user-dashboard-data-754826373806.europe-west1.run.app";
@@ -65,6 +116,16 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
       return dateA - dateB; // For ascending order (oldest first)
       // Use return dateB - dateA; for descending order (newest first)
     });
+  };
+
+  // Tooltip handlers
+  const handleTooltipShow = (key, target) => {
+    setTooltipShow(prev => ({ ...prev, [key]: true }));
+    setTooltipTargets(prev => ({ ...prev, [key]: target }));
+  };
+
+  const handleTooltipHide = (key) => {
+    setTooltipShow(prev => ({ ...prev, [key]: false }));
   };
 
   // Fetch user data and events
@@ -387,7 +448,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                         <>
                           {/* Regular table for desktop */}
                           <div className="table-responsive d-none d-md-block">
-                            <Table className="events-table">
+                            <Table className="events-table six-columns">
                               <thead>
                                 <tr>
                                   <th style={{ minWidth: "200px" }}>
@@ -397,79 +458,125 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                     Datum/Uhrzeit
                                   </th>
                                   <th style={{ minWidth: "150px" }}>Ort</th>
+                                  <th style={{ minWidth: "100px" }}>Betrag</th>
                                   <th className="actions-column">Aktion</th>
                                   <th className="join-column">Beitreten</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {filteredEventsByCalendar[calendar].map(
-                                  (event, index) => (
-                                    <tr key={index} className="event-row">
-                                      <td className="event-details">
-                                        <div className="event-title">
-                                          {event.summary}
-                                        </div>
-                                      </td>
-                                      <td className="event-time date-time-column">
-                                        {event?.start?.dateTime ? (
-                                          <div className="date-time">
-                                            <div className="date">
-                                              {new Date(
-                                                event.start.dateTime
-                                              ).toLocaleDateString("de-DE", {
-                                                day: "2-digit",
-                                                month: "2-digit",
-                                                year: "numeric",
-                                                timeZone: event.start.timeZone,
-                                              })}
-                                            </div>
-                                            <div className="time">
-                                              {new Date(
-                                                event.start.dateTime
-                                              ).toLocaleTimeString("de-DE", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                                timeZone: event.start.timeZone,
-                                              })}
-                                            </div>
+                                  (event, index) => {
+                                    const detailKey = `detail-${calendar}-${index}`;
+                                    const joinKey = `join-${calendar}-${index}`;
+                                    
+                                    return (
+                                      <tr key={index} className="event-row">
+                                        {/* Event Details */}
+                                        <td className="event-details">
+                                          <div className="event-title">
+                                            {event.summary}
                                           </div>
-                                        ) : (
-                                          <span>Datum unbekannt</span>
-                                        )}
-                                      </td>
-                                      <td className="event-location">
-                                        {event.location || "Nicht angegeben"}
-                                      </td>
-                                      <td className="event-actions actions-column">
-                                        <Button
-                                          variant="outline-primary"
-                                          size="sm"
-                                          onClick={() =>
-                                            handleEventClick(event)
-                                          }
-                                          className="open-calendar-button"
-                                        >
-                                          <i className="bi bi-info-circle me-1"></i>
-                                          <span className="d-none d-md-inline">
+                                          <div className="event-location">
+                                            {event.location || "Nicht angegeben"}
+                                          </div>
+                                        </td>
+
+                                        {/* Date / Time */}
+                                        <td className="event-time date-time-column">
+                                          {event?.start?.dateTime ? (
+                                            <div className="date-time">
+                                              <div className="date">
+                                                {new Date(
+                                                  event.start.dateTime
+                                                ).toLocaleDateString("de-DE", {
+                                                  day: "2-digit",
+                                                  month: "2-digit",
+                                                  year: "numeric",
+                                                  timeZone: event.start.timeZone,
+                                                })}
+                                              </div>
+                                              <div className="time">
+                                                {new Date(
+                                                  event.start.dateTime
+                                                ).toLocaleTimeString("de-DE", {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                  timeZone: event.start.timeZone,
+                                                })}
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <span>Datum unbekannt</span>
+                                          )}
+                                        </td>
+
+                                        {/* Location column removed since moved below title */}
+
+                                        {/* Amount Column */}
+                                        <td className="event-amount">
+                                          {event.totalCost || "N/A"}
+                                        </td>
+
+                                        {/* Actions column */}
+                                        <td className="event-actions actions-column">
+                                          <Button
+                                            ref={el => {
+                                              if (el && !tooltipTargets[detailKey]) {
+                                                setTooltipTargets(prev => ({ 
+                                                  ...prev, 
+                                                  [detailKey]: el 
+                                                }));
+                                              }
+                                            }}
+                                            variant="outline-primary"
+                                            size="sm"
+                                            onClick={() => handleEventClick(event)}
+                                            onMouseEnter={(e) => handleTooltipShow(detailKey, e.currentTarget)}
+                                            onMouseLeave={() => handleTooltipHide(detailKey)}
+                                            className="open-calendar-button"
+                                          >
+                                            <InfoCircle className="button-icon" />
+                                          </Button>
+                                          <CustomTooltip 
+                                            show={tooltipShow[detailKey]} 
+                                            target={tooltipTargets[detailKey]}
+                                            variant="primary"
+                                          >
                                             Details
-                                          </span>
-                                        </Button>
-                                      </td>
-                                      <td className="join-event-column join-column">
-                                        <Button
-                                          variant="success"
-                                          size="sm"
-                                          onClick={() => handleJoinClick(event)}
-                                          className="join-event-button"
-                                        >
-                                          <PersonCircle className="button-icon" />
-                                          <span className="d-none d-md-inline">
-                                            Beitreten
-                                          </span>
-                                        </Button>
-                                      </td>
-                                    </tr>
-                                  )
+                                          </CustomTooltip>
+                                        </td>
+
+                                        {/* Join column */}
+                                        <td className="join-event-column join-column">
+                                          <Button
+                                            ref={el => {
+                                              if (el && !tooltipTargets[joinKey]) {
+                                                setTooltipTargets(prev => ({ 
+                                                  ...prev, 
+                                                  [joinKey]: el 
+                                                }));
+                                              }
+                                            }}
+                                            variant="success"
+                                            size="sm"
+                                            onClick={() => handleJoinClick(event)}
+                                            onMouseEnter={(e) => handleTooltipShow(joinKey, e.currentTarget)}
+                                            onMouseLeave={() => handleTooltipHide(joinKey)}
+                                            className="join-event-button"
+                                          >
+                                            <PlusCircle className="button-icon" />
+                                          </Button>
+                                          <CustomTooltip 
+                                            show={tooltipShow[joinKey]} 
+                                            target={tooltipTargets[joinKey]}
+                                            variant="success"
+                                          >
+                                            Veranstaltung beitreten
+                                          </CustomTooltip>
+                                        </td>
+                                      </tr>
+                                    );
+                                  }
                                 )}
                               </tbody>
                             </Table>
@@ -478,64 +585,104 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                           {/* Mobile-friendly cards for small screens */}
                           <div className="event-cards-container d-md-none">
                             {filteredEventsByCalendar[calendar].map(
-                              (event, index) => (
-                                <div key={index} className="event-mobile-card">
-                                  <div className="event-mobile-header">
-                                    <div className="event-mobile-title">
-                                      {event.summary}
+                              (event, index) => {
+                                const detailKey = `mobile-detail-${calendar}-${index}`;
+                                const joinKey = `mobile-join-${calendar}-${index}`;
+                                
+                                return (
+                                  <div key={index} className="event-mobile-card">
+                                    <div className="event-mobile-header">
+                                      <div className="event-mobile-title">
+                                        {event.summary}
+                                      </div>
                                     </div>
-                                  </div>
 
-                                  <div className="event-mobile-content">
-                                    <div className="event-mobile-details">
-                                      {event.location && (
-                                        <div className="event-mobile-location">
-                                          <i className="bi bi-geo-alt"></i>{" "}
-                                          {event.location}
-                                        </div>
-                                      )}
+                                    <div className="event-mobile-content">
+                                      <div className="event-mobile-details">
+                                        {event.location && (
+                                          <div className="event-mobile-location">
+                                            <i className="bi bi-geo-alt"></i>{" "}
+                                            {event.location}
+                                          </div>
+                                        )}
 
-                                      {event.start?.dateTime && (
-                                        <div className="event-mobile-datetime">
-                                          <i className="bi bi-calendar-event"></i>{" "}
-                                          {new Date(
-                                            event.start.dateTime
-                                          ).toLocaleDateString("de-DE")}
-                                          <span className="mobile-time">
-                                            {" "}
+                                        {event.start?.dateTime && (
+                                          <div className="event-mobile-datetime">
+                                            <i className="bi bi-calendar-event"></i>{" "}
                                             {new Date(
                                               event.start.dateTime
-                                            ).toLocaleTimeString("de-DE", {
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
+                                            ).toLocaleDateString("de-DE")}
+                                            <span className="mobile-time">
+                                              {" "}
+                                              {new Date(
+                                                event.start.dateTime
+                                              ).toLocaleTimeString("de-DE", {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                              })}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
 
-                                    <div className="event-mobile-actions">
-                                      <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        onClick={() => handleEventClick(event)}
-                                        className="me-2"
-                                      >
-                                        <i className="bi bi-info-circle me-1"></i>
-                                        Details
-                                      </Button>
-                                      <Button
-                                        variant="success"
-                                        size="sm"
-                                        onClick={() => handleJoinClick(event)}
-                                      >
-                                        <PersonCircle className="me-1" />
-                                        Beitreten
-                                      </Button>
+                                      <div className="event-mobile-actions">
+                                        <Button
+                                          ref={el => {
+                                            if (el && !tooltipTargets[detailKey]) {
+                                              setTooltipTargets(prev => ({ 
+                                                ...prev, 
+                                                [detailKey]: el 
+                                              }));
+                                            }
+                                          }}
+                                          variant="outline-primary"
+                                          size="sm"
+                                          onClick={() => handleEventClick(event)}
+                                          onMouseEnter={(e) => handleTooltipShow(detailKey, e.currentTarget)}
+                                          onMouseLeave={() => handleTooltipHide(detailKey)}
+                                          className="me-2"
+                                        >
+                                          <InfoCircle className="me-1" />
+                                          Details
+                                        </Button>
+                                        <CustomTooltip 
+                                          show={tooltipShow[detailKey]} 
+                                          target={tooltipTargets[detailKey]}
+                                          variant="primary"
+                                        >
+                                          Details
+                                        </CustomTooltip>
+                                        
+                                        <Button
+                                          ref={el => {
+                                            if (el && !tooltipTargets[joinKey]) {
+                                              setTooltipTargets(prev => ({ 
+                                                ...prev, 
+                                                [joinKey]: el 
+                                              }));
+                                            }
+                                          }}
+                                          variant="success"
+                                          size="sm"
+                                          onClick={() => handleJoinClick(event)}
+                                          onMouseEnter={(e) => handleTooltipShow(joinKey, e.currentTarget)}
+                                          onMouseLeave={() => handleTooltipHide(joinKey)}
+                                        >
+                                          <PlusCircle className="me-1" />
+                                          Beitreten
+                                        </Button>
+                                        <CustomTooltip 
+                                          show={tooltipShow[joinKey]} 
+                                          target={tooltipTargets[joinKey]}
+                                          variant="success"
+                                        >
+                                          Veranstaltung beitreten
+                                        </CustomTooltip>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              )
+                                );
+                              }
                             )}
                           </div>
                         </>
