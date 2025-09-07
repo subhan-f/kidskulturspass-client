@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Modal, Button, Table, Alert, Badge, Spinner, Tooltip, Overlay } from "react-bootstrap";
+import {
+  Modal,
+  Button,
+  Table,
+  Alert,
+  Badge,
+  Spinner,
+  Tooltip,
+  Overlay,
+  Form,
+} from "react-bootstrap";
 import {
   ArrowClockwise,
   Calendar3,
@@ -8,8 +18,10 @@ import {
   PersonCircle,
   PersonDash,
   Receipt,
+  Pencil,
   DashCircle,
-  InfoCircle
+  CarFront,
+  InfoCircle,
 } from "react-bootstrap-icons";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBox from "../components/SearchBox";
@@ -19,26 +31,35 @@ import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal";
 import ReactDOM from "react-dom";
+import { jsx } from "react/jsx-runtime";
 
 // Custom Tooltip Component that renders outside the main DOM tree
-const CustomTooltip = ({ show, target, children, placement = "top", variant = "dark" }) => {
+const CustomTooltip = ({
+  show,
+  target,
+  children,
+  placement = "top",
+  variant = "dark",
+}) => {
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = React.useRef();
 
   useEffect(() => {
     if (show && target) {
       const rect = target.getBoundingClientRect();
-      const tooltipHeight = tooltipRef.current ? tooltipRef.current.offsetHeight : 0;
-      
+      const tooltipHeight = tooltipRef.current
+        ? tooltipRef.current.offsetHeight
+        : 0;
+
       let top = 0;
       let left = rect.left + rect.width / 2;
-      
+
       if (placement === "top") {
         top = rect.top - tooltipHeight - 8;
       } else if (placement === "bottom") {
         top = rect.bottom + 8;
       }
-      
+
       setPosition({ top, left });
     }
   }, [show, target, placement]);
@@ -50,10 +71,10 @@ const CustomTooltip = ({ show, target, children, placement = "top", variant = "d
       ref={tooltipRef}
       className={`custom-tooltip custom-tooltip-${variant}`}
       style={{
-        position: 'fixed',
+        position: "fixed",
         top: position.top,
         left: position.left,
-        transform: 'translateX(-50%)',
+        transform: "translateX(-50%)",
         zIndex: 9999,
       }}
     >
@@ -85,10 +106,18 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [activeTab, setActiveTab] = useState("myEvents");
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
-  
+
   // Tooltip state
   const [tooltipShow, setTooltipShow] = useState({});
   const [tooltipTargets, setTooltipTargets] = useState({});
+
+  const [showTravelRoleModal, setShowTravelRoleModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  // Add this state near the other state declarations
+  const [isUpdatingTravelRole, setIsUpdatingTravelRole] = useState(false);
 
   const CALENDAR_MAPPING = {
     "Klavier Mitmachkonzert": "info@kidskulturspass.de",
@@ -121,6 +150,104 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     });
   };
 
+  const handleOpenTravelRoleModal = (event, user) => {
+    setEditingEvent(event);
+    setEditingUser(user);
+
+    // calculate roles according to rules
+    const roles = determineAvailableRoles(event, user);
+    setAvailableRoles(roles);
+
+    // default to the user's current travelRole if present, otherwise first available
+    const defaultRole =
+      user?.travelRole && roles.some((r) => r.value === user.travelRole)
+        ? user.travelRole
+        : roles[0].value;
+    setSelectedRole(defaultRole);
+
+    setShowTravelRoleModal(true);
+  };
+
+  // ---------------------------
+  // Updated: handleSaveTravelRole (with guard for disabled option)
+  // ---------------------------
+  const handleSaveTravelRole = async () => {
+    if (!editingEvent || !editingUser || !selectedRole) {
+      console.error("Missing data to save travel role", {
+        editingEvent,
+        editingUser,
+        selectedRole,
+      });
+      return;
+    }
+
+    // find role meta (to check disabled status)
+    const roleMeta = availableRoles.find((r) => r.value === selectedRole);
+
+    // guard: if role is disabled *and* it's not the user's current role, prevent changing
+    if (
+      roleMeta?.disabled &&
+      selectedRole !== (editingUser?.travelRole || "")
+    ) {
+      setWarning(
+        "Diese Reiserolle kann nicht ausgewählt werden, weil ein anderer Teilnehmer bereits die Rolle 'Passenger' hat."
+      );
+      return;
+    }
+
+    setIsUpdatingTravelRole(true);
+    setLoadingMessage("Reiserolle wird aktualisiert...");
+    setSuccess(null);
+    setWarning(null);
+
+    try {
+      // prepare payload - adjust to your API shape
+      const calendarName = editingEvent.calendarName?.trim().toLowerCase();
+      let calendarId = null;
+      for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
+        if (name.trim().toLowerCase() === calendarName) {
+          calendarId = id;
+          break;
+        }
+      }
+      if (!calendarId) {
+        setWarning("Kalender-ID nicht gefunden.");
+        setIsUpdatingTravelRole(false);
+        setLoadingMessage(null);
+        return;
+      }
+
+      const requestData = {
+        calendarId,
+        eventId: editingEvent.id,
+        artistEmail: editingUser.email,
+        travelRole: selectedRole,
+      };
+
+      const response = await axios.post(
+        `${API_URL}/update-travel-role`,
+        requestData
+      );
+      if (response.data.success) {
+        setSuccess("Reiserolle erfolgreich aktualisiert!");
+        setTimeout(() => setSuccess(null), 20000);
+        // wait a bit for upstream calendar sync if you want (optional)
+        await new Promise((res) => setTimeout(res, 2000));
+        await fetchData();
+        setShowTravelRoleModal(false);
+      } else {
+        setWarning(
+          response.data.message || "Fehler beim Aktualisieren der Reiserolle"
+        );
+      }
+    } catch (err) {
+      console.error("Error updating travel role", err);
+      setError("Fehler beim Aktualisieren der Reiserolle");
+    } finally {
+      setIsUpdatingTravelRole(false);
+      setLoadingMessage(null);
+    }
+  };
   // Generate dummy data for completed and paid events
   const generateDummyEvents = useCallback((eventsData, type) => {
     const dummyEvents = JSON.parse(JSON.stringify(eventsData));
@@ -151,6 +278,61 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [completedEvents, setCompletedEvents] = useState({});
   const [paidEvents, setPaidEvents] = useState({});
 
+  const determineAvailableRoles = (event, user) => {
+    const attendees = event?.attendees || [];
+    const currentRole = (user?.travelRole || "").toLowerCase();
+
+    // helper to build object form
+    const R = (value, disabled = false) => ({
+      value,
+      label: value.charAt(0).toUpperCase() + value.slice(1),
+      disabled,
+    });
+
+    // Only 1 artist (the user themself) => can choose either freely
+    if (attendees.length === 1) {
+      return [R("driver", false), R("passenger", false)];
+    }
+
+    // 2 artists -> apply the cases
+    if (attendees.length === 2) {
+      const other = attendees.find((a) => a.email !== user.email) || {};
+      const otherRole = (other.travelRole || "").toLowerCase();
+
+      // Case A: current user is passenger -> show passenger (default) then driver (both selectable)
+      if (currentRole === "passenger") {
+        return [R("passenger", false), R("driver", false)];
+      }
+
+      // Case B: current user is driver -> behavior depends on the other artist
+      if (currentRole === "driver") {
+        if (otherRole === "driver") {
+          // the other is driver too -> both selectable
+          return [R("driver", false), R("passenger", false)];
+        }
+        if (otherRole === "passenger") {
+          // the other is passenger -> current must stay driver; passenger option shown but unselectable
+          return [R("driver", false), R("passenger", true)];
+        }
+        // fallback: the other has no role info -> allow both
+        return [R("driver", false), R("passenger", false)];
+      }
+
+      // fallback: currentRole unknown -> prefer current (if present) else driver first
+      if (!currentRole) {
+        return [R("driver", false), R("passenger", false)];
+      }
+
+      // ultimate fallback: both
+      return [R("driver", false), R("passenger", false)];
+    }
+
+    // More than 2 attendees: fallback to both selectable (not covered by your rules)
+    return [
+      { value: "driver", label: "Driver", disabled: false },
+      { value: "passenger", label: "Passenger", disabled: false },
+    ];
+  };
   // Fetch user data and events
   const fetchData = async () => {
     try {
@@ -172,7 +354,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
 
       // Fetch assigned events for these calendars
       setLoadingMessage("Veranstaltungen werden geladen...");
-
       const eventsRes = await axios.get(`${API_URL}/assigned`, {
         params: {
           email: userData.data["E-Mail"],
@@ -182,6 +363,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       });
 
       const responseData = eventsRes.data;
+      console.log("response Data:", JSON.stringify(responseData, null, 2));
 
       // Sort events for each calendar by date
       const sortedCategorizedEvents = {};
@@ -407,12 +589,12 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
 
   // Tooltip handlers
   const handleTooltipShow = (key, target) => {
-    setTooltipShow(prev => ({ ...prev, [key]: true }));
-    setTooltipTargets(prev => ({ ...prev, [key]: target }));
+    setTooltipShow((prev) => ({ ...prev, [key]: true }));
+    setTooltipTargets((prev) => ({ ...prev, [key]: target }));
   };
 
   const handleTooltipHide = (key) => {
-    setTooltipShow(prev => ({ ...prev, [key]: false }));
+    setTooltipShow((prev) => ({ ...prev, [key]: false }));
   };
 
   if (loading) {
@@ -474,7 +656,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                     <>
                       {/* Regular table for desktop */}
                       <div className="table-responsive d-none d-md-block">
-                       
                         <Table
                           className={`events-table ${
                             activeTab === "myEvents" || "paidEvents"
@@ -488,11 +669,11 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                               <tr>
                                 <th>Veranstaltung</th>
                                 <th>Meine Rolle(n)</th>
+                                <th>Reiserolle</th> {/* NEW COLUMN */}
                                 <th>Datum/Uhrzeit</th>
                                 <th>Status</th>
                                 <th>Gesamtkosten</th>
                                 <th>Aktion</th>
-                                {/* Note: The "Verlassen" column is in a separate column group */}
                               </tr>
                             </thead>
                           )}
@@ -504,6 +685,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                               <tr>
                                 <th>Veranstaltung</th>
                                 <th>Meine Rolle(n)</th>
+                                <th>Reiserolle</th> {/* NEW COLUMN */}
                                 <th>Datum/Uhrzeit</th>
                                 <th>Status</th>
                                 <th>Gesamtkosten</th>
@@ -516,7 +698,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                               const detailKey = `detail-${calendar}-${index}`;
                               const leaveKey = `leave-${calendar}-${index}`;
                               const receiptKey = `receipt-${calendar}-${index}`;
-                              
+
                               return (
                                 <tr key={index} className="event-row">
                                   <td className="event-details">
@@ -554,6 +736,44 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                       <span>Datum unbekannt</span>
                                     )}
                                   </td>
+                                  <td className="event-travelRole">
+                                    {(() => {
+                                      const currentUser = event.attendees?.find(
+                                        (a) => a.email === user["E-Mail"] // <-- replace with logged-in user email
+                                      );
+                                      if (!currentUser?.travelRole)
+                                        return "Keine Reiserolle";
+
+                                      return (
+                                        <div className="travelRole-display d-flex align-items-center">
+                                          <span className="me-2">
+                                            {currentUser.travelRole
+                                              .charAt(0)
+                                              .toUpperCase() +
+                                              currentUser.travelRole.slice(1)}
+                                          </span>
+
+                                          <Button
+                                            variant="link"
+                                            size="sm"
+                                            className="p-0 travelRole-edit-btn"
+                                            onClick={() =>
+                                              handleOpenTravelRoleModal(
+                                                event,
+                                                currentUser
+                                              )
+                                            }
+                                          >
+                                            <Pencil
+                                              className="text-primary"
+                                              size={16}
+                                            />
+                                          </Button>
+                                        </div>
+                                      );
+                                    })()}
+                                  </td>
+
                                   <td className="event-status">
                                     {activeTab === "myEvents" && (
                                       <Badge bg="primary">bevorstehend</Badge>
@@ -566,29 +786,36 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                     )}
                                   </td>
                                   <td className="event-cost">
-                                    {event.totalCost || "N/A"}
+                                    {event.eventExpense.totalExpense || "N/A"}
                                   </td>
                                   <td className="event-actions actions-column">
                                     <Button
-                                      ref={el => {
+                                      ref={(el) => {
                                         if (el && !tooltipTargets[detailKey]) {
-                                          setTooltipTargets(prev => ({ 
-                                            ...prev, 
-                                            [detailKey]: el 
+                                          setTooltipTargets((prev) => ({
+                                            ...prev,
+                                            [detailKey]: el,
                                           }));
                                         }
                                       }}
                                       variant="outline-primary"
                                       size="sm"
                                       onClick={() => handleEventClick(event)}
-                                      onMouseEnter={(e) => handleTooltipShow(detailKey, e.currentTarget)}
-                                      onMouseLeave={() => handleTooltipHide(detailKey)}
+                                      onMouseEnter={(e) =>
+                                        handleTooltipShow(
+                                          detailKey,
+                                          e.currentTarget
+                                        )
+                                      }
+                                      onMouseLeave={() =>
+                                        handleTooltipHide(detailKey)
+                                      }
                                       className="open-calendar-button me-1"
                                     >
                                       <InfoCircle className="button-icon" />
                                     </Button>
-                                    <CustomTooltip 
-                                      show={tooltipShow[detailKey]} 
+                                    <CustomTooltip
+                                      show={tooltipShow[detailKey]}
                                       target={tooltipTargets[detailKey]}
                                       variant="primary"
                                     >
@@ -599,25 +826,37 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                     {activeTab === "myEvents" && (
                                       <>
                                         <Button
-                                          ref={el => {
-                                            if (el && !tooltipTargets[leaveKey]) {
-                                              setTooltipTargets(prev => ({ 
-                                                ...prev, 
-                                                [leaveKey]: el 
+                                          ref={(el) => {
+                                            if (
+                                              el &&
+                                              !tooltipTargets[leaveKey]
+                                            ) {
+                                              setTooltipTargets((prev) => ({
+                                                ...prev,
+                                                [leaveKey]: el,
                                               }));
                                             }
                                           }}
                                           variant="danger"
                                           size="sm"
-                                          onClick={() => handleLeaveClick(event)}
-                                          onMouseEnter={(e) => handleTooltipShow(leaveKey, e.currentTarget)}
-                                          onMouseLeave={() => handleTooltipHide(leaveKey)}
+                                          onClick={() =>
+                                            handleLeaveClick(event)
+                                          }
+                                          onMouseEnter={(e) =>
+                                            handleTooltipShow(
+                                              leaveKey,
+                                              e.currentTarget
+                                            )
+                                          }
+                                          onMouseLeave={() =>
+                                            handleTooltipHide(leaveKey)
+                                          }
                                           className="leave-event-button"
                                         >
                                           <DashCircle className="button-icon" />
                                         </Button>
-                                        <CustomTooltip 
-                                          show={tooltipShow[leaveKey]} 
+                                        <CustomTooltip
+                                          show={tooltipShow[leaveKey]}
                                           target={tooltipTargets[leaveKey]}
                                           variant="danger"
                                         >
@@ -628,25 +867,37 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                     {activeTab === "paidEvents" && (
                                       <>
                                         <Button
-                                          ref={el => {
-                                            if (el && !tooltipTargets[receiptKey]) {
-                                              setTooltipTargets(prev => ({ 
-                                                ...prev, 
-                                                [receiptKey]: el 
+                                          ref={(el) => {
+                                            if (
+                                              el &&
+                                              !tooltipTargets[receiptKey]
+                                            ) {
+                                              setTooltipTargets((prev) => ({
+                                                ...prev,
+                                                [receiptKey]: el,
                                               }));
                                             }
                                           }}
                                           variant="outline-info"
                                           size="sm"
-                                          onClick={() => handleViewReceipt(event)}
-                                          onMouseEnter={(e) => handleTooltipShow(receiptKey, e.currentTarget)}
-                                          onMouseLeave={() => handleTooltipHide(receiptKey)}
+                                          onClick={() =>
+                                            handleViewReceipt(event)
+                                          }
+                                          onMouseEnter={(e) =>
+                                            handleTooltipShow(
+                                              receiptKey,
+                                              e.currentTarget
+                                            )
+                                          }
+                                          onMouseLeave={() =>
+                                            handleTooltipHide(receiptKey)
+                                          }
                                           className="view-receipt-button"
                                         >
                                           <Receipt className="button-icon" />
                                         </Button>
-                                        <CustomTooltip 
-                                          show={tooltipShow[receiptKey]} 
+                                        <CustomTooltip
+                                          show={tooltipShow[receiptKey]}
                                           target={tooltipTargets[receiptKey]}
                                           variant="info"
                                         >
@@ -668,7 +919,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                           const detailKey = `mobile-detail-${calendar}-${index}`;
                           const leaveKey = `mobile-leave-${calendar}-${index}`;
                           const receiptKey = `mobile-receipt-${calendar}-${index}`;
-                          
+
                           return (
                             <div key={index} className="event-mobile-card">
                               <div className="event-mobile-header">
@@ -733,59 +984,113 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                       Gesamtkosten: {event.totalCost}
                                     </div>
                                   )}
+                                  {event.attendees && (
+                                    <div className="event-mobile-travelRole d-flex align-items-center">
+                                      <CarFront className="text-primary me-2" />
+                                      <span>
+                                        {(() => {
+                                          const currentUser =
+                                            event.attendees.find(
+                                              (a) => a.email === user["E-Mail"]
+                                            );
+                                          if (!currentUser?.travelRole)
+                                            return "Keine Reiserolle";
+                                          return (
+                                            currentUser.travelRole
+                                              .charAt(0)
+                                              .toUpperCase() +
+                                            currentUser.travelRole.slice(1)
+                                          );
+                                        })()}
+                                      </span>
+                                      <Button
+                                        variant="link"
+                                        size="sm"
+                                        className="travelRole-edit-btn ms-2 d-flex align-items-center"
+                                        onClick={() =>
+                                          handleOpenTravelRoleModal(
+                                            event,
+                                            event.attendees.find(
+                                              (a) => a.email === user["E-Mail"]
+                                            )
+                                          )
+                                        }
+                                      >
+                                        <Pencil className="text-primary me-1" />
+                                        Bearbeiten
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="event-mobile-actions">
                                   <Button
-                                    ref={el => {
+                                    ref={(el) => {
                                       if (el && !tooltipTargets[detailKey]) {
-                                        setTooltipTargets(prev => ({ 
-                                          ...prev, 
-                                          [detailKey]: el 
+                                        setTooltipTargets((prev) => ({
+                                          ...prev,
+                                          [detailKey]: el,
                                         }));
                                       }
                                     }}
                                     variant="outline-primary"
                                     size="sm"
                                     onClick={() => handleEventClick(event)}
-                                    onMouseEnter={(e) => handleTooltipShow(detailKey, e.currentTarget)}
-                                    onMouseLeave={() => handleTooltipHide(detailKey)}
+                                    onMouseEnter={(e) =>
+                                      handleTooltipShow(
+                                        detailKey,
+                                        e.currentTarget
+                                      )
+                                    }
+                                    onMouseLeave={() =>
+                                      handleTooltipHide(detailKey)
+                                    }
                                     className="me-2"
                                   >
                                     <InfoCircle className="me-1" />
                                     Details
                                   </Button>
-                                  <CustomTooltip 
-                                    show={tooltipShow[detailKey]} 
+                                  <CustomTooltip
+                                    show={tooltipShow[detailKey]}
                                     target={tooltipTargets[detailKey]}
                                     variant="primary"
                                   >
                                     Details
                                   </CustomTooltip>
-                                  
+
                                   {activeTab === "paidEvents" && (
                                     <>
                                       <Button
-                                        ref={el => {
-                                          if (el && !tooltipTargets[receiptKey]) {
-                                            setTooltipTargets(prev => ({ 
-                                              ...prev, 
-                                              [receiptKey]: el 
+                                        ref={(el) => {
+                                          if (
+                                            el &&
+                                            !tooltipTargets[receiptKey]
+                                          ) {
+                                            setTooltipTargets((prev) => ({
+                                              ...prev,
+                                              [receiptKey]: el,
                                             }));
                                           }
                                         }}
                                         variant="outline-info"
                                         size="sm"
                                         onClick={() => handleViewReceipt(event)}
-                                        onMouseEnter={(e) => handleTooltipShow(receiptKey, e.currentTarget)}
-                                        onMouseLeave={() => handleTooltipHide(receiptKey)}
+                                        onMouseEnter={(e) =>
+                                          handleTooltipShow(
+                                            receiptKey,
+                                            e.currentTarget
+                                          )
+                                        }
+                                        onMouseLeave={() =>
+                                          handleTooltipHide(receiptKey)
+                                        }
                                         className="me-2"
                                       >
                                         <Receipt className="me-1" />
                                         Beleg
                                       </Button>
-                                      <CustomTooltip 
-                                        show={tooltipShow[receiptKey]} 
+                                      <CustomTooltip
+                                        show={tooltipShow[receiptKey]}
                                         target={tooltipTargets[receiptKey]}
                                         variant="info"
                                       >
@@ -796,26 +1101,33 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                   {activeTab === "myEvents" && (
                                     <>
                                       <Button
-                                        ref={el => {
+                                        ref={(el) => {
                                           if (el && !tooltipTargets[leaveKey]) {
-                                            setTooltipTargets(prev => ({ 
-                                              ...prev, 
-                                              [leaveKey]: el 
+                                            setTooltipTargets((prev) => ({
+                                              ...prev,
+                                              [leaveKey]: el,
                                             }));
                                           }
                                         }}
                                         variant="danger"
                                         size="sm"
                                         onClick={() => handleLeaveClick(event)}
-                                        onMouseEnter={(e) => handleTooltipShow(leaveKey, e.currentTarget)}
-                                        onMouseLeave={() => handleTooltipHide(leaveKey)}
+                                        onMouseEnter={(e) =>
+                                          handleTooltipShow(
+                                            leaveKey,
+                                            e.currentTarget
+                                          )
+                                        }
+                                        onMouseLeave={() =>
+                                          handleTooltipHide(leaveKey)
+                                        }
                                         className="leave-event-button"
                                       >
                                         <DashCircle className="me-1" />
                                         Verlassen
                                       </Button>
-                                      <CustomTooltip 
-                                        show={tooltipShow[leaveKey]} 
+                                      <CustomTooltip
+                                        show={tooltipShow[leaveKey]}
                                         target={tooltipTargets[leaveKey]}
                                         variant="danger"
                                       >
@@ -1035,6 +1347,87 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           </Modal.Footer>
         </Modal>
       </div>
+
+      {/* 🔹 Travel Role Modal */}
+      <Modal
+        show={showTravelRoleModal}
+        onHide={() => !isUpdatingTravelRole && setShowTravelRoleModal(false)}
+        backdrop={isUpdatingTravelRole ? "static" : true}
+        keyboard={!isUpdatingTravelRole}
+      >
+        <Modal.Header closeButton={!isUpdatingTravelRole}>
+          <Modal.Title>Reiserolle ändern</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          <Form>
+            <Form.Group>
+              <Form.Label>Neue Rolle wählen</Form.Label>
+
+              <Form.Select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                disabled={isUpdatingTravelRole}
+              >
+                {availableRoles.map((r) => (
+                  // `disabled` on option will prevent the user from selecting it
+                  <option key={r.value} value={r.value} disabled={r.disabled}>
+                    {r.label}
+                    {r.disabled ? " (nicht auswählbar)" : ""}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            {warning && (
+              <Alert variant="warning" className="mt-3">
+                {warning}
+              </Alert>
+            )}
+            {error && (
+              <Alert variant="danger" className="mt-3">
+                {error}
+              </Alert>
+            )}
+            {success && (
+              <Alert variant="success" className="mt-3">
+                {success}
+              </Alert>
+            )}
+          </Form>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowTravelRoleModal(false)}
+            disabled={isUpdatingTravelRole}
+          >
+            Abbrechen
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={handleSaveTravelRole}
+            disabled={isUpdatingTravelRole}
+          >
+            {isUpdatingTravelRole ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  aria-hidden="true"
+                />
+                <span className="ms-2">Wird aktualisiert...</span>
+              </>
+            ) : (
+              "Speichern"
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       {/* Leave Event Confirmation Modal */}
       <Modal
         show={showLeaveConfirmModal}

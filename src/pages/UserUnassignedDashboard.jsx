@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Modal, Button, Table, Alert, Badge, Spinner } from "react-bootstrap";
+import {
+  Modal,
+  Button,
+  Table,
+  Alert,
+  Badge,
+  Spinner,
+  Form,
+} from "react-bootstrap";
 import {
   ArrowClockwise,
   Calendar3,
@@ -18,24 +26,32 @@ import EventModal from "../components/EventModal";
 import ReactDOM from "react-dom";
 
 // Custom Tooltip Component that renders outside the main DOM tree
-const CustomTooltip = ({ show, target, children, placement = "top", variant = "dark" }) => {
+const CustomTooltip = ({
+  show,
+  target,
+  children,
+  placement = "top",
+  variant = "dark",
+}) => {
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = React.useRef();
 
   useEffect(() => {
     if (show && target) {
       const rect = target.getBoundingClientRect();
-      const tooltipHeight = tooltipRef.current ? tooltipRef.current.offsetHeight : 0;
-      
+      const tooltipHeight = tooltipRef.current
+        ? tooltipRef.current.offsetHeight
+        : 0;
+
       let top = 0;
       let left = rect.left + rect.width / 2;
-      
+
       if (placement === "top") {
         top = rect.top - tooltipHeight - 8;
       } else if (placement === "bottom") {
         top = rect.bottom + 8;
       }
-      
+
       setPosition({ top, left });
     }
   }, [show, target, placement]);
@@ -47,10 +63,10 @@ const CustomTooltip = ({ show, target, children, placement = "top", variant = "d
       ref={tooltipRef}
       className={`custom-tooltip custom-tooltip-${variant}`}
       style={{
-        position: 'fixed',
+        position: "fixed",
         top: position.top,
         left: position.left,
-        transform: 'translateX(-50%)',
+        transform: "translateX(-50%)",
         zIndex: 9999,
       }}
     >
@@ -81,7 +97,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
   const [eventToJoin, setEventToJoin] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isJoining, setIsJoining] = useState(false);
-  
+
+  const [roleSelection, setRoleSelection] = useState("");
   // Tooltip state
   const [tooltipShow, setTooltipShow] = useState({});
   const [tooltipTargets, setTooltipTargets] = useState({});
@@ -120,12 +137,12 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
   // Tooltip handlers
   const handleTooltipShow = (key, target) => {
-    setTooltipShow(prev => ({ ...prev, [key]: true }));
-    setTooltipTargets(prev => ({ ...prev, [key]: target }));
+    setTooltipShow((prev) => ({ ...prev, [key]: true }));
+    setTooltipTargets((prev) => ({ ...prev, [key]: target }));
   };
 
   const handleTooltipHide = (key) => {
-    setTooltipShow(prev => ({ ...prev, [key]: false }));
+    setTooltipShow((prev) => ({ ...prev, [key]: false }));
   };
 
   // Fetch user data and events
@@ -204,10 +221,16 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
   const handleJoinConfirm = useCallback(async () => {
     if (!eventToJoin || isJoining) return;
 
+    // Check if travelExpense exists and ensure role is selected
+    if (eventToJoin?.eventExpense?.travelExpense && !roleSelection) {
+      setWarning("Bitte wählen Sie Fahrer oder Passagier aus."); // warning
+      return;
+    }
+
     setIsJoining(true);
     setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
-    setSuccess(null); // Reset success state
-    setWarning(null); // Reset warning state
+    setSuccess(null);
+    setWarning(null);
 
     try {
       const calendarName = eventToJoin.calendarName?.trim().toLowerCase();
@@ -231,12 +254,12 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
         calendarId,
         eventId: eventToJoin.id,
         artistEmail: user["E-Mail"],
+        travelRole: roleSelection || null, // send Passenger/Driver if selected
       };
 
       const response = await axios.post(`${API_URL}/add-artist`, requestData);
 
       if (response.data.success) {
-        // Wait before refreshing
         await new Promise((resolve) => setTimeout(resolve, 20000));
 
         setSuccess("Artist erfolgreich zur Veranstaltung hinzugefügt!");
@@ -246,6 +269,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
         await fetchData();
         setShowJoinConfirmModal(false);
+        setRoleSelection(""); // reset dropdown
       } else {
         setWarning(
           response.data.message || "Fehler beim Hinzufügen des Artists"
@@ -257,7 +281,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     } finally {
       setIsJoining(false);
     }
-  }, [eventToJoin, user, fetchData]);
+  }, [eventToJoin, user, fetchData, roleSelection]);
+
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
     const filtered = {};
@@ -468,7 +493,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                   (event, index) => {
                                     const detailKey = `detail-${calendar}-${index}`;
                                     const joinKey = `join-${calendar}-${index}`;
-                                    
+
                                     return (
                                       <tr key={index} className="event-row">
                                         {/* Event Details */}
@@ -477,7 +502,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                             {event.summary}
                                           </div>
                                           <div className="event-location">
-                                            {event.location || "Nicht angegeben"}
+                                            {event.location ||
+                                              "Nicht angegeben"}
                                           </div>
                                         </td>
 
@@ -492,7 +518,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                                   day: "2-digit",
                                                   month: "2-digit",
                                                   year: "numeric",
-                                                  timeZone: event.start.timeZone,
+                                                  timeZone:
+                                                    event.start.timeZone,
                                                 })}
                                               </div>
                                               <div className="time">
@@ -501,7 +528,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                                 ).toLocaleTimeString("de-DE", {
                                                   hour: "2-digit",
                                                   minute: "2-digit",
-                                                  timeZone: event.start.timeZone,
+                                                  timeZone:
+                                                    event.start.timeZone,
                                                 })}
                                               </div>
                                             </div>
@@ -514,31 +542,44 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
                                         {/* Amount Column */}
                                         <td className="event-amount">
-                                          {event.totalCost || "N/A"}
+                                          {event?.eventExpense?.totalExpense ||
+                                            "N/A"}
                                         </td>
 
                                         {/* Actions column */}
                                         <td className="event-actions actions-column">
                                           <Button
-                                            ref={el => {
-                                              if (el && !tooltipTargets[detailKey]) {
-                                                setTooltipTargets(prev => ({ 
-                                                  ...prev, 
-                                                  [detailKey]: el 
+                                            ref={(el) => {
+                                              if (
+                                                el &&
+                                                !tooltipTargets[detailKey]
+                                              ) {
+                                                setTooltipTargets((prev) => ({
+                                                  ...prev,
+                                                  [detailKey]: el,
                                                 }));
                                               }
                                             }}
                                             variant="outline-primary"
                                             size="sm"
-                                            onClick={() => handleEventClick(event)}
-                                            onMouseEnter={(e) => handleTooltipShow(detailKey, e.currentTarget)}
-                                            onMouseLeave={() => handleTooltipHide(detailKey)}
+                                            onClick={() =>
+                                              handleEventClick(event)
+                                            }
+                                            onMouseEnter={(e) =>
+                                              handleTooltipShow(
+                                                detailKey,
+                                                e.currentTarget
+                                              )
+                                            }
+                                            onMouseLeave={() =>
+                                              handleTooltipHide(detailKey)
+                                            }
                                             className="open-calendar-button"
                                           >
                                             <InfoCircle className="button-icon" />
                                           </Button>
-                                          <CustomTooltip 
-                                            show={tooltipShow[detailKey]} 
+                                          <CustomTooltip
+                                            show={tooltipShow[detailKey]}
                                             target={tooltipTargets[detailKey]}
                                             variant="primary"
                                           >
@@ -549,25 +590,37 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                         {/* Join column */}
                                         <td className="join-event-column join-column">
                                           <Button
-                                            ref={el => {
-                                              if (el && !tooltipTargets[joinKey]) {
-                                                setTooltipTargets(prev => ({ 
-                                                  ...prev, 
-                                                  [joinKey]: el 
+                                            ref={(el) => {
+                                              if (
+                                                el &&
+                                                !tooltipTargets[joinKey]
+                                              ) {
+                                                setTooltipTargets((prev) => ({
+                                                  ...prev,
+                                                  [joinKey]: el,
                                                 }));
                                               }
                                             }}
                                             variant="success"
                                             size="sm"
-                                            onClick={() => handleJoinClick(event)}
-                                            onMouseEnter={(e) => handleTooltipShow(joinKey, e.currentTarget)}
-                                            onMouseLeave={() => handleTooltipHide(joinKey)}
+                                            onClick={() =>
+                                              handleJoinClick(event)
+                                            }
+                                            onMouseEnter={(e) =>
+                                              handleTooltipShow(
+                                                joinKey,
+                                                e.currentTarget
+                                              )
+                                            }
+                                            onMouseLeave={() =>
+                                              handleTooltipHide(joinKey)
+                                            }
                                             className="join-event-button"
                                           >
                                             <PlusCircle className="button-icon" />
                                           </Button>
-                                          <CustomTooltip 
-                                            show={tooltipShow[joinKey]} 
+                                          <CustomTooltip
+                                            show={tooltipShow[joinKey]}
                                             target={tooltipTargets[joinKey]}
                                             variant="success"
                                           >
@@ -588,9 +641,12 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                               (event, index) => {
                                 const detailKey = `mobile-detail-${calendar}-${index}`;
                                 const joinKey = `mobile-join-${calendar}-${index}`;
-                                
+
                                 return (
-                                  <div key={index} className="event-mobile-card">
+                                  <div
+                                    key={index}
+                                    className="event-mobile-card"
+                                  >
                                     <div className="event-mobile-header">
                                       <div className="event-mobile-title">
                                         {event.summary}
@@ -627,52 +683,74 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
                                       <div className="event-mobile-actions">
                                         <Button
-                                          ref={el => {
-                                            if (el && !tooltipTargets[detailKey]) {
-                                              setTooltipTargets(prev => ({ 
-                                                ...prev, 
-                                                [detailKey]: el 
+                                          ref={(el) => {
+                                            if (
+                                              el &&
+                                              !tooltipTargets[detailKey]
+                                            ) {
+                                              setTooltipTargets((prev) => ({
+                                                ...prev,
+                                                [detailKey]: el,
                                               }));
                                             }
                                           }}
                                           variant="outline-primary"
                                           size="sm"
-                                          onClick={() => handleEventClick(event)}
-                                          onMouseEnter={(e) => handleTooltipShow(detailKey, e.currentTarget)}
-                                          onMouseLeave={() => handleTooltipHide(detailKey)}
+                                          onClick={() =>
+                                            handleEventClick(event)
+                                          }
+                                          onMouseEnter={(e) =>
+                                            handleTooltipShow(
+                                              detailKey,
+                                              e.currentTarget
+                                            )
+                                          }
+                                          onMouseLeave={() =>
+                                            handleTooltipHide(detailKey)
+                                          }
                                           className="me-2"
                                         >
                                           <InfoCircle className="me-1" />
                                           Details
                                         </Button>
-                                        <CustomTooltip 
-                                          show={tooltipShow[detailKey]} 
+                                        <CustomTooltip
+                                          show={tooltipShow[detailKey]}
                                           target={tooltipTargets[detailKey]}
                                           variant="primary"
                                         >
                                           Details
                                         </CustomTooltip>
-                                        
+
                                         <Button
-                                          ref={el => {
-                                            if (el && !tooltipTargets[joinKey]) {
-                                              setTooltipTargets(prev => ({ 
-                                                ...prev, 
-                                                [joinKey]: el 
+                                          ref={(el) => {
+                                            if (
+                                              el &&
+                                              !tooltipTargets[joinKey]
+                                            ) {
+                                              setTooltipTargets((prev) => ({
+                                                ...prev,
+                                                [joinKey]: el,
                                               }));
                                             }
                                           }}
                                           variant="success"
                                           size="sm"
                                           onClick={() => handleJoinClick(event)}
-                                          onMouseEnter={(e) => handleTooltipShow(joinKey, e.currentTarget)}
-                                          onMouseLeave={() => handleTooltipHide(joinKey)}
+                                          onMouseEnter={(e) =>
+                                            handleTooltipShow(
+                                              joinKey,
+                                              e.currentTarget
+                                            )
+                                          }
+                                          onMouseLeave={() =>
+                                            handleTooltipHide(joinKey)
+                                          }
                                         >
                                           <PlusCircle className="me-1" />
                                           Beitreten
                                         </Button>
-                                        <CustomTooltip 
-                                          show={tooltipShow[joinKey]} 
+                                        <CustomTooltip
+                                          show={tooltipShow[joinKey]}
                                           target={tooltipTargets[joinKey]}
                                           variant="success"
                                         >
@@ -722,6 +800,44 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
         <Modal.Body>
           Sind Sie sicher, dass Sie der Veranstaltung "{eventToJoin?.summary}"
           beitreten möchten?
+          {/* Conditionally render dropdown if travelExpense exists */}
+          {eventToJoin?.eventExpense?.travelExpense && (
+            <div className="mt-3">
+              <Form.Group controlId="roleSelection">
+                <Form.Label>Bitte wählen Sie eine Rolle:</Form.Label>
+
+                {(() => {
+                  const attendees = eventToJoin.attendees || [];
+
+                  // check if any attendee already has travelRole
+                  const existingDriver = attendees.some(
+                    (a) => a.travelRole === "driver"
+                  );
+                  const existingPassenger = attendees.some(
+                    (a) => a.travelRole === "passenger"
+                  );
+
+                  return (
+                    <Form.Select
+                      value={roleSelection}
+                      onChange={(e) => setRoleSelection(e.target.value)}
+                      required
+                    >
+                      <option value="">-- auswählen --</option>
+
+                      {/* Fahrer always selectable */}
+                      <option value="driver">Fahrer</option>
+
+                      {/* Passagier disabled only if already taken */}
+                      <option value="passenger" disabled={existingPassenger}>
+                        Passagier
+                      </option>
+                    </Form.Select>
+                  );
+                })()}
+              </Form.Group>
+            </div>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <Button
