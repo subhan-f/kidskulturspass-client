@@ -784,8 +784,16 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                     )}
                                   </td>
                                   <td className="event-cost">
-                                    {event?.eventExpense?.totalExpense || "N/A"}
+                                    {event?.eventExpense?.totalExpense ? (
+                                      <>
+                                        {event.eventExpense.totalExpense}
+                                        <i className="bi bi-currency-euro"></i>
+                                      </>
+                                    ) : (
+                                      "N/A"
+                                    )}
                                   </td>
+
                                   <td className="event-actions actions-column">
                                     <Button
                                       ref={(el) => {
@@ -1294,6 +1302,8 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
         {/* Event Modal */}
         {showEventModal && (
           <EventModal
+            user={user}
+            modalFor={"assigned"}
             event={selectedEvent}
             onClose={() => setShowEventModal(false)}
           />
@@ -1371,7 +1381,13 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                 {availableRoles.map((r) => (
                   // `disabled` on option will prevent the user from selecting it
                   <option key={r.value} value={r.value} disabled={r.disabled}>
-                    {r.label}
+                    {r.label === "Driver"
+                      ? "Fahrer*in"
+                      : r.label === "Passenger"
+                      ? "Beifahrer*in"
+                      : r.label === "None"
+                      ? "Keine Reiserolle"
+                      : r.label}
                     {r.disabled ? " (nicht auswählbar)" : ""}
                   </option>
                 ))}

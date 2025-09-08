@@ -541,9 +541,13 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                         {/* Location column removed since moved below title */}
 
                                         {/* Amount Column */}
-                                        <td className="event-amount">
+                                        <td className="event-cost">
                                           {event?.eventExpense?.totalExpense ||
                                             "N/A"}
+                                          {event?.eventExpense
+                                            ?.totalExpense && (
+                                            <i className="bi bi-currency-euro"></i>
+                                          )}
                                         </td>
 
                                         {/* Actions column */}
@@ -679,6 +683,14 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                             </span>
                                           </div>
                                         )}
+
+                                        {event?.eventExpense?.totalExpense && (
+                                          <div className="event-mobile-cost">
+                                            <i className="bi bi-currency-euro"></i>{" "}
+                                            Gesamtkosten:{" "}
+                                            {event?.eventExpense?.totalExpense}
+                                          </div>
+                                        )}
                                       </div>
 
                                       <div className="event-mobile-actions">
@@ -781,6 +793,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
         {/* Event Modal */}
         {showEventModal && (
           <EventModal
+            user={user}
+            modalFor={"unassigned"}
             event={selectedEvent}
             onClose={() => setShowEventModal(false)}
           />
@@ -798,8 +812,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
           <Modal.Title>Beitreten bestätigen</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Sind Sie sicher, dass Sie der Veranstaltung "{eventToJoin?.summary}"
-          beitreten möchten?
+          Bitte wähle deine Rolle, damit die Fahrtkosten korrekt
+          aufgeteilt werden können.
           {/* Conditionally render dropdown if travelExpense exists */}
           {eventToJoin?.eventExpense?.travelExpense && (
             <div className="mt-3">
@@ -817,6 +831,41 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                     (a) => a.travelRole === "passenger"
                   );
 
+                  // calendar required roles config
+                  const calendarWithTheRequiredRoles = [
+                    {
+                      calendar: "Geigen Mitmachkonzert",
+                      requiredRoles: ["Geiger*in", "Moderator*in"],
+                    },
+                    {
+                      calendar: "Klavier Mitmachkonzert",
+                      requiredRoles: ["Pianist*in", "Moderator*in"],
+                    },
+                    {
+                      calendar: "Laternenumzug mit Musik",
+                      requiredRoles: ["Instrumentalist*in", "Sängerin*in"],
+                    },
+                    {
+                      calendar: "Nikolaus Besuch",
+                      requiredRoles: ["Nikolaus", "Sängerin*in"],
+                    },
+                    {
+                      calendar: "Puppentheater",
+                      requiredRoles: ["Puppenspieler*in"],
+                    },
+                    {
+                      calendar: "Weihnachts Mitmachkonzert",
+                      requiredRoles: ["Detlef", "Sängerin*in"],
+                    },
+                  ];
+
+                  const calendarConfig = calendarWithTheRequiredRoles.find(
+                    (c) => c.calendar === eventToJoin.calendarName
+                  );
+
+                  const onlyOneRoleRequired =
+                    calendarConfig && calendarConfig.requiredRoles.length === 1;
+
                   return (
                     <Form.Select
                       value={roleSelection}
@@ -826,12 +875,14 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                       <option value="">-- auswählen --</option>
 
                       {/* Fahrer always selectable */}
-                      <option value="driver">Fahrer</option>
+                      <option value="driver">Fahrer*in</option>
 
-                      {/* Passagier disabled only if already taken */}
-                      <option value="passenger" disabled={existingPassenger}>
-                        Passagier
-                      </option>
+                      {/* Beifahrer only if not single-role calendar */}
+                      {!onlyOneRoleRequired && (
+                        <option value="passenger" disabled={existingPassenger}>
+                          Beifahrer*in
+                        </option>
+                      )}
                     </Form.Select>
                   );
                 })()}
