@@ -664,19 +664,17 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                           }`}
                         >
                           {/* Table headers for My Events (6 columns) */}
-                          {activeTab === "myEvents" && (
-                            <thead>
-                              <tr>
-                                <th>Veranstaltung</th>
-                                <th>Meine Rolle(n)</th>
-                                <th>Reiserolle</th> {/* NEW COLUMN */}
-                                <th>Datum/Uhrzeit</th>
-                                <th>Status</th>
-                                <th>Gesamtkosten</th>
-                                <th>Aktion</th>
-                              </tr>
-                            </thead>
-                          )}
+                          <thead>
+                            <tr>
+                              <th>Veranstaltung</th>
+                              <th>Meine Rolle(n)</th>
+                              <th>Reiserolle</th>
+                              <th>Datum/Uhrzeit</th>
+                              <th>Status</th>
+                              <th>Gesamtkosten</th>
+                              {activeTab === "myEvents" && <th>Aktion</th>}
+                            </tr>
+                          </thead>
 
                           {/* Table headers for Completed/Paid Events (5 columns) */}
                           {(activeTab === "completedEvents" ||
@@ -978,10 +976,11 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                     </div>
                                   )}
 
-                                  {event.totalCost && (
+                                  {event?.eventExpense?.totalExpense && (
                                     <div className="event-mobile-cost">
                                       <i className="bi bi-currency-euro"></i>{" "}
-                                      Gesamtkosten: {event?.eventExpense?.totalExpense}
+                                      Gesamtkosten:{" "}
+                                      {event?.eventExpense?.totalExpense}
                                     </div>
                                   )}
                                   {event.attendees && (
@@ -1324,7 +1323,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                   <strong>Datum:</strong> {selectedReceipt.date}
                 </div>
                 <div className="receipt-field">
-                  <strong>Status:</strong>{" "}
+                  <strong>Status: </strong>
                   <Badge bg="success">{selectedReceipt.status}</Badge>
                 </div>
                 <hr />
