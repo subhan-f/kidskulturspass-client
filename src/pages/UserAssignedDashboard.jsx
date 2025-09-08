@@ -786,7 +786,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                     )}
                                   </td>
                                   <td className="event-cost">
-                                    {event.eventExpense.totalExpense || "N/A"}
+                                    {event?.eventExpense?.totalExpense || "N/A"}
                                   </td>
                                   <td className="event-actions actions-column">
                                     <Button
@@ -981,7 +981,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                   {event.totalCost && (
                                     <div className="event-mobile-cost">
                                       <i className="bi bi-currency-euro"></i>{" "}
-                                      Gesamtkosten: {event.totalCost}
+                                      Gesamtkosten: {event?.eventExpense?.totalExpense}
                                     </div>
                                   )}
                                   {event.attendees && (
