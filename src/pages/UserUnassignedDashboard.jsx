@@ -98,7 +98,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
   const [success, setSuccess] = useState(null);
   const [isJoining, setIsJoining] = useState(false);
 
-  const [roleSelection, setRoleSelection] = useState("");
+  const [roleSelection, setRoleSelection] = useState("driver");
   // Tooltip state
   const [tooltipShow, setTooltipShow] = useState({});
   const [tooltipTargets, setTooltipTargets] = useState({});
@@ -823,7 +823,6 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                 {(() => {
                   const attendees = eventToJoin.attendees || [];
 
-                  // check if any attendee already has travelRole
                   const existingDriver = attendees.some(
                     (a) => a.travelRole === "driver"
                   );
@@ -831,7 +830,6 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                     (a) => a.travelRole === "passenger"
                   );
 
-                  // calendar required roles config
                   const calendarWithTheRequiredRoles = [
                     {
                       calendar: "Geigen Mitmachkonzert",
@@ -868,12 +866,10 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
                   return (
                     <Form.Select
-                      value={roleSelection}
+                      value={roleSelection || "driver"} // ✅ ensure driver is default
                       onChange={(e) => setRoleSelection(e.target.value)}
                       required
                     >
-                      <option value="">-- auswählen --</option>
-
                       {/* Fahrer always selectable */}
                       <option value="driver">Fahrer*in</option>
 

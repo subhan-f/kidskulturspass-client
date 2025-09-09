@@ -78,15 +78,14 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
   ];
 
   // Helper: calculate user's travel expense
+  // Helper: calculate user's travel expense with fraction
   const calculateUserTravelExpense = () => {
     if (!user || !event?.eventExpense?.travelExpense) return null;
 
     const travelExpense = event.eventExpense.travelExpense;
 
     // find the attendee for the current user
-    const attendee = event.attendees?.find(
-      (a) => a.email === user["E-Mail"]
-    );
+    const attendee = event.attendees?.find((a) => a.email === user["E-Mail"]);
     if (!attendee) return null;
 
     const userRole = attendee.travelRole;
@@ -98,35 +97,46 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
 
     const requiredRoles = calendarConfig?.requiredRoles || [];
 
-    // CASE 1: calendar requires only one role -> full travelExpense goes to driver
-    if (requiredRoles.length === 1 && userRole === "driver") {
-      return { amount: travelExpense, role: userRole };
+    // ❗ If event requires >1 artist but only one joined
+    if (requiredRoles.length > 1 && event.attendees?.length === 1) {
+      return { amount: null, role: userRole, fraction: null, incomplete: true };
     }
 
-    // collect all drivers in attendees
+    // CASE 1: calendar requires only one role -> full travelExpense goes to driver
+    if (requiredRoles.length === 1 && userRole === "driver") {
+      return { amount: travelExpense, role: userRole, fraction: "1/1" };
+    }
+
+    // collect all drivers
     const drivers = event.attendees?.filter((a) => a.travelRole === "driver");
 
     // CASE 2: user is driver
     if (userRole === "driver") {
       if (drivers.length === 1) {
-        // single driver: gets 2/3
-        return { amount: (2 / 3) * travelExpense, role: userRole };
+        return {
+          amount: (2 / 3) * travelExpense,
+          role: userRole,
+          fraction: "2/3",
+        };
       } else if (drivers.length === 2) {
-        // two drivers: split equally
-        return { amount: (1 / 2) * travelExpense, role: userRole };
+        return {
+          amount: (1 / 2) * travelExpense,
+          role: userRole,
+          fraction: "1/2",
+        };
       }
     }
 
     // CASE 3: user is passenger
     if (userRole === "passenger") {
-      // passengers share the remaining 1/3 equally
       const passengers = event.attendees?.filter(
         (a) => a.travelRole === "passenger"
       );
       if (passengers.length > 0) {
         return {
-          amount: (1 / 3) * travelExpense / passengers.length,
+          amount: ((1 / 3) * travelExpense) / passengers.length,
           role: userRole,
+          fraction: `1/3`,
         };
       }
     }
@@ -193,11 +203,30 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
                 {event.eventExpense?.travelExpense
                   ? `${event.eventExpense.travelExpense} €`
                   : "N/A"}
-                {modalFor === "assigned" && userTravelExpense && (
+                {modalFor === "assigned" && (
                   <>
-                    <br />
-                    Dein Anteil: {userTravelExpense.amount.toFixed(2)} € (
-                    {userTravelExpense.role})
+                    {userTravelExpense?.incomplete ? (
+                      <>
+                        <br />
+                        <span className="text-danger">
+                          Ein weiterer Künstler ist noch nicht beigetreten. Dein
+                          Reisekostenanteil kann nicht berechnet werden.
+                        </span>
+                      </>
+                    ) : (
+                      userTravelExpense && (
+                        <>
+                          <br />
+                          Dein Anteil: {userTravelExpense.amount.toFixed(2)} € (
+                          {userTravelExpense.role === "driver"
+                            ? "Fahrer*in"
+                            : userTravelExpense.role === "passenger"
+                            ? "Beifahrer*in"
+                            : ""}{" "}
+                          – {userTravelExpense.fraction})
+                        </>
+                      )
+                    )}
                   </>
                 )}
               </p>

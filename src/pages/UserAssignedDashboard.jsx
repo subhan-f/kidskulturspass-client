@@ -745,10 +745,13 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                       return (
                                         <div className="travelRole-display d-flex align-items-center">
                                           <span className="me-2">
-                                            {currentUser.travelRole
-                                              .charAt(0)
-                                              .toUpperCase() +
-                                              currentUser.travelRole.slice(1)}
+                                            {currentUser?.travelRole ===
+                                            "driver"
+                                              ? "Fahrer*in"
+                                              : currentUser?.travelRole ===
+                                                "passenger"
+                                              ? "Beifahrer*in"
+                                              : ""}
                                           </span>
 
                                           <Button
