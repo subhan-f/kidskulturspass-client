@@ -145,6 +145,116 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     setTooltipShow((prev) => ({ ...prev, [key]: false }));
   };
 
+  const calculateUserTravelExpense = (user, event, selectedRole) => {
+    if (!user || !event) return null;
+
+    const travelExpense = event?.eventExpense?.travelExpense;
+    if (!travelExpense || !selectedRole) {
+      return null; // No travel expense or role selected
+    }
+
+    const attendees = event.attendees || [];
+
+    // Calendar config for required roles
+    const calendarWithTheRequiredRoles = [
+      {
+        calendar: "Geigen Mitmachkonzert",
+        requiredRoles: ["Geiger*in", "Moderator*in"],
+      },
+      {
+        calendar: "Klavier Mitmachkonzert",
+        requiredRoles: ["Pianist*in", "Moderator*in"],
+      },
+      {
+        calendar: "Laternenumzug mit Musik",
+        requiredRoles: ["Instrumentalist*in", "Sängerin*in"],
+      },
+      {
+        calendar: "Nikolaus Besuch",
+        requiredRoles: ["Nikolaus", "Sängerin*in"],
+      },
+      { calendar: "Puppentheater", requiredRoles: ["Puppenspieler*in"] },
+      {
+        calendar: "Weihnachts Mitmachkonzert",
+        requiredRoles: ["Detlef", "Sängerin*in"],
+      },
+    ];
+
+    const calendarConfig = calendarWithTheRequiredRoles.find(
+      (c) => c.calendar === event.calendarName
+    );
+
+    const requiredRoles = calendarConfig?.requiredRoles || [];
+
+    // Single-role event → full travel expense to driver
+    if (requiredRoles.length === 1) {
+      return {
+        calendar: event.calendarName,
+        artist1Name: user.Name,
+        artist1TravelCost: travelExpense,
+        artist1Role: "driver",
+      };
+    }
+
+    // Two-role event
+    if (requiredRoles.length === 2) {
+      // No artists joined yet
+      if (attendees.length === 0) {
+        return {
+          calendar: event.calendarName,
+          artist1Role: selectedRole,
+          artist2Role: requiredRoles.find((r) => r !== selectedRole) || null,
+        };
+      }
+
+      // One artist already joined
+      if (attendees.length === 1) {
+        const firstAttendee = attendees[0];
+        const secondAttendee = { Name: user.Name, travelRole: selectedRole };
+
+        let firstCost = 0;
+        let secondCost = 0;
+
+        if (
+          firstAttendee.travelRole === "driver" &&
+          secondAttendee.travelRole === "driver"
+        ) {
+          firstCost = travelExpense / 2;
+          secondCost = travelExpense / 2;
+        } else if (
+          (firstAttendee.travelRole === "driver" &&
+            secondAttendee.travelRole === "passenger") ||
+          (firstAttendee.travelRole === "passenger" &&
+            secondAttendee.travelRole === "driver")
+        ) {
+          firstCost =
+            firstAttendee.travelRole === "driver"
+              ? (2 / 3) * travelExpense
+              : (1 / 3) * travelExpense;
+          secondCost =
+            secondAttendee.travelRole === "driver"
+              ? (2 / 3) * travelExpense
+              : (1 / 3) * travelExpense;
+        }
+
+        return {
+          calendar: event.calendarName,
+          artist1Name: firstAttendee.Name,
+          artist1TravelCost: firstCost,
+          artist1Role: firstAttendee.travelRole,
+          artist2Name: secondAttendee.Name,
+          artist2TravelCost: secondCost,
+          artist2Role: secondAttendee.travelRole,
+        };
+      }
+
+      // More than 1 artist already joined → handle gracefully
+      return null;
+    }
+
+    return null;
+  };
+
   // Fetch user data and events
   const fetchData = async () => {
     try {
@@ -218,70 +328,61 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     setShowJoinConfirmModal(true);
   }, []);
 
-  const handleJoinConfirm = useCallback(async () => {
-    if (!eventToJoin || isJoining) return;
+const handleJoinConfirm = useCallback(async () => {
+  if (!eventToJoin || isJoining) return;
 
-    // Check if travelExpense exists and ensure role is selected
-    if (eventToJoin?.eventExpense?.travelExpense && !roleSelection) {
-      setWarning("Bitte wählen Sie Fahrer oder Passagier aus."); // warning
+  // Check travelRole
+  if (eventToJoin?.eventExpense?.travelExpense && !roleSelection) {
+    setWarning("Bitte wählen Sie Fahrer oder Passagier aus.");
+    return;
+  }
+
+  setIsJoining(true);
+  setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
+  setSuccess(null);
+  setWarning(null);
+
+  try {
+    const calendarName = eventToJoin.calendarName?.trim();
+    const calendarId = CALENDAR_MAPPING[calendarName];
+
+    if (!calendarId) {
+      setWarning("Kalender-ID konnte nicht gefunden werden");
+      setIsJoining(false);
       return;
     }
 
-    setIsJoining(true);
-    setLoadingMessage("Artist wird zur Veranstaltung hinzugefügt...");
-    setSuccess(null);
-    setWarning(null);
+    // ✅ Calculate financials before sending
+    const financials = calculateUserTravelExpense(user, eventToJoin, roleSelection);
 
-    try {
-      const calendarName = eventToJoin.calendarName?.trim().toLowerCase();
-      let calendarId = null;
+    const requestData = {
+      calendarId,
+      eventId: eventToJoin.id,
+      artistEmail: user["E-Mail"],
+      travelRole: roleSelection || null,
+      financials, // <-- include calculated financials here
+    };
 
-      for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
-        if (name.trim().toLowerCase() === calendarName) {
-          calendarId = id;
-          break;
-        }
-      }
+    const response = await axios.post(`${API_URL}/add-artist`, requestData);
 
-      if (!calendarId) {
-        console.error("Calendar ID not found for:", eventToJoin.calendarName);
-        setWarning("Kalender-ID konnte nicht gefunden werden");
-        setIsJoining(false);
-        return;
-      }
-
-      const requestData = {
-        calendarId,
-        eventId: eventToJoin.id,
-        artistEmail: user["E-Mail"],
-        travelRole: roleSelection || null, // send Passenger/Driver if selected
-      };
-
-      const response = await axios.post(`${API_URL}/add-artist`, requestData);
-
-      if (response.data.success) {
-        await new Promise((resolve) => setTimeout(resolve, 20000));
-
-        setSuccess("Artist erfolgreich zur Veranstaltung hinzugefügt!");
-        setTimeout(() => {
-          setSuccess(null);
-        }, 5000);
-
-        await fetchData();
-        setShowJoinConfirmModal(false);
-        setRoleSelection(""); // reset dropdown
-      } else {
-        setWarning(
-          response.data.message || "Fehler beim Hinzufügen des Artists"
-        );
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setError("Fehler beim Hinzufügen des Artists");
-    } finally {
-      setIsJoining(false);
+    if (response.data.success) {
+      await new Promise((resolve) => setTimeout(resolve, 20000));
+      setSuccess("Artist erfolgreich zur Veranstaltung hinzugefügt!");
+      setTimeout(() => setSuccess(null), 5000);
+      await fetchData();
+      setShowJoinConfirmModal(false);
+      setRoleSelection(""); // reset dropdown
+    } else {
+      setWarning(response.data.message || "Fehler beim Hinzufügen des Artists");
     }
-  }, [eventToJoin, user, fetchData, roleSelection]);
+  } catch (error) {
+    console.error("Error:", error);
+    setError("Fehler beim Hinzufügen des Artists");
+  } finally {
+    setIsJoining(false);
+  }
+}, [eventToJoin, user, fetchData, roleSelection]);
+
 
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
