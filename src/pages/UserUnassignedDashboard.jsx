@@ -266,7 +266,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
       console.log("🟢 [Join Confirm] Backend response:", response.data);
 
       if (response.data.success) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 20000));
         setSuccess("Artist erfolgreich zur Veranstaltung hinzugefügt!");
         setTimeout(() => setSuccess(null), 5000);
         await fetchData();

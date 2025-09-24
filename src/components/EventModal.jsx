@@ -1,12 +1,9 @@
 import React from "react";
-import { Button, Badge, Alert } from "react-bootstrap";
+import { Button } from "react-bootstrap";
 import {
   Calendar3,
-  Envelope,
   GeoAlt,
   Clock,
-  Person,
-  PersonCheck,
   ArrowLeft,
 } from "react-bootstrap-icons";
 
@@ -33,7 +30,6 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
 
   const formatDate = (dateTime, timeZone) => {
     if (!dateTime) return "N/A";
-
     try {
       const date = new Date(dateTime);
       return date.toLocaleString("de-DE", {
@@ -77,74 +73,53 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
     },
   ];
 
-  // Helper: calculate user's travel expense
-  // Helper: calculate user's travel expense with fraction
-  const calculateUserTravelExpense = () => {
+  // Helper: get user travel expense info (already pre-calculated in backend)
+  const getUserTravelExpense = () => {
     if (!user || !event?.eventExpense?.travelExpense) return null;
 
-    const travelExpense = event.eventExpense.travelExpense;
-
-    // find the attendee for the current user
     const attendee = event.attendees?.find((a) => a.email === user["E-Mail"]);
     if (!attendee) return null;
 
-    const userRole = attendee.travelRole;
+    const userRole = attendee.artistTravelRole;
+    const travelExpense = event.eventExpense.travelExpense;
 
     // find required roles for this calendar
     const calendarConfig = calendarWithTheRequiredRoles.find(
       (c) => c.calendar === event.calendarName
     );
-
     const requiredRoles = calendarConfig?.requiredRoles || [];
 
-    // ❗ If event requires >1 artist but only one joined
+    // If event requires >1 artist but only one joined
     if (requiredRoles.length > 1 && event.attendees?.length === 1) {
       return { amount: null, role: userRole, fraction: null, incomplete: true };
     }
 
     // CASE 1: calendar requires only one role -> full travelExpense goes to driver
     if (requiredRoles.length === 1 && userRole === "driver") {
-      return { amount: travelExpense, role: userRole, fraction: "1/1" };
+      return { amount: attendee.artistTravelCost, role: userRole, fraction: "1/1" };
     }
 
     // collect all drivers
-    const drivers = event.attendees?.filter((a) => a.travelRole === "driver");
+    const drivers = event.attendees?.filter((a) => a.artistTravelRole === "driver");
 
     // CASE 2: user is driver
     if (userRole === "driver") {
       if (drivers.length === 1) {
-        return {
-          amount: (2 / 3) * travelExpense,
-          role: userRole,
-          fraction: "2/3",
-        };
+        return { amount: attendee.artistTravelCost, role: userRole, fraction: "2/3" };
       } else if (drivers.length === 2) {
-        return {
-          amount: (1 / 2) * travelExpense,
-          role: userRole,
-          fraction: "1/2",
-        };
+        return { amount: attendee.artistTravelCost, role: userRole, fraction: "1/2" };
       }
     }
 
     // CASE 3: user is passenger
     if (userRole === "passenger") {
-      const passengers = event.attendees?.filter(
-        (a) => a.travelRole === "passenger"
-      );
-      if (passengers.length > 0) {
-        return {
-          amount: ((1 / 3) * travelExpense) / passengers.length,
-          role: userRole,
-          fraction: `1/3`,
-        };
-      }
+      return { amount: attendee.artistTravelCost, role: userRole, fraction: "1/3" };
     }
 
-    return null;
+    return { amount: attendee.artistTravelCost, role: userRole, fraction: null };
   };
 
-  const userTravelExpense = calculateUserTravelExpense();
+  const userTravelExpense = getUserTravelExpense();
 
   return (
     <div className="email-modal-overlay">
@@ -178,6 +153,7 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
                 {event.calendarName || "N/A"}
               </p>
             </div>
+
             <div className="email-detail">
               <p className="email-detail-label">
                 <Clock className="me-2" />
@@ -217,13 +193,15 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
                       userTravelExpense && (
                         <>
                           <br />
-                          Dein Anteil: {userTravelExpense.amount.toFixed(2)} € (
+                          Dein Anteil: {userTravelExpense.amount?.toFixed(2)} € (
                           {userTravelExpense.role === "driver"
                             ? "Fahrer*in"
                             : userTravelExpense.role === "passenger"
                             ? "Beifahrer*in"
                             : ""}{" "}
-                          – {userTravelExpense.fraction})
+                          {userTravelExpense.fraction &&
+                            `– ${userTravelExpense.fraction}`}
+                          )
                         </>
                       )
                     )}
