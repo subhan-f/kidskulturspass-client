@@ -222,7 +222,7 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
                       )
                     )}
                   </>
-                ) : (
+                ) : event.eventExpense?.travelExpense ? (
                   <>
                     <br />
                     <span className="text-muted">
@@ -231,7 +231,7 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
                       und 1/3.
                     </span>
                   </>
-                )}
+                ) : null}
               </p>
             </div>
 
