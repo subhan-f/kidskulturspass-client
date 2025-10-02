@@ -289,7 +289,6 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     }
   }, [eventToJoin, user, fetchData, roleSelection]);
 
-  
   // Filter events based on search term
   const filteredEventsByCalendar = useMemo(() => {
     const filtered = {};
@@ -548,13 +547,13 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                         {/* Location column removed since moved below title */}
 
                                         {/* Amount Column */}
+                                        {console.log("Event Expense:", event)}
                                         <td className="event-cost">
-                                          {event?.eventExpense?.totalExpense ||
-                                            "N/A"}
-                                          {event?.eventExpense
-                                            ?.totalExpense && (
-                                            <i className="bi bi-currency-euro"></i>
-                                          )}
+                                          {event?.calendarName ===
+                                          "Puppentheater"
+                                            ? 110
+                                            : 70}
+                                          <i className="bi bi-currency-euro"></i>
                                         </td>
 
                                         {/* Actions column */}

@@ -1,11 +1,6 @@
 import React from "react";
 import { Button } from "react-bootstrap";
-import {
-  Calendar3,
-  GeoAlt,
-  Clock,
-  ArrowLeft,
-} from "react-bootstrap-icons";
+import { Calendar3, GeoAlt, Clock, ArrowLeft } from "react-bootstrap-icons";
 
 const EventModal = ({ user, modalFor, event, onClose }) => {
   if (!event) {
@@ -96,27 +91,49 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
 
     // CASE 1: calendar requires only one role -> full travelExpense goes to driver
     if (requiredRoles.length === 1 && userRole === "driver") {
-      return { amount: attendee.artistTravelCost, role: userRole, fraction: "1/1" };
+      return {
+        amount: attendee.artistTravelCost,
+        role: userRole,
+        fraction: "1/1",
+      };
     }
 
     // collect all drivers
-    const drivers = event.attendees?.filter((a) => a.artistTravelRole === "driver");
+    const drivers = event.attendees?.filter(
+      (a) => a.artistTravelRole === "driver"
+    );
 
     // CASE 2: user is driver
     if (userRole === "driver") {
       if (drivers.length === 1) {
-        return { amount: attendee.artistTravelCost, role: userRole, fraction: "2/3" };
+        return {
+          amount: attendee.artistTravelCost,
+          role: userRole,
+          fraction: "2/3",
+        };
       } else if (drivers.length === 2) {
-        return { amount: attendee.artistTravelCost, role: userRole, fraction: "1/2" };
+        return {
+          amount: attendee.artistTravelCost,
+          role: userRole,
+          fraction: "1/2",
+        };
       }
     }
 
     // CASE 3: user is passenger
     if (userRole === "passenger") {
-      return { amount: attendee.artistTravelCost, role: userRole, fraction: "1/3" };
+      return {
+        amount: attendee.artistTravelCost,
+        role: userRole,
+        fraction: "1/3",
+      };
     }
 
-    return { amount: attendee.artistTravelCost, role: userRole, fraction: null };
+    return {
+      amount: attendee.artistTravelCost,
+      role: userRole,
+      fraction: null,
+    };
   };
 
   const userTravelExpense = getUserTravelExpense();
@@ -170,16 +187,14 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
                 Kosten
               </p>
               <p className="email-detail-value">
-                Gesamt:{" "}
-                {event.eventExpense?.totalExpense
-                  ? `${event.eventExpense.totalExpense} €`
-                  : "N/A"}
+                Veranstaltungsvergütung:{" "}
+                {event?.calendarName === "Puppentheater" ? "110 €" : "70 €"}
                 <br />
                 Reise:{" "}
                 {event.eventExpense?.travelExpense
                   ? `${event.eventExpense.travelExpense} €`
                   : "N/A"}
-                {modalFor === "assigned" && (
+                {modalFor === "assigned" ? (
                   <>
                     {userTravelExpense?.incomplete ? (
                       <>
@@ -193,7 +208,8 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
                       userTravelExpense && (
                         <>
                           <br />
-                          Dein Anteil: {userTravelExpense.amount?.toFixed(2)} € (
+                          Dein Anteil: {userTravelExpense.amount?.toFixed(2)} €
+                          (
                           {userTravelExpense.role === "driver"
                             ? "Fahrer*in"
                             : userTravelExpense.role === "passenger"
@@ -205,6 +221,15 @@ const EventModal = ({ user, modalFor, event, onClose }) => {
                         </>
                       )
                     )}
+                  </>
+                ) : (
+                  <>
+                    <br />
+                    <span className="text-muted">
+                      <strong>Hinweis:</strong> Fahrer*in allein = volle Kosten.
+                      Zwei Fahrer*innen = je 1/2. Fahrer*in + Beifahrer*in = 2/3
+                      und 1/3.
+                    </span>
                   </>
                 )}
               </p>
