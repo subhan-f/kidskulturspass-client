@@ -547,7 +547,6 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                         {/* Location column removed since moved below title */}
 
                                         {/* Amount Column */}
-                                        {console.log("Event Expense:", event)}
                                         <td className="event-cost">
                                           {event?.calendarName ===
                                           "Puppentheater"
@@ -799,6 +798,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
         {/* Event Modal */}
         {showEventModal && (
           <EventModal
+            mode="unassigned"
             user={user}
             modalFor={"unassigned"}
             event={selectedEvent}

@@ -787,14 +787,10 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                     )}
                                   </td>
                                   <td className="event-cost">
-                                    {event?.eventExpense?.totalExpense ? (
-                                      <>
-                                        {event.eventExpense.totalExpense}
-                                        <i className="bi bi-currency-euro"></i>
-                                      </>
-                                    ) : (
-                                      "N/A"
-                                    )}
+                                    {event?.calendarName === "Puppentheater"
+                                      ? 110
+                                      : 70}
+                                    <i className="bi bi-currency-euro"></i>
                                   </td>
 
                                   <td className="event-actions actions-column">
@@ -1305,6 +1301,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
         {/* Event Modal */}
         {showEventModal && (
           <EventModal
+           mode="assigned"
             user={user}
             modalFor={"assigned"}
             event={selectedEvent}

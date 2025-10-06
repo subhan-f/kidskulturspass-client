@@ -15,6 +15,7 @@ import {
   X,
   Eye,
   EyeSlash,
+  Pencil,
 } from "react-bootstrap-icons";
 import DashboardLayout from "../components/DashboardLayout";
 import PullToRefresh from "../components/PullToRefresh";
@@ -48,6 +49,8 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const [showTooltip, setShowTooltip] = useState({});
   const [showPasswords, setShowPasswords] = useState({});
   const [openTooltips, setOpenTooltips] = useState({});
+  const [modalMode, setModalMode] = useState("add"); // "add" or "edit"
+  const [artistToEdit, setArtistToEdit] = useState(null);
 
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
 
@@ -323,6 +326,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const toggleAddForm = useCallback(
     (calendar, e) => {
       if (e) e.stopPropagation();
+      setModalMode("add");
       setSelectedCalendarForModal(calendar);
       setTimeout(() => setShowAddModal(true), 0);
       setSelectedRoles([
@@ -331,6 +335,15 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     },
     [artistsByCalendar]
   );
+
+  const handleEditClick = useCallback((artist, e) => {
+    if (e) e.stopPropagation();
+    setModalMode("edit");
+    setArtistToEdit(artist);
+    setSelectedCalendarForModal(artist.calendar);
+    setTimeout(() => setShowAddModal(true), 0);
+    closeAllTooltips();
+  }, []);
 
   const handleAddArtistFromModal = async (artistData) => {
     try {
@@ -362,6 +375,41 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       console.error("Error adding artist:", error);
       console.error(
         "Fehler beim Hinzufügen des Künstlers: " +
+          (error.response?.data?.message || error.message)
+      );
+    }
+  };
+
+  const handleUpdateArtistFromModal = async (updatedData) => {
+    try {
+      if (!updatedData.name || !updatedData.role || !updatedData.email) {
+        toast.error("Bitte füllen Sie alle Felder aus");
+        return;
+      }
+
+      const updatePayload = {
+        Calendar: updatedData.calendar,
+        Name: updatedData.name,
+        Role: updatedData.role,
+        email: updatedData.email,
+        originalEmail: artistToEdit.email, // For identifying the artist to update
+      };
+
+      const response = await api.put("/artist", updatePayload);
+
+      if (response.data.status === "success") {
+        toast.success("Künstler erfolgreich aktualisiert");
+        setShowAddModal(false);
+        fetchArtists(true);
+      } else {
+        toast.error(
+          response.data.message || "Fehler beim Aktualisieren des Künstlers"
+        );
+      }
+    } catch (error) {
+      console.error("Error updating artist:", error);
+      toast.error(
+        "Fehler beim Aktualisieren des Künstlers: " +
           (error.response?.data?.message || error.message)
       );
     }
@@ -487,7 +535,13 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                   : 'Klicken Sie auf "Künstler hinzufügen", um einen neuen Künstler hinzuzufügen.'}
               </p>
               {!searchTerm && (
-                <Button variant="primary" onClick={() => setShowAddModal(true)}>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setModalMode("add");
+                    setShowAddModal(true);
+                  }}
+                >
                   Künstler hinzufügen
                 </Button>
               )}
@@ -677,6 +731,18 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   </td>
                                   <td className="artist-actions d-flex gap-1">
                                     <Button
+                                      variant="outline-primary"
+                                      size="sm"
+                                      onClick={(e) =>
+                                        handleEditClick(artist, e)
+                                      }
+                                      className="edit-btn"
+                                      title="Künstler bearbeiten"
+                                    >
+                                      <Pencil size={16} />
+                                    </Button>
+
+                                    <Button
                                       variant="outline-danger"
                                       size="sm"
                                       onClick={() => handleDeleteClick(artist)}
@@ -795,6 +861,16 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                               )}
                               <div className="artist-mobile-actions">
                                 <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={(e) => handleEditClick(artist, e)}
+                                  className="w-auto"
+                                  title="Künstler bearbeiten"
+                                >
+                                  <Pencil size={16} />
+                                </Button>
+
+                                <Button
                                   variant="outline-danger"
                                   size="sm"
                                   onClick={() => handleDeleteClick(artist)}
@@ -839,7 +915,10 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         selectedRoles={selectedRoles}
         selectedCalendar={selectedCalendarForModal}
         handleAddArtist={handleAddArtistFromModal}
+        handleUpdateArtist={handleUpdateArtistFromModal}
         roleOptions={roleOptions}
+        mode={modalMode}
+        artistToEdit={artistToEdit}
       />
 
       <Modal
@@ -888,4 +967,3 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 };
 
 export default ArtistsDashboard;
-
