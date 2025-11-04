@@ -117,7 +117,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
     "Laternenumzug mit Musik":
       "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
-    Puppentheater:
+    "Puppentheater":
       "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
   };
 
@@ -548,10 +548,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
                                         {/* Amount Column */}
                                         <td className="event-cost">
-                                          {event?.calendarName ===
-                                          "Puppentheater"
-                                            ? 110
-                                            : 70}
+                                          {event?.eventExpense.eventPay}
                                           <i className="bi bi-currency-euro"></i>
                                         </td>
 

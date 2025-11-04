@@ -787,9 +787,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                     )}
                                   </td>
                                   <td className="event-cost">
-                                    {event?.calendarName === "Puppentheater"
-                                      ? 110
-                                      : 70}
+                                    {event?.eventExpense.eventPay}
                                     <i className="bi bi-currency-euro"></i>
                                   </td>
 
