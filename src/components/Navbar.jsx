@@ -132,14 +132,14 @@ function Navbar({ handleLogout }) {
                 >
                   Sperrtermine
                 </Nav.Link>
-                <Nav.Link
+                {/* <Nav.Link
                   as={Link}
                   to="/my-balance"
                   active={location.pathname === '/my-balance'}
                   onClick={() => setExpanded(false)}
                 >
                   My balance
-                </Nav.Link>
+                </Nav.Link> */}
               </>
             )}
           </Nav>
