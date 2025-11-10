@@ -26,7 +26,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import UserAssignedDashboard from './pages/UserAssignedDashboard';
 import UserUnassignedDashboard from './pages/UserUnassignedDashboard';
-import MyBalanceDashboard from './pages/MyBalance';
+// import MyBalanceDashboard from './pages/MyBalance';
 
 // Init debug
 initDebug();
@@ -256,7 +256,7 @@ function App() {
         <Route path="/user-assigned-dashboard" element={<ProtectedRoute allowedRoles={ARTIST_ROLES}><UserAssignedDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         <Route path="/user-unassigned-dashboard" element={<ProtectedRoute allowedRoles={ARTIST_ROLES}><UserUnassignedDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         <Route path="/unavailability-form" element={<ArtistOnlyRoute><UnavailabilityDashboard handleLogout={handleLogout} artistName={loggedInUser?.name} /></ArtistOnlyRoute>} />
-        <Route path="/my-balance" element={<ArtistOnlyRoute><MyBalanceDashboard handleLogout={handleLogout} artistName={loggedInUser?.name} /></ArtistOnlyRoute>} />
+        {/* <Route path="/my-balance" element={<ArtistOnlyRoute><MyBalanceDashboard handleLogout={handleLogout} artistName={loggedInUser?.name} /></ArtistOnlyRoute>} /> */}
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" />} />
