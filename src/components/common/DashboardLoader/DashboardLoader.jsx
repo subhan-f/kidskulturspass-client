@@ -1,5 +1,5 @@
 import React from 'react';
-import LoadingSpinner from './LoadingSpinner'; // Changed from destructured import
+import LoadingSpinner from '../LoadingSpinner'; // Changed from destructured import
 
 /**
  * Standardized dashboard loading component to ensure consistent loading UI

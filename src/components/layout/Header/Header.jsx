@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Navbar as BootstrapNavbar, Nav, Spinner } from 'react-bootstrap';
 import { BoxArrowRight } from 'react-bootstrap-icons';
-import { authApi } from '../utils/api';
+import { authApi } from '../../../utils/api';
 
-function Navbar({ handleLogout }) {
+function Header({ handleLogout }) {
   const [expanded, setExpanded] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -174,4 +174,4 @@ function Navbar({ handleLogout }) {
   );
 }
 
-export default Navbar;
+export default React.memo(Header);

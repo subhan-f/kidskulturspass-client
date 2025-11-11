@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../utils/api";
-import LoadingSpinner from "../components/LoadingSpinner";
+import { LoadingSpinner } from "../components/common";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");

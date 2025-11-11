@@ -1,7 +1,7 @@
 import React from 'react';
-import Navbar from './Navbar';
-import Footer from './Footer';
-import NetworkStatusIndicator from './NetworkStatusIndicator';
+import Header from '../Header/Header';
+import Footer from '../Footer/Footer';
+import { NetworkStatusIndicator } from '../../common';
 
 /**
  * Shared layout for all dashboard pages
@@ -16,7 +16,7 @@ function DashboardLayout({
 }) {
   return (
     <div className="dashboard-page">
-      <Navbar setAuth={setAuth} onRefresh={onRefresh} handleLogout={handleLogout}/>
+      <Header setAuth={setAuth} onRefresh={onRefresh} handleLogout={handleLogout}/>
       <NetworkStatusIndicator />
       
       <div className={`content-wrapper ${containerClass}`}>

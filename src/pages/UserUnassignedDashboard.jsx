@@ -17,9 +17,8 @@ import {
   InfoCircle,
   PlusCircle,
 } from "react-bootstrap-icons";
-import SearchBox from "../components/SearchBox";
-import DashboardLayout from "../components/DashboardLayout";
-import DashboardLoader from "../components/DashboardLoader";
+import { SearchBox, DashboardLoader } from "../components/common";
+import { DashboardLayout } from "../components/layout";
 import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal";

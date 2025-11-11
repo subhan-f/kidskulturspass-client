@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import DashboardLayout from "../components/DashboardLayout";
-import SearchBox from "../components/SearchBox";
-import DashboardLoader from "../components/DashboardLoader";
+import { DashboardLayout } from "../components/layout";
+import { DashboardLoader, SearchBox } from "../components/common";
 import {
   Table,
   Button,

@@ -21,10 +21,10 @@ import {
   Clock,
   ArrowRepeat,
 } from "react-bootstrap-icons";
-import DashboardLayout from "../components/DashboardLayout";
-import SearchBox from "../components/SearchBox";
+import { DashboardLayout } from "../components/layout";
+import { SearchBox,  DashboardLoader } from "../components/common";
+
 import { useMediaQuery } from "react-responsive";
-import DashboardLoader from "../components/DashboardLoader";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";

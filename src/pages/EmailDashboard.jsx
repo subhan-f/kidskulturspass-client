@@ -14,11 +14,10 @@ import {
   CameraVideo,
   ArrowReturnRight,
 } from "react-bootstrap-icons";
-import LoadingSpinner from "../components/LoadingSpinner";
-import SearchBox from "../components/SearchBox";
-import DashboardLayout from "../components/DashboardLayout";
+import { DashboardLayout } from "../components/layout";
 import api, { getEmails } from "../utils/api";
-import DashboardLoader from "../components/DashboardLoader";
+import { SearchBox, DashboardLoader } from "../components/common";
+
 import EmailModal from "../components/EmailModel";
 import { Link } from "react-router-dom";
 

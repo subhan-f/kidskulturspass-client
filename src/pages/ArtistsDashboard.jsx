@@ -17,13 +17,12 @@ import {
   EyeSlash,
   Pencil,
 } from "react-bootstrap-icons";
-import DashboardLayout from "../components/DashboardLayout";
-import PullToRefresh from "../components/PullToRefresh";
-import SearchBox from "../components/SearchBox";
+import { DashboardLayout } from "../components/layout";
+import { PullToRefresh, SearchBox, DashboardLoader} from "../components/common";
+import AddArtistModal from "../components/AddArtistModal";
+
 import { useMediaQuery } from "react-responsive";
 import api, { authApi } from "../utils/api";
-import DashboardLoader from "../components/DashboardLoader";
-import AddArtistModal from "../components/AddArtistModal";
 import { useNavigate } from "react-router-dom";
 
 const ArtistsDashboard = ({ setAuth, handleLogout }) => {

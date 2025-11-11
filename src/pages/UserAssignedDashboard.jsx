@@ -23,15 +23,14 @@ import {
   CarFront,
   InfoCircle,
 } from "react-bootstrap-icons";
-import LoadingSpinner from "../components/LoadingSpinner";
-import SearchBox from "../components/SearchBox";
-import DashboardLayout from "../components/DashboardLayout";
-import DashboardLoader from "../components/DashboardLoader";
+
+import { DashboardLayout } from "../components/layout";
+import { SearchBox, DashboardLoader } from "../components/common";
+
 import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal";
 import ReactDOM from "react-dom";
-import { jsx } from "react/jsx-runtime";
 
 // Custom Tooltip Component that renders outside the main DOM tree
 const CustomTooltip = ({

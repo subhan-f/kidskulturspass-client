@@ -15,18 +15,19 @@ import {
   ChatLeftText,
   CheckCircle,
   Clock,
-  ExclamationTriangle
+  ExclamationTriangle,
 } from "react-bootstrap-icons";
-import LoadingSpinner from "../components/LoadingSpinner";
-import SearchBox from "../components/SearchBox";
-import DashboardLayout from "../components/DashboardLayout";
-import DashboardLoader from "../components/DashboardLoader";
+
+import { SearchBox, DashboardLoader } from "../components/common";
+import { DashboardLayout } from "../components/layout";
 import { Link } from "react-router-dom";
 
-function WhatsAppListDashboard({ setAuth,handleLogout }) {
+function WhatsAppListDashboard({ setAuth, handleLogout }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Nachrichten werden geladen...");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Nachrichten werden geladen..."
+  );
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,7 +45,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Sent",
       sentOn: "2025-06-30T10:15:00Z",
       content: "Einladung zum Konzert am 15. Juli",
-      calendar: "Geigen Mitmachkonzert"
+      calendar: "Geigen Mitmachkonzert",
     },
     {
       id: "2",
@@ -54,7 +55,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Delivered",
       sentOn: "2025-06-29T14:30:00Z",
       content: "Neuer Job: Klavierabend am 20. Juli",
-      calendar: "Klavier Mitmachkonzert"
+      calendar: "Klavier Mitmachkonzert",
     },
     {
       id: "3",
@@ -64,7 +65,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Read",
       sentOn: "2025-06-28T15:00:00Z",
       content: "Erinnerung: Noch offene Jobs verfügbar",
-      calendar: "Laternenumzug mit Musik"
+      calendar: "Laternenumzug mit Musik",
     },
     {
       id: "4",
@@ -74,7 +75,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Sent",
       sentOn: "2025-06-27T11:45:00Z",
       content: "Update: Zeitänderung für Puppentheater",
-      calendar: "Puppentheater"
+      calendar: "Puppentheater",
     },
     {
       id: "5",
@@ -84,7 +85,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Failed",
       sentOn: "2025-06-26T09:20:00Z",
       content: "Absage: Nikolaus Besuch am 5. Dezember",
-      calendar: "Nikolaus Besuch"
+      calendar: "Nikolaus Besuch",
     },
     {
       id: "6",
@@ -94,7 +95,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Pending",
       sentOn: "2025-06-25T12:00:00Z",
       content: "Erinnerung: Konzert morgen um 19 Uhr",
-      calendar: "Weihnachts Mitmachkonzert"
+      calendar: "Weihnachts Mitmachkonzert",
     },
     {
       id: "7",
@@ -104,7 +105,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Sent",
       sentOn: "2025-06-24T16:30:00Z",
       content: "Bitte Fotos/Videos während des Auftritts machen",
-      calendar: "Geigen Mitmachkonzert"
+      calendar: "Geigen Mitmachkonzert",
     },
     {
       id: "8",
@@ -114,7 +115,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Delivered",
       sentOn: "2025-06-23T18:15:00Z",
       content: "Bitte melden Sie sich nach dem Event für Feedback",
-      calendar: "Klavier Mitmachkonzert"
+      calendar: "Klavier Mitmachkonzert",
     },
     {
       id: "9",
@@ -124,7 +125,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Read",
       sentOn: "2025-06-22T13:45:00Z",
       content: "Neuer Job: Weihnachtskonzert am 24. Dezember",
-      calendar: "Weihnachts Mitmachkonzert"
+      calendar: "Weihnachts Mitmachkonzert",
     },
     {
       id: "10",
@@ -134,8 +135,8 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       status: "Sent",
       sentOn: "2025-06-21T10:10:00Z",
       content: "Update: Ortänderung für Laternenumzug",
-      calendar: "Laternenumzug mit Musik"
-    }
+      calendar: "Laternenumzug mit Musik",
+    },
   ];
 
   const messageTypes = [
@@ -144,57 +145,57 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
       label: "Einladung",
       icon: <ChatLeftText size={14} />,
       class: "type-badge-invitation",
-      tooltip: "Einladung zum Event – enthält alle wichtigen Informationen."
+      tooltip: "Einladung zum Event – enthält alle wichtigen Informationen.",
     },
     {
       type: "New Deal",
       label: "Neuer Job",
       icon: <PlusCircle size={14} />,
       class: "type-badge-new-deal",
-      tooltip: "Information über einen neu verfügbaren Job."
+      tooltip: "Information über einen neu verfügbaren Job.",
     },
     {
       type: "Follow Up",
       label: "Job noch offen",
       icon: <ArrowReturnRight size={14} />,
       class: "type-badge-follow-up",
-      tooltip: "Erinnerung an noch verfügbare Jobs."
+      tooltip: "Erinnerung an noch verfügbare Jobs.",
     },
     {
       type: "Update Deal",
       label: "Update",
       icon: <ArrowRepeat size={14} />,
       class: "type-badge-update-deal",
-      tooltip: "Aktualisierte Informationen zu einem bestehenden Job."
+      tooltip: "Aktualisierte Informationen zu einem bestehenden Job.",
     },
     {
       type: "Cancel Deal",
       label: "Absage",
       icon: <XCircle size={14} />,
       class: "type-badge-cancel-deal",
-      tooltip: "Benachrichtigung über die Absage eines Jobs."
+      tooltip: "Benachrichtigung über die Absage eines Jobs.",
     },
     {
       type: "Reminder",
       label: "Event-Erinnerung",
       icon: <Bell size={14} />,
       class: "type-badge-reminder",
-      tooltip: "Erinnerung an einen bereits zugesagten Job."
+      tooltip: "Erinnerung an einen bereits zugesagten Job.",
     },
     {
       type: "Reminder Photos Videos",
       label: "Fotos/Videos Erinnerung",
       icon: <CameraVideo size={14} />,
       class: "type-badge-reminder-photos-videos",
-      tooltip: "Erinnerung, Fotos und Videos während des Auftritts zu machen."
+      tooltip: "Erinnerung, Fotos und Videos während des Auftritts zu machen.",
     },
     {
       type: "Performance Email",
       label: "Performance-Bericht",
       icon: <Telephone size={14} />,
       class: "type-badge-performance",
-      tooltip: "Aufforderung, sich nach dem Event für Feedback zu melden."
-    }
+      tooltip: "Aufforderung, sich nach dem Event für Feedback zu melden.",
+    },
   ];
 
   const calendarTypes = [
@@ -203,7 +204,7 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
     "Laternenumzug mit Musik",
     "Nikolaus Besuch",
     "Puppentheater",
-    "Weihnachts Mitmachkonzert"
+    "Weihnachts Mitmachkonzert",
   ];
 
   const messagesPerPage = 7;
@@ -226,12 +227,12 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
   const fetchMessages = async () => {
     setLoading(true);
     setLoadingMessage("Nachrichten werden geladen...");
-    
+
     try {
       // In a real app, you would call your API here
       // const response = await getWhatsAppMessages();
       // setMessages(response.data);
-      
+
       // Using mock data for demonstration
       setTimeout(() => {
         setMessages(mockMessages);
@@ -438,10 +439,18 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
         (message.phoneNumber || "").includes(searchTerm) ||
-        (message.messageType || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (message.status || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (message.content || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (message.calendar || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (message.messageType || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (message.status || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (message.content || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (message.calendar || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
     );
 
     return filtered.reduce((acc, message) => {
@@ -533,26 +542,30 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
 
   if (loading) {
     return (
-      <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} >
+      <DashboardLayout handleLogout={handleLogout} setAuth={setAuth}>
         <DashboardLoader message={loadingMessage} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout handleLogout={handleLogout} setAuth={setAuth} onRefresh={handleRefresh}>
+    <DashboardLayout
+      handleLogout={handleLogout}
+      setAuth={setAuth}
+      onRefresh={handleRefresh}
+    >
       <div className="unassigned-events-dashboard">
         {!loading && (
-        <div className="transparent-header-container">
-          <h1 className="dashboard-main-title">WhatsApp Nachrichten</h1>
-          <div className="header-search-box">
-            <SearchBox
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Suche nach Künstler, Telefon, Nachricht oder Typ"
-            />
+          <div className="transparent-header-container">
+            <h1 className="dashboard-main-title">WhatsApp Nachrichten</h1>
+            <div className="header-search-box">
+              <SearchBox
+                value={searchTerm}
+                onChange={handleSearchChange}
+                placeholder="Suche nach Künstler, Telefon, Nachricht oder Typ"
+              />
+            </div>
           </div>
-        </div>
         )}
         {warning && (
           <Alert variant="warning" className="dashboard-alert">
@@ -568,18 +581,21 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
         <div className="message-type-glossary-vertical">
           <h5 className="glossary-title">Nachrichten Typen Legende:</h5>
           <div className="glossary-items-vertical">
-            {messageTypes.map(({ type, label, icon, class: typeClass, tooltip }) => (
-              <div
-                key={type}
-                className={`glossary-item-vertical ${typeClass.replace('type-badge-', '')}-glossaryitem`}
-                data-tooltip={tooltip}
-              >
-                <div className={`icon-badge ${typeClass}`}>
-                  {icon}
+            {messageTypes.map(
+              ({ type, label, icon, class: typeClass, tooltip }) => (
+                <div
+                  key={type}
+                  className={`glossary-item-vertical ${typeClass.replace(
+                    "type-badge-",
+                    ""
+                  )}-glossaryitem`}
+                  data-tooltip={tooltip}
+                >
+                  <div className={`icon-badge ${typeClass}`}>{icon}</div>
+                  <span className="glossary-label">{label}</span>
                 </div>
-                <span className="glossary-label">{label}</span>
-              </div>
-            ))}
+              )
+            )}
           </div>
         </div>
 
@@ -662,7 +678,9 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
 
                       <span className="events-count">
                         <span className="count-number">
-                          {hasMessages ? filteredMessagesByType[type].length : 0}
+                          {hasMessages
+                            ? filteredMessagesByType[type].length
+                            : 0}
                         </span>
                         <span className="count-label">
                           {hasMessages
@@ -708,7 +726,9 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
                                     <td className="event-roles">
                                       <Badge
                                         bg={
-                                          message.status === "Sent" || message.status === "Delivered" || message.status === "Read"
+                                          message.status === "Sent" ||
+                                          message.status === "Delivered" ||
+                                          message.status === "Read"
                                             ? "success"
                                             : message.status === "Failed"
                                             ? "danger"
@@ -718,7 +738,8 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
                                         }
                                         className="role-badge"
                                       >
-                                        {getStatusIcon(message.status)} {getStatusText(message.status)}
+                                        {getStatusIcon(message.status)}{" "}
+                                        {getStatusText(message.status)}
                                       </Badge>
                                     </td>
                                     <td className="event-time">
@@ -733,7 +754,9 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
                                     </td>
                                     <td className="event-time">
                                       <div className="event-title">
-                                        {messageTypes.find(t => t.type === message.messageType)?.label || message.messageType}
+                                        {messageTypes.find(
+                                          (t) => t.type === message.messageType
+                                        )?.label || message.messageType}
                                       </div>
                                     </td>
                                     <td className="event-actions">
@@ -763,7 +786,9 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
                                   </div>
                                   <Badge
                                     bg={
-                                      message.status === "Sent" || message.status === "Delivered" || message.status === "Read"
+                                      message.status === "Sent" ||
+                                      message.status === "Delivered" ||
+                                      message.status === "Read"
                                         ? "success"
                                         : message.status === "Failed"
                                         ? "danger"
@@ -773,23 +798,30 @@ function WhatsAppListDashboard({ setAuth,handleLogout }) {
                                     }
                                     className="role-badge"
                                   >
-                                    {getStatusIcon(message.status)} {getStatusText(message.status)}
+                                    {getStatusIcon(message.status)}{" "}
+                                    {getStatusText(message.status)}
                                   </Badge>
                                 </div>
 
                                 <div className="event-mobile-content">
                                   <div className="event-mobile-details">
                                     <div className="event-mobile-phone">
-                                      <i className="bi bi-telephone"></i> {message.phoneNumber}
+                                      <i className="bi bi-telephone"></i>{" "}
+                                      {message.phoneNumber}
                                     </div>
                                     <div className="event-mobile-message">
-                                      <i className="bi bi-chat-left-text"></i> {message.content}
+                                      <i className="bi bi-chat-left-text"></i>{" "}
+                                      {message.content}
                                     </div>
                                     <div className="event-mobile-datetime">
-                                      <i className="bi bi-calendar-event"></i> {formatDate(message.sentOn)}
+                                      <i className="bi bi-calendar-event"></i>{" "}
+                                      {formatDate(message.sentOn)}
                                     </div>
                                     <div className="event-mobile-type">
-                                      <i className="bi bi-tag"></i> {messageTypes.find(t => t.type === message.messageType)?.label || message.messageType}
+                                      <i className="bi bi-tag"></i>{" "}
+                                      {messageTypes.find(
+                                        (t) => t.type === message.messageType
+                                      )?.label || message.messageType}
                                     </div>
                                   </div>
 

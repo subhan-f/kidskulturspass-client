@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './scss/main.scss'; // Import main.scss first to ensure variables are loaded before Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'; // Bootstrap CSS
 import App from './App';
-import ErrorBoundary from './ErrorBoundary';
+import { ErrorBoundary } from './components/common';
 
 const container = document.getElementById('root');
 const root = createRoot(container);

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,50 +9,29 @@ import {
 } from 'react-router-dom';
 
 import ArtistsDashboard from './pages/ArtistsDashboard';
-import UserDashboard from './pages/UserAssignedDashboard';
 import UnassignedEventsDashboard from './pages/UnassignedEventsDashboard';
+import UserAssignedDashboard from './pages/UserAssignedDashboard';
+import UserUnassignedDashboard from './pages/UserUnassignedDashboard';
 import EmailListDashboard from './pages/EmailDashboard';
 import WhatsAppListDashboard from './pages/WhatsAppListDashboard';
 import EmailModal from './components/EmailModel';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import Navbar from './components/Navbar';
 import UnavailabilityDashboard from './pages/UnavailabilityDashboard';
 
 import { authApi } from './utils/api';
 import { initDebug } from './utils/debug';
-import LoadingSpinner from './components/LoadingSpinner';
+import { LoadingSpinner } from './components/common';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import UserAssignedDashboard from './pages/UserAssignedDashboard';
-import UserUnassignedDashboard from './pages/UserUnassignedDashboard';
-// import MyBalanceDashboard from './pages/MyBalance';
+import { ARTIST_ROLES, ARTIST_DASHBOARD_ROUTES, ADMIN_DASHBOARD_ROUTES } from './constants/app.contants'
+
 
 // Init debug
 initDebug();
 
-// Artist/Admin roles
-const ARTIST_ROLES = [
-  "Geiger*in", "Moderator*in", "Pianist*in", "Instrumentalist*in",
-  "Nikolaus", "Puppenspieler*in", "Detlef", "Sängerin*in"
-];
-
-const ARTIST_DASHBOARD_ROUTES = [
-  "/user-assigned-dashboard",
-  "/user-unassigned-dashboard",
-  "/unavailability-form"
-];
-
-const ADMIN_DASHBOARD_ROUTES = [
-  "/artists",
-  "/emails",
-  "/whatsapp",
-  "/unassigned-events",
-  "/emails"
-];
-
-// 🔹 Component that tracks first dashboard visit
+// Component that tracks first dashboard visit
 function DashboardVisitTracker({ user }) {
   const location = useLocation();
   const visitTracked = useRef(false);
@@ -65,7 +45,7 @@ function DashboardVisitTracker({ user }) {
     const isAdminDashboard = ADMIN_DASHBOARD_ROUTES.some(route => path.startsWith(route));
 
     if ((isArtistDashboard || isAdminDashboard) && !visitTracked.current) {
-      authApi.trackVisit(user._id); // ✅ send userId
+      authApi.trackVisit(user._id);
       visitTracked.current = true;
     }
   }, [location.pathname, user]);
@@ -181,7 +161,7 @@ function ArtistOnlyRoute({ children }) {
 
   return (
     <>
-      <DashboardVisitTracker user={user} /> {/* 🔹 Track visit here */}
+      <DashboardVisitTracker user={user} />
       {children}
     </>
   );
@@ -256,7 +236,7 @@ function App() {
         <Route path="/user-assigned-dashboard" element={<ProtectedRoute allowedRoles={ARTIST_ROLES}><UserAssignedDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         <Route path="/user-unassigned-dashboard" element={<ProtectedRoute allowedRoles={ARTIST_ROLES}><UserUnassignedDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         <Route path="/unavailability-form" element={<ArtistOnlyRoute><UnavailabilityDashboard handleLogout={handleLogout} artistName={loggedInUser?.name} /></ArtistOnlyRoute>} />
-        {/* <Route path="/my-balance" element={<ArtistOnlyRoute><MyBalanceDashboard handleLogout={handleLogout} artistName={loggedInUser?.name} /></ArtistOnlyRoute>} /> */}
+
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" />} />
