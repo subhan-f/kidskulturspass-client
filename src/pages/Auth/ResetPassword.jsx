@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { authApi } from '../utils/api';
-import { LoadingSpinner } from '../components/common';
+import { authApi } from '../../utils/api';
+import { LoadingSpinner } from '../../components/common';
 
 function ResetPassword() {
   const { resetToken } = useParams();

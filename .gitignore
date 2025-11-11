@@ -11,6 +11,8 @@
 
 pnpm-lock.yaml
 /scripts
+/temp
+package-lock.json
 
 # production
 /build

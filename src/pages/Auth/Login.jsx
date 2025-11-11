@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { authApi } from "../utils/api";
-import { LoadingSpinner } from "../components/common";
+import { authApi } from "../../utils/api";
+import { LoadingSpinner } from "../../components/common";
 import { Eye, EyeSlash } from "react-bootstrap-icons"; // 👈 Eye icons
 import { Spinner } from "react-bootstrap";
 
