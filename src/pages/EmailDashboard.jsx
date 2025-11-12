@@ -18,7 +18,7 @@ import { DashboardLayout } from "../components/layout";
 import api, { getEmails } from "../utils/api";
 import { SearchBox, DashboardLoader } from "../components/common";
 
-import EmailModal from "../components/EmailModel";
+import EmailModal from "../components/EmailModal";
 import { Link } from "react-router-dom";
 
 function EmailListDashboard({ setAuth, handleLogout }) {
