@@ -14,7 +14,7 @@ import UserAssignedDashboard from './pages/UserAssignedDashboard';
 import UserUnassignedDashboard from './pages/UserUnassignedDashboard';
 import EmailListDashboard from './pages/EmailDashboard';
 import WhatsAppListDashboard from './pages/WhatsAppListDashboard';
-import EmailModal from './components/EmailModel';
+import EmailModal from './components/EmailModal';
 import Login from './pages/Auth/Login';
 import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
