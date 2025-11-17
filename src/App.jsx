@@ -13,7 +13,7 @@ import UnassignedEventsDashboard from './pages/UnassignedEventsDashboard';
 import UserAssignedDashboard from './pages/UserAssignedDashboard';
 import UserUnassignedDashboard from './pages/UserUnassignedDashboard';
 import EmailListDashboard from './pages/EmailDashboard';
-import WhatsAppListDashboard from './pages/WhatsAppListDashboard';
+// import WhatsAppListDashboard from './pages/WhatsAppListDashboard';
 import EmailModal from './components/EmailModal';
 import Login from './pages/Auth/Login';
 import ForgotPassword from './pages/Auth/ForgotPassword';
@@ -228,7 +228,7 @@ function App() {
         {/* Admin-only routes */}
         <Route path="/artists" element={<ProtectedRoute allowedRoles={['Admin']}><ArtistsDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         <Route path="/emails" element={<ProtectedRoute allowedRoles={['Admin']}><EmailListDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
-        <Route path="/whatsapp" element={<ProtectedRoute allowedRoles={['Admin']}><WhatsAppListDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
+        {/* <Route path="/whatsapp" element={<ProtectedRoute allowedRoles={['Admin']}><WhatsAppListDashboard handleLogout={handleLogout} /></ProtectedRoute>} /> */}
         <Route path="/unassigned-events" element={<ProtectedRoute allowedRoles={['Admin']}><UnassignedEventsDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         <Route path="/emails/:id" element={<ProtectedRoute allowedRoles={['Admin']}><EmailModal /></ProtectedRoute>} />
 

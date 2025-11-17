@@ -6,17 +6,17 @@ import {
   Alert,
   Badge,
   Spinner,
-  Tooltip,
-  Overlay,
+  // Tooltip,
+  // Overlay,
   Form,
 } from "react-bootstrap";
 import {
-  ArrowClockwise,
+  // ArrowClockwise,
   Calendar3,
   ChevronDown,
   ChevronUp,
-  PersonCircle,
-  PersonDash,
+  // PersonCircle,
+  // PersonDash,
   Receipt,
   Pencil,
   DashCircle,
@@ -31,6 +31,8 @@ import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal";
 import ReactDOM from "react-dom";
+
+import { CALENDAR_MAPPING, API_URL, USER_API_URL } from '../constants/app.contants';
 
 // Custom Tooltip Component that renders outside the main DOM tree
 const CustomTooltip = ({
@@ -88,14 +90,15 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState(
-    "Daten werden geladen..."
-  );
+  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
-  const [searchFocused, setSearchFocused] = useState(false);
+  const [
+    searchFocused,
+    setSearchFocused
+  ] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
@@ -117,24 +120,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [editingUser, setEditingUser] = useState(null);
   // Add this state near the other state declarations
   const [isUpdatingTravelRole, setIsUpdatingTravelRole] = useState(false);
-
-  const CALENDAR_MAPPING = {
-    "Klavier Mitmachkonzert": "info@kidskulturspass.de",
-    "Geigen Mitmachkonzert":
-      "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
-    "Weihnachts Mitmachkonzert":
-      "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
-    "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
-    "Laternenumzug mit Musik":
-      "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
-    Puppentheater:
-      "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
-  };
-
-  const API_URL =
-    "https://user-dashboard-data-754826373806.europe-west1.run.app";
-  const USER_API_URL =
-    "https://artist-crud-function-754826373806.europe-west10.run.app";
 
   // Sort events by date (most recent first)
   const sortEventsByDate = (eventsArray) => {
@@ -1484,6 +1469,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           </Button>
         </Modal.Footer>
       </Modal>
+
     </DashboardLayout>
   );
 }
