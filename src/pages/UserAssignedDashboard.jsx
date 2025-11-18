@@ -32,7 +32,11 @@ import axios from "axios";
 import EventModal from "../components/EventModal";
 import ReactDOM from "react-dom";
 
-import { CALENDAR_MAPPING, API_URL, USER_API_URL } from '../constants/app.contants';
+import {
+  CALENDAR_MAPPING,
+  API_URL,
+  USER_API_URL,
+} from "../constants/app.contants";
 
 // Custom Tooltip Component that renders outside the main DOM tree
 const CustomTooltip = ({
@@ -90,15 +94,14 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Daten werden geladen..."
+  );
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
-  const [
-    searchFocused,
-    setSearchFocused
-  ] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
@@ -359,10 +362,29 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
 
       setEvents(sortedCategorizedEvents);
 
-      // Generate dummy data for completed and paid events
-      setCompletedEvents(
-        generateDummyEvents(sortedCategorizedEvents, "completed")
+      // Fetch completed events using the real API
+      setLoadingMessage("Abgeschlossene Veranstaltungen werden geladen...");
+      const completedRes = await axios.get(`${API_URL}/completed`, {
+        params: {
+          email: userData.data["E-Mail"],
+          calendars: calendarNames.join(","),
+          categorize: true,
+        },
+      });
+
+      // Sort completed events for each calendar by date
+      const sortedCompletedEvents = {};
+      Object.keys(completedRes.data.categorizedEvents || {}).forEach(
+        (calendar) => {
+          sortedCompletedEvents[calendar] = sortEventsByDate(
+            completedRes.data.categorizedEvents[calendar]
+          );
+        }
       );
+
+      setCompletedEvents(sortedCompletedEvents);
+
+      // Keep paid events as dummy data for now (or update if you have a paid API)
       setPaidEvents(generateDummyEvents(sortedCategorizedEvents, "paid"));
 
       // Initialize expanded state for calendars
@@ -1283,7 +1305,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
         {/* Event Modal */}
         {showEventModal && (
           <EventModal
-           mode="assigned"
+            mode="assigned"
             user={user}
             modalFor={"assigned"}
             event={selectedEvent}
@@ -1469,7 +1491,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           </Button>
         </Modal.Footer>
       </Modal>
-
     </DashboardLayout>
   );
 }
