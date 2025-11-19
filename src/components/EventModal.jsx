@@ -222,7 +222,7 @@ const EventModal = ({ user, modalFor, event, onClose, mode }) => {
                   ? `${event.eventExpense.eventPay} €`
                   : event.calendarName === "Puppentheater"
                   ? "110 €"
-                  : "70 €"}
+                  : "N/A"}
                 <br />
                 Reise:{" "}
                 {event.eventExpense?.travelExpense

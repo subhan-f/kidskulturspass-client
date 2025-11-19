@@ -116,7 +116,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
     "Laternenumzug mit Musik":
       "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
-    "Puppentheater":
+    Puppentheater:
       "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
   };
 
@@ -309,6 +309,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
     return filtered;
   }, [categorizedEvents, searchTerm]);
+
+  console.log(filteredEventsByCalendar);
 
   const calendars = useMemo(
     () => Object.keys(filteredEventsByCalendar).sort(),
@@ -803,7 +805,6 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
         )}
       </div>
       {/* Join Event Confirmation Modal */}
-      {/* Join Event Confirmation Modal */}
       <Modal
         show={showJoinConfirmModal}
         onHide={() => !isJoining && setShowJoinConfirmModal(false)}
@@ -817,6 +818,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
           Bitte wähle deine Rolle, damit die Fahrtkosten korrekt
           aufgeteilt werden können.
           {/* Conditionally render dropdown if travelExpense exists */}
+          {console.log("Event to Join:", eventToJoin)}
           {eventToJoin?.eventExpense?.travelExpense && (
             <div className="mt-3">
               <Form.Group controlId="roleSelection">
@@ -826,11 +828,13 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                   const attendees = eventToJoin.attendees || [];
 
                   const existingDriver = attendees.some(
-                    (a) => a.travelRole === "driver"
+                    (a) => a.artistTravelRole === "driver"
                   );
                   const existingPassenger = attendees.some(
-                    (a) => a.travelRole === "passenger"
+                    (a) => a.artistTravelRole === "passenger"
                   );
+
+                  
 
                   const calendarWithTheRequiredRoles = [
                     {
@@ -868,18 +872,16 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
                   return (
                     <Form.Select
-                      value={roleSelection || "driver"} // ✅ ensure driver is default
+                      value={roleSelection || "driver"}
                       onChange={(e) => setRoleSelection(e.target.value)}
                       required
                     >
                       {/* Fahrer always selectable */}
                       <option value="driver">Fahrer*in</option>
 
-                      {/* Beifahrer only if not single-role calendar */}
-                      {!onlyOneRoleRequired && (
-                        <option value="passenger" disabled={existingPassenger}>
-                          Beifahrer*in
-                        </option>
+                      {/* Show passenger ONLY if no existing passenger */}
+                      {!onlyOneRoleRequired && !existingPassenger && (
+                        <option value="passenger">Beifahrer*in</option>
                       )}
                     </Form.Select>
                   );
