@@ -1237,7 +1237,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                 }`}
                 onClick={() => setActiveTab("myEvents")}
               >
-                Upcoming Events
+                Zukünftige Events
               </button>
               <button
                 className={`chrome-tab ${
