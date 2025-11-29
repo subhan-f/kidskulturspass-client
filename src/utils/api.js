@@ -200,7 +200,6 @@ export default {
   post: async (url, data) => {
     
     if (url === '/artist') {
-      data.Name = data.Name.charAt(0).toUpperCase() + data.Name.slice(1);
       return await artistService.addArtist(data);
     }
     

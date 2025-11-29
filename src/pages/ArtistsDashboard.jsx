@@ -18,7 +18,11 @@ import {
   Pencil,
 } from "react-bootstrap-icons";
 import { DashboardLayout } from "../components/layout";
-import { PullToRefresh, SearchBox, DashboardLoader} from "../components/common";
+import {
+  PullToRefresh,
+  SearchBox,
+  DashboardLoader,
+} from "../components/common";
 import AddArtistModal from "../components/AddArtistModal";
 
 import { useMediaQuery } from "react-responsive";
@@ -87,6 +91,10 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         role: artist.Role,
         password: artist.password,
         dashboardVisits: artist.dashboardVisits || [], // Add this line
+        firstName: artist.FirstName || "",
+        lastName: artist.LastName || "",
+        phone: artist.Phone || "",
+        address: artist.Address || "",
       }));
 
       if (response.data.error) {
@@ -249,6 +257,8 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   };
 
   const artistsByCalendar = useMemo(() => {
+  console.log("Rendering ArtistsDashboard with artists:", artists);
+
     const filtered =
       searchTerm.trim() === ""
         ? artists
@@ -267,6 +277,18 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                 .toLowerCase()
                 .includes(searchTerm.toLowerCase()) ||
               (artist.password || "")
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())||
+              (artist.firstName || "")
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase()) ||
+              (artist.lastName || "")
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase()) ||
+              (artist.phone || "")
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase()) ||
+              (artist.address || "")
                 .toLowerCase()
                 .includes(searchTerm.toLowerCase())
           );
@@ -337,6 +359,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
   const handleEditClick = useCallback((artist, e) => {
     if (e) e.stopPropagation();
+          console.log("Editing artist:", artistToEdit);
     setModalMode("edit");
     setArtistToEdit(artist);
     setSelectedCalendarForModal(artist.calendar);
@@ -346,33 +369,58 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
   const handleAddArtistFromModal = async (artistData) => {
     try {
-      if (!artistData.name || !artistData.role || !artistData.email) {
-        console.error("Bitte füllen Sie alle Felder aus");
+      // Validation check - all required fields
+      if (
+        !artistData.calendar ||
+        !artistData.firstName ||
+        !artistData.lastName ||
+        !artistData.phone ||
+        !artistData.address ||
+        !artistData.role ||
+        !artistData.email
+      ) {
+        toast.error("Bitte füllen Sie alle Pflichtfelder aus");
         return;
       }
-      artistData = {
-        Calendar: artistData.calendar,
-        Name: artistData.name,
-        Role: artistData.role,
-        email: artistData.email,
-        password: artistData.password,
+
+      // Capitalize name helper function
+      const capitalizeName = (name) => {
+        return name
+          .trim()
+          .toLowerCase()
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
       };
 
-      const response = await api.post("/artist", artistData);
-      console.log(response);
-      setShowAddModal(false);
-      fetchArtists(true);
+      // Trim and process fields
+      const processedData = {
+        Calendar: artistData.calendar.trim(),
+        Name: `${capitalizeName(artistData.firstName)} ${capitalizeName(
+          artistData.lastName
+        )}`,
+        FirstName: capitalizeName(artistData.firstName),
+        LastName: capitalizeName(artistData.lastName),
+        Role: artistData.role.trim(),
+        email: artistData.email.trim().toLowerCase(), // Email should be lowercase
+        Phone: artistData.phone.trim().replace(/\s/g, ""), // Remove spaces from phone
+        Address: artistData.address.trim(),
+      };
+
+      const response = await api.post("/artist", processedData);
 
       if (response.data.status === "success") {
-        console.success("Künstler erfolgreich hinzugefügt");
+        toast.success("Künstler erfolgreich hinzugefügt");
+        setShowAddModal(false);
+        fetchArtists(true);
       } else {
-        console.error(
+        toast.error(
           response.data.message || "Fehler beim Hinzufügen des Künstlers"
         );
       }
     } catch (error) {
       console.error("Error adding artist:", error);
-      console.error(
+      toast.error(
         "Fehler beim Hinzufügen des Künstlers: " +
           (error.response?.data?.message || error.message)
       );
@@ -381,17 +429,43 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
   const handleUpdateArtistFromModal = async (updatedData) => {
     try {
-      if (!updatedData.name || !updatedData.role || !updatedData.email) {
-        toast.error("Bitte füllen Sie alle Felder aus");
+      // Validation check - all required fields
+      if (
+        !updatedData.calendar ||
+        !updatedData.firstName ||
+        !updatedData.lastName ||
+        !updatedData.phone ||
+        !updatedData.address ||
+        !updatedData.role ||
+        !updatedData.email
+      ) {
+        toast.error("Bitte füllen Sie alle Pflichtfelder aus");
         return;
       }
 
+      // Capitalize name helper function
+      const capitalizeName = (name) => {
+        return name
+          .trim()
+          .toLowerCase()
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      };
+
+      // Trim and process fields
       const updatePayload = {
-        Calendar: updatedData.calendar,
-        Name: updatedData.name,
-        Role: updatedData.role,
-        email: updatedData.email,
-        originalEmail: artistToEdit.email, // For identifying the artist to update
+        Calendar: updatedData.calendar.trim(),
+        Name: `${capitalizeName(updatedData.firstName)} ${capitalizeName(
+          updatedData.lastName
+        )}`,
+        FirstName: capitalizeName(updatedData.firstName),
+        LastName: capitalizeName(updatedData.lastName),
+        Role: updatedData.role.trim(),
+        email: updatedData.email.trim().toLowerCase(), // Email should be lowercase
+        Phone: updatedData.phone.trim().replace(/\s/g, ""), // Remove spaces from phone
+        Address: updatedData.address.trim(),
+        originalEmail: artistToEdit.email.trim().toLowerCase(), // Lowercase for consistency
       };
 
       const response = await api.put("/artist", updatePayload);
@@ -905,6 +979,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           )}
         </div>
       </div>
+
 
       <AddArtistModal
         fetchArtists={fetchArtists}
