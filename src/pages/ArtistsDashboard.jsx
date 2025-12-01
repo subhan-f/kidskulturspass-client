@@ -84,18 +84,45 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
     try {
       const response = await api.get("/artists");
-      response.data = response.data.map((artist) => ({
-        name: artist.Name,
-        calendar: artist.Calendar,
-        email: artist["E-Mail"],
-        role: artist.Role,
-        password: artist.password,
-        dashboardVisits: artist.dashboardVisits || [], // Add this line
-        firstName: artist.FirstName || "",
-        lastName: artist.LastName || "",
-        phone: artist.Phone || "",
-        address: artist.Address || "",
-      }));
+      response.data = response.data.map((artist) => {
+        // If individual address fields exist but combined doesn't, create it
+        const street = artist.Street || artist.street || "";
+        const houseNumber = artist.HouseNumber || artist.houseNumber || "";
+        const city = artist.City || artist.city || "";
+        const postalCode = artist.PostalCode || artist.postalCode || "";
+        const state = artist.State || artist.state || "";
+
+        let combinedAddress = artist.Address || "";
+
+        // Create combined address if we have individual fields but no combined address
+        if (!combinedAddress && (street || city || postalCode || state)) {
+          combinedAddress =
+            `${street} ${houseNumber}, ${postalCode} ${city}, ${state}`.trim();
+          // Clean up any trailing commas or empty parts
+          combinedAddress = combinedAddress
+            .replace(/\s*,\s*$/g, "")
+            .replace(/,\s*,/g, ",");
+        }
+
+        return {
+          name: artist.Name,
+          calendar: artist.Calendar,
+          email: artist["E-Mail"],
+          role: artist.Role,
+          password: artist.password,
+          dashboardVisits: artist.dashboardVisits || [],
+          firstName: artist.FirstName || "",
+          lastName: artist.LastName || "",
+          phone: artist.Phone || "",
+          address: combinedAddress,
+          // Individual address fields
+          street: street,
+          houseNumber: houseNumber,
+          city: city,
+          postalCode: postalCode,
+          state: state,
+        };
+      });
 
       if (response.data.error) {
         setError(response.data.error);
@@ -257,42 +284,44 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   };
 
   const artistsByCalendar = useMemo(() => {
-  console.log("Rendering ArtistsDashboard with artists:", artists);
+    console.log("Rendering ArtistsDashboard with artists:", artists);
 
     const filtered =
       searchTerm.trim() === ""
         ? artists
-        : artists.filter(
-            (artist) =>
-              (artist.name || "")
+        : artists.filter((artist) => {
+            const searchLower = searchTerm.toLowerCase();
+
+            // Check all searchable fields
+            return (
+              (artist.name || "").toLowerCase().includes(searchLower) ||
+              (artist.email || "").toLowerCase().includes(searchLower) ||
+              (artist.calendar || "").toLowerCase().includes(searchLower) ||
+              (artist.role || "").toLowerCase().includes(searchLower) ||
+              (artist.password || "").toLowerCase().includes(searchLower) ||
+              (artist.firstName || "").toLowerCase().includes(searchLower) ||
+              (artist.lastName || "").toLowerCase().includes(searchLower) ||
+              (artist.phone || "").toLowerCase().includes(searchLower) ||
+              // Combined address field (for backward compatibility)
+              (artist.address || "").toLowerCase().includes(searchLower) ||
+              // Individual address fields (if they exist on the artist object)
+              (artist.street || "").toLowerCase().includes(searchLower) ||
+              (artist.houseNumber || "").toLowerCase().includes(searchLower) ||
+              (artist.city || "").toLowerCase().includes(searchLower) ||
+              (artist.postalCode || "").toLowerCase().includes(searchLower) ||
+              (artist.state || "").toLowerCase().includes(searchLower) ||
+              // Also search in the combined format of address fields
+              // This helps when individual fields might not be stored separately
+              `${artist.street || ""} ${artist.houseNumber || ""} ${
+                artist.city || ""
+              } ${artist.postalCode || ""} ${artist.state || ""}`
                 .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              (artist.email || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              (artist.calendar || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              (artist.role || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              (artist.password || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase())||
-              (artist.firstName || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              (artist.lastName || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              (artist.phone || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              (artist.address || "")
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase())
-          );
+                .includes(searchLower)
+            );
+          });
+
     console.log("Filtered artists:", filtered);
+
     return filtered.reduce((acc, artist) => {
       const calendar = artist.calendar || "Unbekannt";
       if (!acc[calendar]) {
@@ -359,7 +388,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
   const handleEditClick = useCallback((artist, e) => {
     if (e) e.stopPropagation();
-          console.log("Editing artist:", artistToEdit);
+    console.log("Editing artist:", artistToEdit);
     setModalMode("edit");
     setArtistToEdit(artist);
     setSelectedCalendarForModal(artist.calendar);
@@ -375,7 +404,11 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         !artistData.firstName ||
         !artistData.lastName ||
         !artistData.phone ||
-        !artistData.address ||
+        !artistData.street ||
+        !artistData.houseNumber ||
+        !artistData.city ||
+        !artistData.postalCode ||
+        !artistData.state ||
         !artistData.role ||
         !artistData.email
       ) {
@@ -393,6 +426,19 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           .join(" ");
       };
 
+      // Capitalize city and street names
+      const capitalizeAddressPart = (text) => {
+        return text
+          .trim()
+          .toLowerCase()
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      };
+
+      // Build the combined address string
+      const combinedAddress = `${artistData.street.trim()} ${artistData.houseNumber.trim()}, ${artistData.postalCode.trim()} ${artistData.city.trim()}, ${artistData.state.trim()}`;
+
       // Trim and process fields
       const processedData = {
         Calendar: artistData.calendar.trim(),
@@ -404,7 +450,13 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         Role: artistData.role.trim(),
         email: artistData.email.trim().toLowerCase(), // Email should be lowercase
         Phone: artistData.phone.trim().replace(/\s/g, ""), // Remove spaces from phone
-        Address: artistData.address.trim(),
+        Address: combinedAddress,
+        // Add individual address fields if your API supports them
+        Street: capitalizeAddressPart(artistData.street),
+        HouseNumber: artistData.houseNumber.trim(),
+        City: capitalizeAddressPart(artistData.city),
+        PostalCode: artistData.postalCode.trim(),
+        State: artistData.state.trim(),
       };
 
       const response = await api.post("/artist", processedData);
@@ -435,7 +487,11 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         !updatedData.firstName ||
         !updatedData.lastName ||
         !updatedData.phone ||
-        !updatedData.address ||
+        !updatedData.street ||
+        !updatedData.houseNumber ||
+        !updatedData.city ||
+        !updatedData.postalCode ||
+        !updatedData.state ||
         !updatedData.role ||
         !updatedData.email
       ) {
@@ -453,6 +509,19 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           .join(" ");
       };
 
+      // Capitalize city and street names
+      const capitalizeAddressPart = (text) => {
+        return text
+          .trim()
+          .toLowerCase()
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      };
+
+      // Build the combined address string
+      const combinedAddress = `${updatedData.street.trim()} ${updatedData.houseNumber.trim()}, ${updatedData.postalCode.trim()} ${updatedData.city.trim()}, ${updatedData.state.trim()}`;
+
       // Trim and process fields
       const updatePayload = {
         Calendar: updatedData.calendar.trim(),
@@ -464,7 +533,13 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         Role: updatedData.role.trim(),
         email: updatedData.email.trim().toLowerCase(), // Email should be lowercase
         Phone: updatedData.phone.trim().replace(/\s/g, ""), // Remove spaces from phone
-        Address: updatedData.address.trim(),
+        Address: combinedAddress,
+        // Add individual address fields if your API supports them
+        Street: capitalizeAddressPart(updatedData.street),
+        HouseNumber: updatedData.houseNumber.trim(),
+        City: capitalizeAddressPart(updatedData.city),
+        PostalCode: updatedData.postalCode.trim(),
+        State: updatedData.state.trim(),
         originalEmail: artistToEdit.email.trim().toLowerCase(), // Lowercase for consistency
       };
 
@@ -979,7 +1054,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           )}
         </div>
       </div>
-
 
       <AddArtistModal
         fetchArtists={fetchArtists}

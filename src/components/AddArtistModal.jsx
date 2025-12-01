@@ -12,6 +12,26 @@ const calendarConfig = [
   { calendar: "Weihnachts Mitmachkonzert", roles: ["Detlef", "Sängerin*in", "Admin"] },
 ];
 
+// German states (Bundesländer)
+const germanStates = [
+  "Baden-Württemberg",
+  "Bayern",
+  "Berlin",
+  "Brandenburg",
+  "Bremen",
+  "Hamburg",
+  "Hessen",
+  "Mecklenburg-Vorpommern",
+  "Niedersachsen",
+  "Nordrhein-Westfalen",
+  "Rheinland-Pfalz",
+  "Saarland",
+  "Sachsen",
+  "Sachsen-Anhalt",
+  "Schleswig-Holstein",
+  "Thüringen"
+];
+
 function AddArtistModal({ 
   showModal, 
   setShowModal, 
@@ -31,7 +51,11 @@ function AddArtistModal({
     firstName: '',
     lastName: '',
     phone: '',
-    address: '',
+    street: '',
+    houseNumber: '',
+    city: '',
+    postalCode: '',
+    state: '',
     role: '',
     email: '',
   });
@@ -45,7 +69,10 @@ function AddArtistModal({
     phone: /^(\+49|0)(\s?\d){7,14}$/,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     name: /^[a-zA-ZäöüÄÖÜß\s\-']+$/,
-    address: /^[a-zA-Z0-9äöüÄÖÜß\s\-\.,#'/]+$/
+    street: /^[a-zA-Z0-9äöüÄÖÜß\s\-.,#'/]+$/,
+    houseNumber: /^[a-zA-Z0-9\s\-/]+$/,
+    city: /^[a-zA-ZäöüÄÖÜß\s\-'.]+$/,
+    postalCode: /^\d{5}$/,
   };
 
   // Validation messages
@@ -54,7 +81,11 @@ function AddArtistModal({
     firstName: "Bitte geben Sie einen gültigen Vornamen ein (nur Buchstaben, Bindestriche und Leerzeichen).",
     lastName: "Bitte geben Sie einen gültigen Nachnamen ein (nur Buchstaben, Bindestriche und Leerzeichen).",
     phone: "Bitte geben Sie eine gültige deutsche Telefonnummer ein (z. B. +4915123456789 oder 015123456789).",
-    address: "Bitte geben Sie eine gültige Adresse ein.",
+    street: "Bitte geben Sie eine gültige Straße ein.",
+    houseNumber: "Bitte geben Sie eine gültige Hausnummer ein.",
+    city: "Bitte geben Sie einen gültigen Ort ein.",
+    postalCode: "Bitte geben Sie eine gültige 5-stellige Postleitzahl ein.",
+    state: "Bitte wählen Sie ein Bundesland aus.",
     role: "Bitte wählen Sie eine Rolle aus.",
     email: "Bitte geben Sie eine gültige E-Mail-Adresse ein."
   };
@@ -64,8 +95,6 @@ function AddArtistModal({
     return config ? config.roles : [];
   }, []);
 
-  
-      // console.log("Editing artist:", artistToEdit);
   useEffect(() => {
     if (artistData.calendar) {
       const roles = getRolesForCalendar(artistData.calendar);
@@ -79,13 +108,50 @@ function AddArtistModal({
 
   useEffect(() => {
     if (mode === "edit" && artistToEdit) {
+      // Parse the existing address if it's in the old format
+      let street = '';
+      let houseNumber = '';
+      let city = '';
+      let postalCode = '';
+      let state = '';
+
+      if (artistToEdit.address) {
+        // Try to parse the old address format
+        const addressParts = artistToEdit.address.split(', ');
+        if (addressParts.length >= 2) {
+          // Extract street and house number
+          const streetAndNumber = addressParts[0].split(' ');
+          if (streetAndNumber.length > 1) {
+            houseNumber = streetAndNumber.pop();
+            street = streetAndNumber.join(' ');
+          } else {
+            street = addressParts[0];
+          }
+
+          // Extract postal code and city
+          const cityPart = addressParts[1].split(' ');
+          if (cityPart.length > 1) {
+            postalCode = cityPart[0];
+            city = cityPart.slice(1).join(' ');
+          }
+
+          // Extract state if exists
+          if (addressParts.length > 2) {
+            state = addressParts[2];
+          }
+        }
+      }
 
       const editData = {
         calendar: artistToEdit.calendar || '',
         firstName: artistToEdit.firstName || '',
         lastName: artistToEdit.lastName || '',
         phone: artistToEdit.phone || '',
-        address: artistToEdit.address || '',
+        street: street || '',
+        houseNumber: houseNumber || '',
+        city: city || '',
+        postalCode: postalCode || '',
+        state: state || '',
         role: artistToEdit.role || '',
         email: artistToEdit.email || '',
       };
@@ -100,7 +166,11 @@ function AddArtistModal({
         firstName: '',
         lastName: '',
         phone: '',
-        address: '',
+        street: '',
+        houseNumber: '',
+        city: '',
+        postalCode: '',
+        state: '',
         role: '',
         email: '',
       });
@@ -140,9 +210,29 @@ function AddArtistModal({
         message = !isValid ? validationMessages.phone : '';
         break;
       
-      case 'address':
-        isValid = !!value.trim() && validationPatterns.address.test(value);
-        message = !isValid ? validationMessages.address : '';
+      case 'street':
+        isValid = !!value.trim() && validationPatterns.street.test(value);
+        message = !isValid ? validationMessages.street : '';
+        break;
+      
+      case 'houseNumber':
+        isValid = !!value.trim() && validationPatterns.houseNumber.test(value);
+        message = !isValid ? validationMessages.houseNumber : '';
+        break;
+      
+      case 'city':
+        isValid = !!value.trim() && validationPatterns.city.test(value);
+        message = !isValid ? validationMessages.city : '';
+        break;
+      
+      case 'postalCode':
+        isValid = !!value.trim() && validationPatterns.postalCode.test(value);
+        message = !isValid ? validationMessages.postalCode : '';
+        break;
+      
+      case 'state':
+        isValid = !!value.trim();
+        message = !isValid ? validationMessages.state : '';
         break;
       
       case 'role':
@@ -213,10 +303,18 @@ function AddArtistModal({
 
     setIsLoading(true);
     try {
+      // Combine address fields into a single string for backward compatibility
+      const combinedAddress = `${artistData.street} ${artistData.houseNumber}, ${artistData.postalCode} ${artistData.city}, ${artistData.state}`;
+      
+      const artistDataWithCombinedAddress = {
+        ...artistData,
+        address: combinedAddress
+      };
+
       if (mode === "add") {
-        await handleAddArtist(artistData);
+        await handleAddArtist(artistDataWithCombinedAddress);
       } else {
-        await handleUpdateArtist(artistData);
+        await handleUpdateArtist(artistDataWithCombinedAddress);
       }
       resetForm();
     } finally {
@@ -237,7 +335,11 @@ function AddArtistModal({
       firstName: '',
       lastName: '',
       phone: '',
-      address: '',
+      street: '',
+      houseNumber: '',
+      city: '',
+      postalCode: '',
+      state: '',
       role: '',
       email: '',
     });
@@ -347,22 +449,102 @@ function AddArtistModal({
             </Form.Control.Feedback>
           </Form.Group>
 
-          {/* Address */}
-          <Form.Group className="mb-3">
-            <Form.Label>Adresse *</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Adresse eingeben"
-              value={artistData.address}
-              onChange={(e) => handleFieldChange("address", e.target.value)}
-              onBlur={(e) => handleFieldBlur("address", e.target.value)}
-              required
-              isInvalid={!!fieldErrors.address}
-            />
-            <Form.Control.Feedback type="invalid">
-              {fieldErrors.address}
-            </Form.Control.Feedback>
-          </Form.Group>
+          {/* Address Section */}
+          <div className="border p-3 mb-3 rounded">
+            <h6 className="mb-3">Adresse</h6>
+            
+            {/* Street */}
+            <Form.Group className="mb-3">
+              <Form.Label>Straße (Street) *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Straße eingeben"
+                value={artistData.street}
+                onChange={(e) => handleFieldChange("street", e.target.value)}
+                onBlur={(e) => handleFieldBlur("street", e.target.value)}
+                required
+                isInvalid={!!fieldErrors.street}
+              />
+              <Form.Control.Feedback type="invalid">
+                {fieldErrors.street}
+              </Form.Control.Feedback>
+            </Form.Group>
+
+            {/* House Number */}
+            <Form.Group className="mb-3">
+              <Form.Label>Hausnummer (House Number) *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Hausnummer eingeben"
+                value={artistData.houseNumber}
+                onChange={(e) => handleFieldChange("houseNumber", e.target.value)}
+                onBlur={(e) => handleFieldBlur("houseNumber", e.target.value)}
+                required
+                isInvalid={!!fieldErrors.houseNumber}
+              />
+              <Form.Control.Feedback type="invalid">
+                {fieldErrors.houseNumber}
+              </Form.Control.Feedback>
+            </Form.Group>
+
+            {/* City and Postal Code in one row */}
+            <div className="row">
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>PLZ / Postleitzahl (Postal Code) *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="12345"
+                    value={artistData.postalCode}
+                    onChange={(e) => handleFieldChange("postalCode", e.target.value)}
+                    onBlur={(e) => handleFieldBlur("postalCode", e.target.value)}
+                    required
+                    isInvalid={!!fieldErrors.postalCode}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.postalCode}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </div>
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>Ort (City / Town) *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Stadt eingeben"
+                    value={artistData.city}
+                    onChange={(e) => handleFieldChange("city", e.target.value)}
+                    onBlur={(e) => handleFieldBlur("city", e.target.value)}
+                    required
+                    isInvalid={!!fieldErrors.city}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {fieldErrors.city}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </div>
+            </div>
+
+            {/* State */}
+            <Form.Group className="mb-3">
+              <Form.Label>Bundesland (State / Region) *</Form.Label>
+              <Form.Select
+                value={artistData.state}
+                onChange={(e) => handleFieldChange("state", e.target.value)}
+                onBlur={(e) => handleFieldBlur("state", e.target.value)}
+                required
+                isInvalid={!!fieldErrors.state}
+              >
+                <option value="">Bundesland auswählen</option>
+                {germanStates.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </Form.Select>
+              <Form.Control.Feedback type="invalid">
+                {fieldErrors.state}
+              </Form.Control.Feedback>
+            </Form.Group>
+          </div>
 
           {/* Role */}
           <Form.Group className="mb-3">
