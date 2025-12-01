@@ -990,8 +990,8 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                   {event?.eventExpense?.totalExpense && (
                                     <div className="event-mobile-cost">
                                       <i className="bi bi-currency-euro"></i>{" "}
-                                      Gesamtkosten:{" "}
-                                      {event?.eventExpense?.totalExpense}
+                                      Event Bezahlung{" "}
+                                      {event?.eventExpense?.eventPay}
                                     </div>
                                   )}
                                   {event.attendees && (

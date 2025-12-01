@@ -690,8 +690,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                                         {event?.eventExpense?.totalExpense && (
                                           <div className="event-mobile-cost">
                                             <i className="bi bi-currency-euro"></i>{" "}
-                                            Gesamtkosten:{" "}
-                                            {event?.eventExpense?.totalExpense}
+                                            Event Bezahlung{" "}
+                                            {event?.eventExpense?.eventPay}
                                           </div>
                                         )}
                                       </div>
@@ -833,8 +833,6 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                   const existingPassenger = attendees.some(
                     (a) => a.artistTravelRole === "passenger"
                   );
-
-                  
 
                   const calendarWithTheRequiredRoles = [
                     {
