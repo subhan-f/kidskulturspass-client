@@ -141,15 +141,14 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     setEditingEvent(event);
     setEditingUser(user);
 
-    // calculate roles according to rules
     const roles = determineAvailableRoles(event, user);
     setAvailableRoles(roles);
 
-    // default to the user's current travelRole if present, otherwise first available
+    const currentRole = user?.artistTravelRole || user?.travelRole || "";
     const defaultRole =
-      user?.travelRole && roles.some((r) => r.value === user.travelRole)
-        ? user.travelRole
-        : roles[0].value;
+      currentRole && roles.some((r) => r.value === currentRole)
+        ? currentRole
+        : roles[0]?.value || "";
     setSelectedRole(defaultRole);
 
     setShowTravelRoleModal(true);
@@ -159,25 +158,32 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   // Updated: handleSaveTravelRole (with guard for disabled option)
   // ---------------------------
   const handleSaveTravelRole = async () => {
-    if (!editingEvent || !editingUser || !selectedRole) {
-      console.error("Missing data to save travel role", {
-        editingEvent,
-        editingUser,
-        selectedRole,
-      });
+    if (!editingEvent || !editingUser || !selectedRole) return;
+
+    const currentRole =
+      editingUser?.artistTravelRole || editingUser?.travelRole || "";
+
+    if (selectedRole === currentRole) {
+      console.log("No change in role, skipping API request");
+      setSuccess("Keine Änderung erforderlich.");
+      setTimeout(() => {
+        setSuccess(null);
+        setShowTravelRoleModal(false);
+      }, 2000);
       return;
     }
 
-    // find role meta (to check disabled status)
-    const roleMeta = availableRoles.find((r) => r.value === selectedRole);
-
-    // guard: if role is disabled *and* it's not the user's current role, prevent changing
-    if (
-      roleMeta?.disabled &&
-      selectedRole !== (editingUser?.travelRole || "")
-    ) {
+    if (editingEvent.calendarName === "Puppentheater") {
       setWarning(
-        "Diese Reiserolle kann nicht ausgewählt werden, weil ein anderer Teilnehmer bereits die Rolle 'Passenger' hat."
+        "Für Puppentheater Veranstaltungen kann die Reiserolle nicht geändert werden."
+      );
+      return;
+    }
+
+    const roleMeta = availableRoles.find((r) => r.value === selectedRole);
+    if (roleMeta?.disabled) {
+      setWarning(
+        "Diese Reiserolle kann nicht ausgewählt werden, da bereits ein anderer Teilnehmer diese Rolle hat."
       );
       return;
     }
@@ -188,7 +194,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     setWarning(null);
 
     try {
-      // prepare payload - adjust to your API shape
       const calendarName = editingEvent.calendarName?.trim().toLowerCase();
       let calendarId = null;
       for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
@@ -197,6 +202,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           break;
         }
       }
+
       if (!calendarId) {
         setWarning("Kalender-ID nicht gefunden.");
         setIsUpdatingTravelRole(false);
@@ -211,17 +217,24 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
         travelRole: selectedRole,
       };
 
+      console.log("Request Data for updating travel role:", requestData);
+
       const response = await axios.post(
         `${API_URL}/update-travel-role`,
         requestData
       );
-      if (response.data.success) {
+
+      if (response?.data?.success) {
+        // ✅ Wait 20 seconds before showing success
+        await new Promise((res) => setTimeout(res, 20000));
         setSuccess("Reiserolle erfolgreich aktualisiert!");
-        setTimeout(() => setSuccess(null), 20000);
-        // wait a bit for upstream calendar sync if you want (optional)
-        await new Promise((res) => setTimeout(res, 2000));
-        await fetchData();
-        setShowTravelRoleModal(false);
+
+        // ✅ Wait 1 second before closing modal and fetching data
+        setTimeout(async () => {
+          setShowTravelRoleModal(false);
+          await fetchData();
+          setSuccess(null);
+        }, 1000);
       } else {
         setWarning(
           response.data.message || "Fehler beim Aktualisieren der Reiserolle"
@@ -235,6 +248,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       setLoadingMessage(null);
     }
   };
+
   // Generate dummy data for completed and paid events
   const generateDummyEvents = useCallback((eventsData, type) => {
     const dummyEvents = JSON.parse(JSON.stringify(eventsData));
@@ -265,61 +279,129 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
   const [completedEvents, setCompletedEvents] = useState({});
   const [paidEvents, setPaidEvents] = useState({});
 
+  const calendarWithTheRequiredRoles = [
+    {
+      calendar: "Geigen Mitmachkonzert",
+      requiredRoles: ["Geiger*in", "Moderator*in"],
+    },
+    {
+      calendar: "Klavier Mitmachkonzert",
+      requiredRoles: ["Pianist*in", "Moderator*in"],
+    },
+    {
+      calendar: "Laternenumzug mit Musik",
+      requiredRoles: ["Instrumentalist*in", "Sängerin*in"],
+    },
+    { calendar: "Nikolaus Besuch", requiredRoles: ["Nikolaus", "Sängerin*in"] },
+    { calendar: "Puppentheater", requiredRoles: ["Puppenspieler*in"] },
+    {
+      calendar: "Weihnachts Mitmachkonzert",
+      requiredRoles: ["Detlef", "Sängerin*in"],
+    },
+  ];
+
   const determineAvailableRoles = (event, user) => {
     const attendees = event?.attendees || [];
-    const currentRole = (user?.travelRole || "").toLowerCase();
+    console.log("Event Attendees:", attendees);
+    console.log("Current User:", user);
+    const currentUser = attendees.find((a) => a.email === user.email);
+    console.log("Current User in attendees:", currentUser);
+    const currentRole = (
+      currentUser?.artistTravelRole ||
+      currentUser?.travelRole ||
+      ""
+    ).toLowerCase();
+    const calendarName = event.calendarName;
 
-    // helper to build object form
-    const R = (value, disabled = false) => ({
-      value,
-      label: value.charAt(0).toUpperCase() + value.slice(1),
-      disabled,
-    });
+    console.log(
+      "Determining roles for event:",
+      calendarName,
+      "user:",
+      user.email,
+      "currentRole:",
+      currentRole
+    );
 
-    // Only 1 artist (the user themself) => can choose either freely
-    if (attendees.length === 1) {
-      return [R("driver", false), R("passenger", false)];
+    if (calendarName === "Puppentheater") {
+      return [
+        {
+          value: currentRole || "none",
+          label:
+            currentRole === "driver"
+              ? "Fahrer*in"
+              : currentRole === "passenger"
+              ? "Beifahrer*in"
+              : "Keine Reiserolle",
+          disabled: true,
+        },
+      ];
     }
 
-    // 2 artists -> apply the cases
-    if (attendees.length === 2) {
-      const other = attendees.find((a) => a.email !== user.email) || {};
-      const otherRole = (other.travelRole || "").toLowerCase();
+    const calendarConfig = calendarWithTheRequiredRoles.find(
+      (c) => c.calendar === calendarName
+    );
+    const requiredRoles = calendarConfig?.requiredRoles || [];
 
-      // Case A: current user is passenger -> show passenger (default) then driver (both selectable)
-      if (currentRole === "passenger") {
-        return [R("passenger", false), R("driver", false)];
-      }
+    // Filter only valid artists (having a role in requiredRoles)
+    const validArtists = attendees.filter((a) =>
+      requiredRoles.includes(a.role)
+    );
 
-      // Case B: current user is driver -> behavior depends on the other artist
-      if (currentRole === "driver") {
-        if (otherRole === "driver") {
-          // the other is driver too -> both selectable
-          return [R("driver", false), R("passenger", false)];
-        }
-        if (otherRole === "passenger") {
-          // the other is passenger -> current must stay driver; passenger option shown but unselectable
-          return [R("driver", false), R("passenger", true)];
-        }
-        // fallback: the other has no role info -> allow both
-        return [R("driver", false), R("passenger", false)];
-      }
+    const otherArtists = validArtists.filter((a) => a.email !== user.email);
+    const otherArtist = otherArtists[0]; // There should be max 1 other valid artist
 
-      // fallback: currentRole unknown -> prefer current (if present) else driver first
-      if (!currentRole) {
-        return [R("driver", false), R("passenger", false)];
-      }
-
-      // ultimate fallback: both
-      return [R("driver", false), R("passenger", false)];
+    if (!otherArtist) {
+      // Only one valid artist (current user)
+      console.log("Single artist scenario");
+      return [
+        {
+          value: "driver",
+          label: "Fahrer*in",
+          disabled: currentRole === "driver",
+        },
+        {
+          value: "passenger",
+          label: "Beifahrer*in",
+          disabled: currentRole === "passenger",
+        },
+      ];
     }
 
-    // More than 2 attendees: fallback to both selectable (not covered by your rules)
+    const otherRole = (
+      otherArtist?.artistTravelRole ||
+      otherArtist?.travelRole ||
+      ""
+    ).toLowerCase();
+    console.log("Other artist role:", otherRole);
+
+    // Apply business rules
+    if (currentRole === "driver") {
+      if (otherRole === "driver") {
+        return [
+          { value: "driver", label: "Fahrer*in", disabled: false },
+          { value: "passenger", label: "Beifahrer*in", disabled: false },
+        ];
+      } else if (otherRole === "passenger") {
+        return [
+          { value: "driver", label: "Fahrer*in", disabled: false },
+          { value: "passenger", label: "Beifahrer*in", disabled: true },
+        ];
+      }
+    } else if (currentRole === "passenger") {
+      // if other is driver or passenger, both options allowed
+      return [
+        { value: "driver", label: "Fahrer*in", disabled: false },
+        { value: "passenger", label: "Beifahrer*in", disabled: false },
+      ];
+    }
+
+    // Fallback
     return [
-      { value: "driver", label: "Driver", disabled: false },
-      { value: "passenger", label: "Passenger", disabled: false },
+      { value: "driver", label: "Fahrer*in", disabled: false },
+      { value: "passenger", label: "Beifahrer*in", disabled: false },
     ];
   };
+
   // Fetch user data and events
   const fetchData = async () => {
     try {
@@ -670,12 +752,16 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                           }`}
                         >
                           {/* Table headers for My Events (6 columns) */}
+                          {/* Table headers for My Events (6 columns) */}
                           <thead>
                             <tr>
                               <th>Veranstaltung</th>
                               <th>Meine Rolle(n)</th>
-                              <th>Reiserolle</th>
                               <th>Datum/Uhrzeit</th>
+                              {activeTab === "myEvents" && (
+                                <th>Reiserolle</th>
+                              )}{" "}
+                              {/* NEW COLUMN - ONLY for myEvents */}
                               <th>Status</th>
                               <th>Gesamtkosten</th>
                               {activeTab === "myEvents" && <th>Aktion</th>}
@@ -689,11 +775,9 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                               <tr>
                                 <th>Veranstaltung</th>
                                 <th>Meine Rolle(n)</th>
-                                <th>Reiserolle</th> {/* NEW COLUMN */}
                                 <th>Datum/Uhrzeit</th>
                                 <th>Status</th>
                                 <th>Gesamtkosten</th>
-                                {/* Note: The "Aktion" column is in a separate column group */}
                               </tr>
                             </thead>
                           )}
@@ -740,46 +824,57 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                       <span>Datum unbekannt</span>
                                     )}
                                   </td>
-                                  <td className="event-travelRole">
-                                    {(() => {
-                                      const currentUser = event.attendees?.find(
-                                        (a) => a.email === user["E-Mail"] // <-- replace with logged-in user email
-                                      );
-                                      if (!currentUser?.travelRole)
-                                        return "Keine Reiserolle";
 
-                                      return (
-                                        <div className="travelRole-display d-flex align-items-center">
-                                          <span className="me-2">
-                                            {currentUser?.travelRole ===
-                                            "driver"
-                                              ? "Fahrer*in"
-                                              : currentUser?.travelRole ===
-                                                "passenger"
-                                              ? "Beifahrer*in"
-                                              : ""}
-                                          </span>
+                                  {/* Travel Role Column - ONLY for upcoming events */}
+                                  {activeTab === "myEvents" && (
+                                    <td className="event-travelRole">
+                                      {(() => {
+                                        const currentUser =
+                                          event.attendees?.find(
+                                            (a) => a.email === user["E-Mail"]
+                                          );
+                                        const travelRole =
+                                          currentUser?.artistTravelRole ||
+                                          currentUser?.travelRole;
 
-                                          {/* <Button
-                                            variant="link"
-                                            size="sm"
-                                            className="p-0 travelRole-edit-btn"
-                                            onClick={() =>
-                                              handleOpenTravelRoleModal(
-                                                event,
-                                                currentUser
-                                              )
-                                            }
-                                          >
-                                            <Pencil
-                                              className="text-primary"
-                                              size={16}
-                                            />
-                                          </Button> */}
-                                        </div>
-                                      );
-                                    })()}
-                                  </td>
+                                        if (!travelRole)
+                                          return "Keine Reiserolle";
+
+                                        return (
+                                          <div className="travelRole-display d-flex align-items-center">
+                                            <span className="me-2">
+                                              {travelRole === "driver"
+                                                ? "Fahrer*in"
+                                                : travelRole === "passenger"
+                                                ? "Beifahrer*in"
+                                                : travelRole}
+                                            </span>
+
+                                            {/* Edit button - check if event is not Puppentheater */}
+                                            {event.calendarName !==
+                                              "Puppentheater" && (
+                                              <Button
+                                                variant="link"
+                                                size="sm"
+                                                className="p-0 travelRole-edit-btn"
+                                                onClick={() =>
+                                                  handleOpenTravelRoleModal(
+                                                    event,
+                                                    currentUser
+                                                  )
+                                                }
+                                              >
+                                                <Pencil
+                                                  className="text-primary"
+                                                  size={16}
+                                                />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
+                                    </td>
+                                  )}
 
                                   <td className="event-status">
                                     {activeTab === "myEvents" && (
@@ -994,43 +1089,59 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                                       {event?.eventExpense?.eventPay}
                                     </div>
                                   )}
-                                  {event.attendees && (
-                                    <div className="event-mobile-travelRole d-flex align-items-center">
-                                      <CarFront className="text-primary me-2" />
-                                      <span>
+                                  {event.attendees &&
+                                    activeTab === "myEvents" && (
+                                      <div className="event-mobile-travelRole d-flex align-items-center">
+                                        <CarFront className="text-primary me-2" />
+
                                         {(() => {
                                           const currentUser =
                                             event.attendees.find(
                                               (a) => a.email === user["E-Mail"]
                                             );
-                                          if (!currentUser?.travelRole)
-                                            return "Keine Reiserolle";
+                                          const travelRole =
+                                            currentUser?.artistTravelRole ||
+                                            currentUser?.travelRole;
+
+                                          if (!travelRole)
+                                            return (
+                                              <span>Keine Reiserolle</span>
+                                            );
+
+                                          const translatedRole =
+                                            travelRole === "driver"
+                                              ? "Fahrer*in"
+                                              : travelRole === "passenger"
+                                              ? "Beifahrer*in"
+                                              : travelRole;
+
                                           return (
-                                            currentUser.travelRole
-                                              .charAt(0)
-                                              .toUpperCase() +
-                                            currentUser.travelRole.slice(1)
+                                            <div className="d-flex align-items-center">
+                                              <span>{translatedRole}</span>
+
+                                              {/* Edit button (hide for Puppentheater) */}
+                                              {event.calendarName !==
+                                                "Puppentheater" && (
+                                                <Button
+                                                  variant="link"
+                                                  size="sm"
+                                                  className="travelRole-edit-btn ms-2 d-flex align-items-center"
+                                                  onClick={() =>
+                                                    handleOpenTravelRoleModal(
+                                                      event,
+                                                      currentUser
+                                                    )
+                                                  }
+                                                >
+                                                  <Pencil className="text-primary me-1" />
+                                                  Bearbeiten
+                                                </Button>
+                                              )}
+                                            </div>
                                           );
                                         })()}
-                                      </span>
-                                      <Button
-                                        variant="link"
-                                        size="sm"
-                                        className="travelRole-edit-btn ms-2 d-flex align-items-center"
-                                        onClick={() =>
-                                          handleOpenTravelRoleModal(
-                                            event,
-                                            event.attendees.find(
-                                              (a) => a.email === user["E-Mail"]
-                                            )
-                                          )
-                                        }
-                                      >
-                                        <Pencil className="text-primary me-1" />
-                                        Bearbeiten
-                                      </Button>
-                                    </div>
-                                  )}
+                                      </div>
+                                    )}
                                 </div>
 
                                 <div className="event-mobile-actions">
@@ -1369,33 +1480,59 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
         keyboard={!isUpdatingTravelRole}
       >
         <Modal.Header closeButton={!isUpdatingTravelRole}>
-          <Modal.Title>Reiserolle ändern</Modal.Title>
+          <Modal.Title>
+            {editingEvent?.calendarName === "Puppentheater"
+              ? "Reiserolle anzeigen"
+              : "Reiserolle ändern"}
+          </Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
           <Form>
             <Form.Group>
-              <Form.Label>Neue Rolle wählen</Form.Label>
+              <Form.Label>
+                {editingEvent?.calendarName === "Puppentheater"
+                  ? "Aktuelle Reiserolle"
+                  : "Neue Rolle wählen"}
+              </Form.Label>
 
               <Form.Select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                disabled={isUpdatingTravelRole}
+                disabled={
+                  isUpdatingTravelRole ||
+                  editingEvent?.calendarName === "Puppentheater"
+                }
               >
                 {availableRoles.map((r) => (
-                  // `disabled` on option will prevent the user from selecting it
                   <option key={r.value} value={r.value} disabled={r.disabled}>
-                    {r.label === "Driver"
+                    {r.label === "Fahrer*in"
                       ? "Fahrer*in"
-                      : r.label === "Passenger"
+                      : r.label === "Beifahrer*in"
                       ? "Beifahrer*in"
-                      : r.label === "None"
+                      : r.label === "none"
                       ? "Keine Reiserolle"
                       : r.label}
                     {r.disabled ? " (nicht auswählbar)" : ""}
                   </option>
                 ))}
               </Form.Select>
+
+              {editingEvent?.calendarName === "Puppentheater" && (
+                <Form.Text className="text-muted">
+                  Für Puppentheater Veranstaltungen kann die Reiserolle nicht
+                  geändert werden.
+                </Form.Text>
+              )}
+
+              {availableRoles.some(
+                (r) => r.disabled && r.value === "passenger"
+              ) && (
+                <Form.Text className="text-warning">
+                  Die Rolle "Beifahrer*in" ist nicht auswählbar, da bereits ein
+                  anderer Teilnehmer diese Rolle hat.
+                </Form.Text>
+              )}
             </Form.Group>
 
             {warning && (
@@ -1422,28 +1559,30 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
             onClick={() => setShowTravelRoleModal(false)}
             disabled={isUpdatingTravelRole}
           >
-            Abbrechen
+            Schließen
           </Button>
 
-          <Button
-            variant="primary"
-            onClick={handleSaveTravelRole}
-            disabled={isUpdatingTravelRole}
-          >
-            {isUpdatingTravelRole ? (
-              <>
-                <Spinner
-                  as="span"
-                  animation="border"
-                  size="sm"
-                  aria-hidden="true"
-                />
-                <span className="ms-2">Wird aktualisiert...</span>
-              </>
-            ) : (
-              "Speichern"
-            )}
-          </Button>
+          {editingEvent?.calendarName !== "Puppentheater" && (
+            <Button
+              variant="primary"
+              onClick={handleSaveTravelRole}
+              disabled={isUpdatingTravelRole}
+            >
+              {isUpdatingTravelRole ? (
+                <>
+                  <Spinner
+                    as="span"
+                    animation="border"
+                    size="sm"
+                    aria-hidden="true"
+                  />
+                  <span className="ms-2">Wird aktualisiert...</span>
+                </>
+              ) : (
+                "Speichern"
+              )}
+            </Button>
+          )}
         </Modal.Footer>
       </Modal>
 
