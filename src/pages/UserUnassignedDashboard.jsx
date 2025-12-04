@@ -815,76 +815,89 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
           <Modal.Title>Beitreten bestätigen</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Bitte wähle deine Rolle, damit die Fahrtkosten korrekt
-          aufgeteilt werden können.
           {/* Conditionally render dropdown if travelExpense exists */}
           {console.log("Event to Join:", eventToJoin)}
           {eventToJoin?.eventExpense?.travelExpense && (
             <div className="mt-3">
-              <Form.Group controlId="roleSelection">
-                <Form.Label>Bitte wählen Sie eine Rolle:</Form.Label>
+              {eventToJoin?.calendarName === "Puppentheater" ? (
+                <>
+                  {/* Auto-select driver silently */}
+                  {(() => {
+                    if (roleSelection !== "driver") {
+                      setRoleSelection("driver");
+                    }
+                  })()}
 
-                {(() => {
-                  const attendees = eventToJoin.attendees || [];
+                  {/* No dropdown shown — just a confirmation message */}
+                  <Alert variant="info" className="mb-0">
+                    Diese Veranstaltung erfordert keine Rollen-Auswahl.
+                  </Alert>
+                </>
+              ) : (
+                <Form.Group controlId="roleSelection">
+                  <Form.Label>Bitte wählen Sie eine Rolle:</Form.Label>
 
-                  const existingDriver = attendees.some(
-                    (a) => a.artistTravelRole === "driver"
-                  );
-                  const existingPassenger = attendees.some(
-                    (a) => a.artistTravelRole === "passenger"
-                  );
+                  {(() => {
+                    const attendees = eventToJoin.attendees || [];
 
-                  const calendarWithTheRequiredRoles = [
-                    {
-                      calendar: "Geigen Mitmachkonzert",
-                      requiredRoles: ["Geiger*in", "Moderator*in"],
-                    },
-                    {
-                      calendar: "Klavier Mitmachkonzert",
-                      requiredRoles: ["Pianist*in", "Moderator*in"],
-                    },
-                    {
-                      calendar: "Laternenumzug mit Musik",
-                      requiredRoles: ["Instrumentalist*in", "Sängerin*in"],
-                    },
-                    {
-                      calendar: "Nikolaus Besuch",
-                      requiredRoles: ["Nikolaus", "Sängerin*in"],
-                    },
-                    {
-                      calendar: "Puppentheater",
-                      requiredRoles: ["Puppenspieler*in"],
-                    },
-                    {
-                      calendar: "Weihnachts Mitmachkonzert",
-                      requiredRoles: ["Detlef", "Sängerin*in"],
-                    },
-                  ];
+                    const existingDriver = attendees.some(
+                      (a) => a.artistTravelRole === "driver"
+                    );
+                    const existingPassenger = attendees.some(
+                      (a) => a.artistTravelRole === "passenger"
+                    );
 
-                  const calendarConfig = calendarWithTheRequiredRoles.find(
-                    (c) => c.calendar === eventToJoin.calendarName
-                  );
+                    const calendarWithTheRequiredRoles = [
+                      {
+                        calendar: "Geigen Mitmachkonzert",
+                        requiredRoles: ["Geiger*in", "Moderator*in"],
+                      },
+                      {
+                        calendar: "Klavier Mitmachkonzert",
+                        requiredRoles: ["Pianist*in", "Moderator*in"],
+                      },
+                      {
+                        calendar: "Laternenumzug mit Musik",
+                        requiredRoles: ["Instrumentalist*in", "Sängerin*in"],
+                      },
+                      {
+                        calendar: "Nikolaus Besuch",
+                        requiredRoles: ["Nikolaus", "Sängerin*in"],
+                      },
+                      {
+                        calendar: "Puppentheater",
+                        requiredRoles: ["Puppenspieler*in"],
+                      },
+                      {
+                        calendar: "Weihnachts Mitmachkonzert",
+                        requiredRoles: ["Detlef", "Sängerin*in"],
+                      },
+                    ];
 
-                  const onlyOneRoleRequired =
-                    calendarConfig && calendarConfig.requiredRoles.length === 1;
+                    const calendarConfig = calendarWithTheRequiredRoles.find(
+                      (c) => c.calendar === eventToJoin.calendarName
+                    );
 
-                  return (
-                    <Form.Select
-                      value={roleSelection || "driver"}
-                      onChange={(e) => setRoleSelection(e.target.value)}
-                      required
-                    >
-                      {/* Fahrer always selectable */}
-                      <option value="driver">Fahrer*in</option>
+                    const onlyOneRoleRequired =
+                      calendarConfig &&
+                      calendarConfig.requiredRoles.length === 1;
 
-                      {/* Show passenger ONLY if no existing passenger */}
-                      {!onlyOneRoleRequired && !existingPassenger && (
-                        <option value="passenger">Beifahrer*in</option>
-                      )}
-                    </Form.Select>
-                  );
-                })()}
-              </Form.Group>
+                    return (
+                      <Form.Select
+                        value={roleSelection || "driver"}
+                        onChange={(e) => setRoleSelection(e.target.value)}
+                        required
+                      >
+                        <option value="driver">Fahrer*in</option>
+
+                        {!onlyOneRoleRequired && !existingPassenger && (
+                          <option value="passenger">Beifahrer*in</option>
+                        )}
+                      </Form.Select>
+                    );
+                  })()}
+                </Form.Group>
+              )}
             </div>
           )}
         </Modal.Body>
