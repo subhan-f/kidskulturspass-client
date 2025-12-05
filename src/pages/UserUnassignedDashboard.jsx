@@ -23,15 +23,20 @@ import EventModal from "../components/EventModal";
 import CustomTooltip from "../components/common/CustomToolTip/CustomToolTip";
 
 const API_URL = "https://user-dashboard-data-754826373806.europe-west1.run.app";
-const USER_API_URL = "https://artist-crud-function-754826373806.europe-west10.run.app";
+const USER_API_URL =
+  "https://artist-crud-function-754826373806.europe-west10.run.app";
 
 const CALENDAR_MAPPING = {
   "Klavier Mitmachkonzert": "info@kidskulturspass.de",
-  "Geigen Mitmachkonzert": "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
-  "Weihnachts Mitmachkonzert": "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
+  "Geigen Mitmachkonzert":
+    "7111s8p6jb3oau6t1ufjlloido@group.calendar.google.com",
+  "Weihnachts Mitmachkonzert":
+    "70fsor795u3sgq4qenes0akpds@group.calendar.google.com",
   "Nikolaus Besuch": "onogqrrdnif7emfdj84etq7nas@group.calendar.google.com",
-  "Laternenumzug mit Musik": "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
-  Puppentheater: "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
+  "Laternenumzug mit Musik":
+    "81a15ca9db886aadd3db93e6121dee9c607aeb390d5e6e353e6ee6a3a2d87f7f@group.calendar.google.com",
+  Puppentheater:
+    "3798c15a6afb9d16f832d4da08afdf46c59fb95ded9a26911b0df49a7613d6fc@group.calendar.google.com",
 };
 
 const CALENDAR_ROLES = {
@@ -48,14 +53,16 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
   const [user, setUser] = useState(null);
   const [categorizedEvents, setCategorizedEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Daten werden geladen..."
+  );
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
   const [success, setSuccess] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
   const [isJoining, setIsJoining] = useState(false);
-  
+
   // Modal States
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
@@ -64,9 +71,9 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
   const [roleSelection, setRoleSelection] = useState("");
   const [roleAvailability, setRoleAvailability] = useState({
     driver: { available: false, reason: "" },
-    passenger: { available: false, reason: "" }
+    passenger: { available: false, reason: "" },
   });
-  
+
   // Tooltip State
   const [tooltipShow, setTooltipShow] = useState({});
   const [tooltipTargets, setTooltipTargets] = useState({});
@@ -74,19 +81,23 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
   // Utility Functions
   const sortEventsByDate = (eventsArray) => {
     return [...eventsArray].sort((a, b) => {
-      const dateA = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : 0;
-      const dateB = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : 0;
+      const dateA = a.start?.dateTime
+        ? new Date(a.start.dateTime).getTime()
+        : 0;
+      const dateB = b.start?.dateTime
+        ? new Date(b.start.dateTime).getTime()
+        : 0;
       return dateA - dateB;
     });
   };
 
   const handleTooltipShow = (key, target) => {
-    setTooltipShow(prev => ({ ...prev, [key]: true }));
-    setTooltipTargets(prev => ({ ...prev, [key]: target }));
+    setTooltipShow((prev) => ({ ...prev, [key]: true }));
+    setTooltipTargets((prev) => ({ ...prev, [key]: target }));
   };
 
   const handleTooltipHide = (key) => {
-    setTooltipShow(prev => ({ ...prev, [key]: false }));
+    setTooltipShow((prev) => ({ ...prev, [key]: false }));
   };
 
   const clearMessages = () => {
@@ -101,113 +112,126 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
       // No attendees yet - both roles available for non-Puppentheater events
       const isPuppentheater = event?.calendarName === "Puppentheater";
       return {
-        driver: { 
-          available: !isPuppentheater, 
-          reason: isPuppentheater 
-            ? "Für Puppentheater ist nur die Rolle 'Fahrer*in' verfügbar und automatisch zugewiesen." 
-            : "Keine Künstler in dieser Veranstaltung. Beide Rollen verfügbar." 
+        driver: {
+          available: !isPuppentheater,
+          reason: isPuppentheater
+            ? "Für Puppentheater ist nur die Rolle 'Fahrer*in' verfügbar und automatisch zugewiesen."
+            : "Keine Künstler in dieser Veranstaltung. Beide Rollen verfügbar.",
         },
-        passenger: { 
-          available: !isPuppentheater, 
-          reason: isPuppentheater 
-            ? "Für Puppentheater ist nur die Rolle 'Fahrer*in' verfügbar." 
-            : "Keine Künstler in dieser Veranstaltung. Beide Rollen verfügbar." 
-        }
+        passenger: {
+          available: !isPuppentheater,
+          reason: isPuppentheater
+            ? "Für Puppentheater ist nur die Rolle 'Fahrer*in' verfügbar."
+            : "Keine Künstler in dieser Veranstaltung. Beide Rollen verfügbar.",
+        },
       };
     }
 
     const attendees = event.attendees || [];
-    const existingDriver = attendees.find(a => a.artistTravelRole === "driver");
-    const existingPassenger = attendees.find(a => a.artistTravelRole === "passenger");
-    
+    const existingDriver = attendees.find(
+      (a) => a.artistTravelRole === "driver"
+    );
+    const existingPassenger = attendees.find(
+      (a) => a.artistTravelRole === "passenger"
+    );
+
     // For non-Puppentheater events
     if (event.calendarName !== "Puppentheater") {
       if (existingDriver && !existingPassenger) {
         // Driver exists, passenger available
         return {
-          driver: { 
-            available: true, 
-            reason: existingDriver.displayName 
-              ? `Fahrer*in-Rolle verfügbar, da ${existingDriver.displayName} bereits als Fahrer*in angemeldet ist.` 
-              : "Fahrer*in-Rolle verfügbar." 
+          driver: {
+            available: true,
+            reason: existingDriver.displayName
+              ? `Fahrer*in-Rolle verfügbar, da ${existingDriver.displayName} bereits als Fahrer*in angemeldet ist.`
+              : "Fahrer*in-Rolle verfügbar.",
           },
-          passenger: { 
-            available: true, 
-            reason: existingDriver.displayName 
-              ? `Beifahrer*in-Rolle verfügbar, da ${existingDriver.displayName} bereits als Fahrer*in fungiert.` 
-              : "Beifahrer*in-Rolle verfügbar." 
-          }
+          passenger: {
+            available: true,
+            reason: existingDriver.displayName
+              ? `Beifahrer*in-Rolle verfügbar, da ${existingDriver.displayName} bereits als Fahrer*in fungiert.`
+              : "Beifahrer*in-Rolle verfügbar.",
+          },
         };
       } else if (existingPassenger && !existingDriver) {
         // Passenger exists, only driver available
         return {
-          driver: { 
-            available: true, 
-            reason: existingPassenger.displayName 
-              ? `Fahrer*in-Rolle verfügbar, da ${existingPassenger.displayName} bereits als Beifahrer*in angemeldet ist.` 
-              : "Fahrer*in-Rolle verfügbar." 
+          driver: {
+            available: true,
+            reason: existingPassenger.displayName
+              ? `Fahrer*in-Rolle verfügbar, da ${existingPassenger.displayName} bereits als Beifahrer*in angemeldet ist.`
+              : "Fahrer*in-Rolle verfügbar.",
           },
-          passenger: { 
-            available: false, 
-            reason: existingPassenger.displayName 
-              ? `Beifahrer*in-Rolle nicht verfügbar, da ${existingPassenger.displayName} bereits als Beifahrer*in angemeldet ist.` 
-              : "Beifahrer*in-Rolle bereits besetzt." 
-          }
+          passenger: {
+            available: false,
+            reason: existingPassenger.displayName
+              ? `Beifahrer*in-Rolle nicht verfügbar, da ${existingPassenger.displayName} bereits als Beifahrer*in angemeldet ist.`
+              : "Beifahrer*in-Rolle bereits besetzt.",
+          },
         };
       } else if (existingDriver && existingPassenger) {
         // Both roles taken
         return {
-          driver: { 
-            available: false, 
-            reason: existingDriver.displayName && existingPassenger.displayName
-              ? `Fahrer*in-Rolle nicht verfügbar, da ${existingDriver.displayName} bereits als Fahrer*in und ${existingPassenger.displayName} als Beifahrer*in angemeldet sind.` 
-              : "Fahrer*in-Rolle bereits besetzt." 
+          driver: {
+            available: false,
+            reason:
+              existingDriver.displayName && existingPassenger.displayName
+                ? `Fahrer*in-Rolle nicht verfügbar, da ${existingDriver.displayName} bereits als Fahrer*in und ${existingPassenger.displayName} als Beifahrer*in angemeldet sind.`
+                : "Fahrer*in-Rolle bereits besetzt.",
           },
-          passenger: { 
-            available: false, 
-            reason: existingDriver.displayName && existingPassenger.displayName
-              ? `Beifahrer*in-Rolle nicht verfügbar, da ${existingDriver.displayName} bereits als Fahrer*in und ${existingPassenger.displayName} als Beifahrer*in angemeldet sind.` 
-              : "Beifahrer*in-Rolle bereits besetzt." 
-          }
+          passenger: {
+            available: false,
+            reason:
+              existingDriver.displayName && existingPassenger.displayName
+                ? `Beifahrer*in-Rolle nicht verfügbar, da ${existingDriver.displayName} bereits als Fahrer*in und ${existingPassenger.displayName} als Beifahrer*in angemeldet sind.`
+                : "Beifahrer*in-Rolle bereits besetzt.",
+          },
         };
       } else {
         // No travel roles assigned yet, but there might be attendees without travel roles
-        const hasAttendeesWithoutTravelRole = attendees.some(a => !a.artistTravelRole);
+        const hasAttendeesWithoutTravelRole = attendees.some(
+          (a) => !a.artistTravelRole
+        );
         if (hasAttendeesWithoutTravelRole) {
           return {
-            driver: { 
-              available: true, 
-              reason: "Fahrer*in-Rolle verfügbar, da vorhandene Künstler keine Reiserolle haben." 
+            driver: {
+              available: true,
+              reason:
+                "Fahrer*in-Rolle verfügbar, da vorhandene Künstler keine Reiserolle haben.",
             },
-            passenger: { 
-              available: true, 
-              reason: "Beifahrer*in-Rolle verfügbar, da vorhandene Künstler keine Reiserolle haben." 
-            }
+            passenger: {
+              available: true,
+              reason:
+                "Beifahrer*in-Rolle verfügbar, da vorhandene Künstler keine Reiserolle haben.",
+            },
           };
         }
         // No attendees with travel roles
         return {
-          driver: { 
-            available: true, 
-            reason: "Keine Künstler mit Reiserollen in dieser Veranstaltung. Beide Rollen verfügbar." 
+          driver: {
+            available: true,
+            reason:
+              "Keine Künstler mit Reiserollen in dieser Veranstaltung. Beide Rollen verfügbar.",
           },
-          passenger: { 
-            available: true, 
-            reason: "Keine Künstler mit Reiserollen in dieser Veranstaltung. Beide Rollen verfügbar." 
-          }
+          passenger: {
+            available: true,
+            reason:
+              "Keine Künstler mit Reiserollen in dieser Veranstaltung. Beide Rollen verfügbar.",
+          },
         };
       }
     } else {
       // Puppentheater - only driver available
       return {
-        driver: { 
-          available: true, 
-          reason: "Für Puppentheater ist nur die Rolle 'Fahrer*in' verfügbar und automatisch zugewiesen." 
+        driver: {
+          available: true,
+          reason:
+            "Für Puppentheater ist nur die Rolle 'Fahrer*in' verfügbar und automatisch zugewiesen.",
         },
-        passenger: { 
-          available: false, 
-          reason: "Für Puppentheater ist nur die Rolle 'Fahrer*in' verfügbar." 
-        }
+        passenger: {
+          available: false,
+          reason: "Für Puppentheater ist nur die Rolle 'Fahrer*in' verfügbar.",
+        },
       };
     }
   }, []);
@@ -221,7 +245,9 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
       const res = await authApi.getMe();
       const currentUser = res.data.user;
-      const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
+      const userData = await axios.get(
+        `${USER_API_URL}/?id=${currentUser._id}`
+      );
       setUser(userData.data);
 
       const joinedCalendars = userData.data.joinedCalendars || [];
@@ -236,11 +262,13 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
       // Sort events for each calendar by date
       const sortedCategorizedEvents = {};
-      Object.keys(unassignedRes.data.categorizedEvents || {}).forEach((calendar) => {
-        sortedCategorizedEvents[calendar] = sortEventsByDate(
-          unassignedRes.data.categorizedEvents[calendar]
-        );
-      });
+      Object.keys(unassignedRes.data.categorizedEvents || {}).forEach(
+        (calendar) => {
+          sortedCategorizedEvents[calendar] = sortEventsByDate(
+            unassignedRes.data.categorizedEvents[calendar]
+          );
+        }
+      );
 
       setCategorizedEvents(sortedCategorizedEvents);
 
@@ -253,7 +281,9 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
       setLoading(false);
     } catch (err) {
-      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      setError(
+        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
+      );
       setLoading(false);
     }
   };
@@ -264,9 +294,9 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
   // Event Handlers
   const toggleCalendarExpand = useCallback((calendar) => {
-    setExpandedCalendars(prev => ({
+    setExpandedCalendars((prev) => ({
       ...prev,
-      [calendar]: !prev[calendar]
+      [calendar]: !prev[calendar],
     }));
   }, []);
 
@@ -275,31 +305,35 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     setShowEventModal(true);
   }, []);
 
-  const handleJoinClick = useCallback((event) => {
-    setEventToJoin(event);
-    
-    // Calculate role availability for this event
-    const availability = calculateRoleAvailability(event);
-    setRoleAvailability(availability);
-    
-    // Set default role selection based on availability
-    if (availability.driver.available) {
-      setRoleSelection("driver");
-    } else if (availability.passenger.available) {
-      setRoleSelection("passenger");
-    } else {
-      setRoleSelection("");
-    }
-    
-    setShowJoinConfirmModal(true);
-  }, [calculateRoleAvailability]);
+  const handleJoinClick = useCallback(
+    (event) => {
+      setEventToJoin(event);
+
+      // Calculate role availability for this event
+      const availability = calculateRoleAvailability(event);
+      setRoleAvailability(availability);
+
+      // Set default role selection based on availability
+      if (availability.driver.available) {
+        setRoleSelection("driver");
+      } else if (availability.passenger.available) {
+        setRoleSelection("passenger");
+      } else {
+        setRoleSelection("");
+      }
+
+      setShowJoinConfirmModal(true);
+    },
+    [calculateRoleAvailability]
+  );
 
   const handleJoinConfirm = useCallback(async () => {
     if (!eventToJoin || isJoining) return;
 
     // For ALL events, check if a role is selected when roles are available
-    const hasAvailableRole = roleAvailability.driver.available || roleAvailability.passenger.available;
-    
+    const hasAvailableRole =
+      roleAvailability.driver.available || roleAvailability.passenger.available;
+
     if (hasAvailableRole && !roleSelection) {
       setWarning("Bitte wählen Sie eine Rolle aus.");
       return;
@@ -309,7 +343,11 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     if (roleSelection) {
       const isRoleAvailable = roleAvailability[roleSelection]?.available;
       if (!isRoleAvailable) {
-        setWarning(`Die ausgewählte Rolle (${roleSelection === "driver" ? "Fahrer*in" : "Beifahrer*in"}) ist nicht verfügbar.`);
+        setWarning(
+          `Die ausgewählte Rolle (${
+            roleSelection === "driver" ? "Fahrer*in" : "Beifahrer*in"
+          }) ist nicht verfügbar.`
+        );
         return;
       }
     }
@@ -338,14 +376,16 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
       const response = await axios.post(`${API_URL}/add-artist`, requestData);
 
       if (response.data.success) {
-        await new Promise(resolve => setTimeout(resolve, 20000)); // Wait for processing
+        await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for processing
         setSuccess("Artist erfolgreich zur Veranstaltung hinzugefügt!");
         await fetchData();
         setShowJoinConfirmModal(false);
         setEventToJoin(null);
         setRoleSelection("");
       } else {
-        setWarning(response.data.message || "Fehler beim Hinzufügen des Artists");
+        setWarning(
+          response.data.message || "Fehler beim Hinzufügen des Artists"
+        );
       }
     } catch (error) {
       setError("Fehler beim Hinzufügen des Artists");
@@ -370,9 +410,15 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     Object.keys(categorizedEvents).forEach((calendar) => {
       filtered[calendar] = (categorizedEvents[calendar] || []).filter(
         (event) =>
-          (event.summary || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.calendar || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (event.location || "").toLowerCase().includes(searchTerm.toLowerCase())
+          (event.summary || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (event.calendar || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (event.location || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     });
     return filtered;
@@ -398,20 +444,30 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
     // Always show role selection for ALL events
     const calendarName = eventToJoin?.calendarName;
     const hasTravelExpense = eventToJoin?.eventExpense?.travelExpense || false;
-    
+
     // For Puppentheater, show fixed message
     if (calendarName === "Puppentheater") {
       return (
         <Form.Group>
           <Form.Label>Rollen-Verfügbarkeit für Puppentheater:</Form.Label>
+
           <div className="p-3 mb-3 bg-light border rounded">
-            <p className="mb-1"><strong>Fahrer*in:</strong> Verfügbar (automatisch zugewiesen)</p>
-            <p className="mb-1"><strong>Beifahrer*in:</strong> Nicht verfügbar</p>
             {!hasTravelExpense && (
-              <p className="mb-1"><strong>Reisekosten:</strong> Für diese Veranstaltung sind keine Reisekosten vorgesehen.</p>
+              <Alert variant="info" className="mb-3">
+                <strong>Hinweis:</strong> Für diese Veranstaltung sind keine
+                Reisekosten vorgesehen. Die Rollenauswahl dient lediglich zur
+                Organisation der Anreise.
+              </Alert>
             )}
+            <p className="mb-1">
+              <strong>Fahrer*in:</strong> Verfügbar (automatisch zugewiesen)
+            </p>
+            <p className="mb-1">
+              <strong>Beifahrer*in:</strong> Nicht verfügbar
+            </p>
             <small className="text-muted">
-              Für den Puppentheater-Kalender ist nur die Rolle "Fahrer*in" verfügbar und wird automatisch zugewiesen.
+              Für den Puppentheater-Kalender ist nur die Rolle "Fahrer*in"
+              verfügbar und wird automatisch zugewiesen.
             </small>
           </div>
           <Form.Label>Ihre Rolle:</Form.Label>
@@ -424,8 +480,12 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
     // Get existing attendees with travel roles for display
     const attendees = eventToJoin?.attendees || [];
-    const existingDriver = attendees.find(a => a.artistTravelRole === "driver");
-    const existingPassenger = attendees.find(a => a.artistTravelRole === "passenger");
+    const existingDriver = attendees.find(
+      (a) => a.artistTravelRole === "driver"
+    );
+    const existingPassenger = attendees.find(
+      (a) => a.artistTravelRole === "passenger"
+    );
 
     // Generate options based on availability
     const options = [];
@@ -442,11 +502,12 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
         <div className="p-3 mb-3 bg-light border rounded">
           {!hasTravelExpense && (
             <Alert variant="info" className="mb-3">
-              <strong>Hinweis:</strong> Für diese Veranstaltung sind keine Reisekosten vorgesehen. 
-              Die Rollenauswahl dient lediglich zur Organisation der Anreise.
+              <strong>Hinweis:</strong> Für diese Veranstaltung sind keine
+              Reisekosten vorgesehen. Die Rollenauswahl dient lediglich zur
+              Organisation der Anreise.
             </Alert>
           )}
-          
+
           <div className="mb-2">
             <strong>Aktuelle Künstler mit Reiserollen:</strong>
             {attendees.length === 0 ? (
@@ -455,53 +516,82 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
               <ul className="mb-1 ps-3">
                 {existingDriver && (
                   <li>
-                    <strong>{existingDriver.name || "Unbekannter Künstler"}</strong> 
+                    <strong>
+                      {existingDriver.name || "Unbekannter Künstler"}
+                    </strong>
                     - Rolle: <Badge bg="primary">Fahrer*in</Badge>
                   </li>
                 )}
                 {existingPassenger && (
                   <li>
-                    <strong>{existingPassenger.name || "Unbekannter Künstler"}</strong> 
+                    <strong>
+                      {existingPassenger.name || "Unbekannter Künstler"}
+                    </strong>
                     - Rolle: <Badge bg="secondary">Beifahrer*in</Badge>
                   </li>
                 )}
-                {attendees.filter(a => !a.artistTravelRole).map((attendee, idx) => (
-                  <li key={idx}>
-                    <strong>{attendee.displayName || "Unbekannter Künstler"}</strong> 
-                    - Rolle: <Badge bg="light" text="dark">Keine Reiserolle</Badge>
-                  </li>
-                ))}
+                {attendees
+                  .filter((a) => !a.artistTravelRole)
+                  .map((attendee, idx) => (
+                    <li key={idx}>
+                      <strong>
+                        {attendee.displayName || "Unbekannter Künstler"}
+                      </strong>
+                      - Rolle:{" "}
+                      <Badge bg="light" text="dark">
+                        Keine Reiserolle
+                      </Badge>
+                    </li>
+                  ))}
               </ul>
             )}
           </div>
-          
+
           <div className="mb-2">
             <strong>Verfügbare Rollen:</strong>
             <ul className="mb-1 ps-3">
               <li>
-                <strong>Fahrer*in:</strong> 
-                <Badge bg={roleAvailability.driver.available ? "success" : "danger"} className="ms-2">
-                  {roleAvailability.driver.available ? "Verfügbar" : "Nicht verfügbar"}
+                <strong>Fahrer*in:</strong>
+                <Badge
+                  bg={roleAvailability.driver.available ? "success" : "danger"}
+                  className="ms-2"
+                >
+                  {roleAvailability.driver.available
+                    ? "Verfügbar"
+                    : "Nicht verfügbar"}
                 </Badge>
-                <div className="small text-muted">{roleAvailability.driver.reason}</div>
+                <div className="small text-muted">
+                  {roleAvailability.driver.reason}
+                </div>
               </li>
               <li>
-                <strong>Beifahrer*in:</strong> 
-                <Badge bg={roleAvailability.passenger.available ? "success" : "danger"} className="ms-2">
-                  {roleAvailability.passenger.available ? "Verfügbar" : "Nicht verfügbar"}
+                <strong>Beifahrer*in:</strong>
+                <Badge
+                  bg={
+                    roleAvailability.passenger.available ? "success" : "danger"
+                  }
+                  className="ms-2"
+                >
+                  {roleAvailability.passenger.available
+                    ? "Verfügbar"
+                    : "Nicht verfügbar"}
                 </Badge>
-                <div className="small text-muted">{roleAvailability.passenger.reason}</div>
+                <div className="small text-muted">
+                  {roleAvailability.passenger.reason}
+                </div>
               </li>
             </ul>
           </div>
-          
-          {!roleAvailability.driver.available && !roleAvailability.passenger.available && (
-            <Alert variant="warning" className="mb-0">
-              <strong>Hinweis:</strong> Alle Reiserollen sind bereits besetzt. Sie können dieser Veranstaltung nur ohne Reiserolle beitreten.
-            </Alert>
-          )}
+
+          {!roleAvailability.driver.available &&
+            !roleAvailability.passenger.available && (
+              <Alert variant="warning" className="mb-0">
+                <strong>Hinweis:</strong> Alle Reiserollen sind bereits besetzt.
+                Sie können dieser Veranstaltung nur ohne Reiserolle beitreten.
+              </Alert>
+            )}
         </div>
-        
+
         {options.length > 0 ? (
           <>
             <Form.Label>Bitte wählen Sie eine Rolle:</Form.Label>
@@ -511,7 +601,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
               required
             >
               <option value="">-- Bitte auswählen --</option>
-              {options.map(option => (
+              {options.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -523,7 +613,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
           </>
         ) : (
           <Alert variant="info">
-            <strong>Hinweis:</strong> Alle Reiserollen sind bereits besetzt. Sie werden dieser Veranstaltung ohne spezifische Reiserolle beitreten.
+            <strong>Hinweis:</strong> Alle Reiserollen sind bereits besetzt. Sie
+            werden dieser Veranstaltung ohne spezifische Reiserolle beitreten.
           </Alert>
         )}
       </Form.Group>
@@ -538,7 +629,9 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
       <tr key={index} className="event-row">
         <td className="event-details">
           <div className="event-title">{event.summary}</div>
-          <div className="event-location">{event.location || "Nicht angegeben"}</div>
+          <div className="event-location">
+            {event.location || "Nicht angegeben"}
+          </div>
         </td>
         <td className="event-time date-time-column">
           {event?.start?.dateTime ? (
@@ -563,14 +656,12 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
             <span>Datum unbekannt</span>
           )}
         </td>
-        <td className="event-cost">
-          {event?.eventExpense?.eventPay || "0"} €
-        </td>
+        <td className="event-cost">{event?.eventExpense?.eventPay || "0"} €</td>
         <td className="event-actions actions-column">
           <Button
             ref={(el) => {
               if (el && !tooltipTargets[detailKey]) {
-                setTooltipTargets(prev => ({ ...prev, [detailKey]: el }));
+                setTooltipTargets((prev) => ({ ...prev, [detailKey]: el }));
               }
             }}
             variant="outline-primary"
@@ -594,7 +685,7 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
           <Button
             ref={(el) => {
               if (el && !tooltipTargets[joinKey]) {
-                setTooltipTargets(prev => ({ ...prev, [joinKey]: el }));
+                setTooltipTargets((prev) => ({ ...prev, [joinKey]: el }));
               }
             }}
             variant="success"
@@ -702,7 +793,10 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                 Willkommen, {user?.Name || "Benutzer"}!
               </h1>
               {user?.joinedCalendars?.length > 0 && (
-                <div style={{ margin: "15px 0px" }} className="joined-calendars-badges">
+                <div
+                  style={{ margin: "15px 0px" }}
+                  className="joined-calendars-badges"
+                >
                   Deine beigetretenen Kalender:
                   {user.joinedCalendars.map((calendar, index) => (
                     <Badge
@@ -729,17 +823,32 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
 
         {/* Messages */}
         {warning && (
-          <Alert variant="warning" className="dashboard-alert" onClose={() => setWarning(null)} dismissible>
+          <Alert
+            variant="warning"
+            className="dashboard-alert"
+            onClose={() => setWarning(null)}
+            dismissible
+          >
             {warning}
           </Alert>
         )}
         {success && (
-          <Alert variant="success" className="dashboard-alert" onClose={() => setSuccess(null)} dismissible>
+          <Alert
+            variant="success"
+            className="dashboard-alert"
+            onClose={() => setSuccess(null)}
+            dismissible
+          >
             {success}
           </Alert>
         )}
         {error && (
-          <Alert variant="danger" className="dashboard-alert" onClose={() => setError(null)} dismissible>
+          <Alert
+            variant="danger"
+            className="dashboard-alert"
+            onClose={() => setError(null)}
+            dismissible
+          >
             {error}
           </Alert>
         )}
@@ -767,7 +876,9 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
               return (
                 <div
                   key={calendar}
-                  className={`event-calendar-card ${isFilteredOut ? "filtered-out" : ""}`}
+                  className={`event-calendar-card ${
+                    isFilteredOut ? "filtered-out" : ""
+                  }`}
                 >
                   <div
                     className="calendar-header"
@@ -786,7 +897,9 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                       </div>
                       <span className="events-count">
                         <span className="count-number">
-                          {hasEvents ? filteredEventsByCalendar[calendar].length : 0}
+                          {hasEvents
+                            ? filteredEventsByCalendar[calendar].length
+                            : 0}
                         </span>
                         <span className="count-label">
                           {hasEvents
@@ -807,29 +920,36 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
                             <Table className="events-table six-columns">
                               <thead>
                                 <tr>
-                                  <th style={{ minWidth: "200px" }}>Veranstaltung</th>
-                                  <th style={{ minWidth: "120px" }}>Datum/Uhrzeit</th>
+                                  <th style={{ minWidth: "200px" }}>
+                                    Veranstaltung
+                                  </th>
+                                  <th style={{ minWidth: "120px" }}>
+                                    Datum/Uhrzeit
+                                  </th>
                                   <th style={{ minWidth: "100px" }}>Betrag</th>
                                   <th className="actions-column">Aktion</th>
                                   <th className="join-column">Beitreten</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {filteredEventsByCalendar[calendar].map((event, index) =>
-                                  renderEventRow(event, calendar, index)
+                                {filteredEventsByCalendar[calendar].map(
+                                  (event, index) =>
+                                    renderEventRow(event, calendar, index)
                                 )}
                               </tbody>
                             </Table>
                           </div>
                           <div className="event-cards-container d-md-none">
-                            {filteredEventsByCalendar[calendar].map((event, index) =>
-                              renderMobileEventCard(event, calendar, index)
+                            {filteredEventsByCalendar[calendar].map(
+                              (event, index) =>
+                                renderMobileEventCard(event, calendar, index)
                             )}
                           </div>
                         </>
                       ) : (
                         <div className="no-events-message">
-                          Keine nicht zugewiesenen Veranstaltungen in diesem Kalender.
+                          Keine nicht zugewiesenen Veranstaltungen in diesem
+                          Kalender.
                         </div>
                       )}
                     </div>
@@ -863,7 +983,8 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
           </Modal.Header>
           <Modal.Body>
             <p className="mb-4">
-              Möchten Sie der Veranstaltung "<strong>{eventToJoin?.summary}</strong>" wirklich beitreten?
+              Möchten Sie der Veranstaltung "
+              <strong>{eventToJoin?.summary}</strong>" wirklich beitreten?
             </p>
             {renderRoleSelection()}
           </Modal.Body>
@@ -878,7 +999,12 @@ function UserUnassignedDashboard({ setAuth, handleLogout }) {
             <Button
               variant="success"
               onClick={handleJoinConfirm}
-              disabled={isJoining || ((roleAvailability.driver.available || roleAvailability.passenger.available) && !roleSelection)}
+              disabled={
+                isJoining ||
+                ((roleAvailability.driver.available ||
+                  roleAvailability.passenger.available) &&
+                  !roleSelection)
+              }
             >
               {isJoining ? (
                 <>
