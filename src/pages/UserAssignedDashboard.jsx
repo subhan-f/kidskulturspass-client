@@ -6,140 +6,489 @@ import {
   Alert,
   Badge,
   Spinner,
-  // Tooltip,
-  // Overlay,
   Form,
 } from "react-bootstrap";
 import {
-  // ArrowClockwise,
   Calendar3,
   ChevronDown,
   ChevronUp,
-  // PersonCircle,
-  // PersonDash,
   Receipt,
   Pencil,
   DashCircle,
   CarFront,
   InfoCircle,
 } from "react-bootstrap-icons";
-
 import { DashboardLayout } from "../components/layout";
 import { SearchBox, DashboardLoader } from "../components/common";
-
 import { authApi } from "../utils/api";
 import axios from "axios";
 import EventModal from "../components/EventModal";
-import ReactDOM from "react-dom";
-
+import CustomTooltip from "../components/common/CustomToolTip/CustomToolTip";
 import {
   CALENDAR_MAPPING,
   API_URL,
   USER_API_URL,
 } from "../constants/app.contants";
 
-// Custom Tooltip Component that renders outside the main DOM tree
-const CustomTooltip = ({
-  show,
-  target,
-  children,
-  placement = "top",
-  variant = "dark",
-}) => {
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const tooltipRef = React.useRef();
-
-  useEffect(() => {
-    if (show && target) {
-      const rect = target.getBoundingClientRect();
-      const tooltipHeight = tooltipRef.current
-        ? tooltipRef.current.offsetHeight
-        : 0;
-
-      let top = 0;
-      let left = rect.left + rect.width / 2;
-
-      if (placement === "top") {
-        top = rect.top - tooltipHeight - 8;
-      } else if (placement === "bottom") {
-        top = rect.bottom + 8;
-      }
-
-      setPosition({ top, left });
-    }
-  }, [show, target, placement]);
-
-  if (!show) return null;
-
-  return ReactDOM.createPortal(
-    <div
-      ref={tooltipRef}
-      className={`custom-tooltip custom-tooltip-${variant}`}
-      style={{
-        position: "fixed",
-        top: position.top,
-        left: position.left,
-        transform: "translateX(-50%)",
-        zIndex: 9999,
-      }}
-    >
-      {children}
-      <div className="custom-tooltip-arrow"></div>
-    </div>,
-    document.body
-  );
+// Calendar role configuration
+const CALENDAR_ROLES = {
+  "Geigen Mitmachkonzert": { roles: ["Geiger*in", "Moderator*in"] },
+  "Klavier Mitmachkonzert": { roles: ["Pianist*in", "Moderator*in"] },
+  "Laternenumzug mit Musik": { roles: ["Instrumentalist*in", "Sängerin*in"] },
+  "Nikolaus Besuch": { roles: ["Nikolaus", "Sängerin*in"] },
+  Puppentheater: { roles: ["Puppenspieler*in"], singleRole: true },
+  "Weihnachts Mitmachkonzert": { roles: ["Detlef", "Sängerin*in"] },
 };
 
 function UserAssignedDashboard({ setAuth, handleLogout }) {
+  // State Management
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState({});
+  const [completedEvents, setCompletedEvents] = useState({});
+  const [paidEvents, setPaidEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState(
-    "Daten werden geladen..."
-  );
+  const [loadingMessage, setLoadingMessage] = useState("Daten werden geladen...");
   const [error, setError] = useState(null);
   const [warning, setWarning] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCalendars, setExpandedCalendars] = useState({});
-  const [searchFocused, setSearchFocused] = useState(false);
+  const [activeTab, setActiveTab] = useState("myEvents");
+  
+  // Modal States
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
   const [eventToLeave, setEventToLeave] = useState(null);
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
-  const [success, setSuccess] = useState(null);
-  const [activeTab, setActiveTab] = useState("myEvents");
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
-
-  // Tooltip state
-  const [tooltipShow, setTooltipShow] = useState({});
-  const [tooltipTargets, setTooltipTargets] = useState({});
-
   const [showTravelRoleModal, setShowTravelRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
   const [availableRoles, setAvailableRoles] = useState([]);
   const [editingEvent, setEditingEvent] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
-  // Add this state near the other state declarations
   const [isUpdatingTravelRole, setIsUpdatingTravelRole] = useState(false);
+  const [roleNotes, setRoleNotes] = useState("");
+  const [otherAttendees, setOtherAttendees] = useState([]);
+  
+  // Tooltip State
+  const [tooltipShow, setTooltipShow] = useState({});
+  const [tooltipTargets, setTooltipTargets] = useState({});
 
-  // Sort events by date (most recent first)
+  // Utility Functions
   const sortEventsByDate = (eventsArray) => {
     return [...eventsArray].sort((a, b) => {
-      const dateA = a.start?.dateTime
-        ? new Date(a.start.dateTime).getTime()
-        : 0;
-      const dateB = b.start?.dateTime
-        ? new Date(b.start.dateTime).getTime()
-        : 0;
+      const dateA = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : 0;
+      const dateB = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : 0;
       return dateA - dateB;
     });
   };
 
+  const generateDummyEvents = useCallback((eventsData, type) => {
+    const dummyEvents = JSON.parse(JSON.stringify(eventsData));
+
+    Object.keys(dummyEvents).forEach((calendar) => {
+      dummyEvents[calendar] = dummyEvents[calendar].map((event) => {
+        if (type === "completed") {
+          event.status = "abgeschlossen";
+          event.totalCost = `€${(Math.random() * 500 + 100).toFixed(2)}`;
+        } else if (type === "paid") {
+          event.status = "bezahlt";
+          event.totalCost = `€${(Math.random() * 500 + 100).toFixed(2)}`;
+          event.paymentDate = new Date(
+            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+          ).toLocaleDateString("de-DE");
+          event.receiptId = `RCPT-${Math.floor(Math.random() * 10000)
+            .toString()
+            .padStart(4, "0")}`;
+        }
+        return event;
+      });
+    });
+
+    return dummyEvents;
+  }, []);
+
+  const determineAvailableRoles = (event, user) => {
+    const attendees = event?.attendees || [];
+    const currentUser = attendees.find((a) => a.email === user.email);
+    const currentRole = (
+      currentUser?.artistTravelRole ||
+      currentUser?.travelRole ||
+      ""
+    ).toLowerCase();
+    const calendarName = event.calendarName;
+    
+    // Collect other attendees info
+    const otherAttendeesList = attendees
+      .filter((a) => a.email !== user.email)
+      .map(a => ({
+        name: a.name || "Unbekannter Künstler",
+        email: a.email,
+        role: a.role || "Unbekannte Rolle",
+        travelRole: a.artistTravelRole || a.travelRole || "Keine Reiserolle"
+      }));
+    
+    setOtherAttendees(otherAttendeesList);
+
+    // Puppentheater - fixed role
+    if (calendarName === "Puppentheater") {
+      const notes = "Für Puppentheater Veranstaltungen ist nur die Rolle 'Fahrer*in' verfügbar und kann nicht geändert werden.";
+      setRoleNotes(notes);
+      return [
+        {
+          value: currentRole || "none",
+          label:
+            currentRole === "driver"
+              ? "Fahrer*in"
+              : currentRole === "passenger"
+              ? "Beifahrer*in"
+              : "Keine Reiserolle",
+          disabled: true,
+          reason: "Puppentheater hat feste Reiserollen"
+        },
+      ];
+    }
+
+    const calendarConfig = CALENDAR_ROLES[calendarName];
+    const requiredRoles = calendarConfig?.roles || [];
+
+    const validArtists = attendees.filter((a) =>
+      requiredRoles.includes(a.role)
+    );
+
+    const otherArtists = validArtists.filter((a) => a.email !== user.email);
+    const otherArtist = otherArtists[0];
+
+    // Case 1: No other valid artists (single artist event)
+    if (!otherArtist) {
+      const notes = "Sie sind der einzige Künstler in dieser Veranstaltung. Beide Rollen (Fahrer*in und Beifahrer*in) sind verfügbar.";
+      setRoleNotes(notes);
+      return [
+        {
+          value: "driver",
+          label: "Fahrer*in",
+          disabled: currentRole === "driver",
+          reason: currentRole === "driver" 
+            ? "Sie sind bereits Fahrer*in" 
+            : "Verfügbar - kein anderer Künstler vorhanden"
+        },
+        {
+          value: "passenger",
+          label: "Beifahrer*in",
+          disabled: currentRole === "passenger",
+          reason: currentRole === "passenger"
+            ? "Sie sind bereits Beifahrer*in"
+            : "Verfügbar - kein anderer Künstler vorhanden"
+        },
+      ];
+    }
+
+    const otherRole = (
+      otherArtist?.artistTravelRole ||
+      otherArtist?.travelRole ||
+      ""
+    ).toLowerCase();
+
+    // Case 2: Current user is driver, other is also driver
+    if (currentRole === "driver" && otherRole === "driver") {
+      const notes = "Sowohl Sie als auch der andere Künstler sind aktuell als Fahrer*in eingetragen. Beide können zwischen Fahrer*in und Beifahrer*in wechseln.";
+      setRoleNotes(notes);
+      return [
+        { 
+          value: "driver", 
+          label: "Fahrer*in", 
+          disabled: false,
+          reason: "Verfügbar - beide Künstler sind aktuell Fahrer*in"
+        },
+        { 
+          value: "passenger", 
+          label: "Beifahrer*in", 
+          disabled: false,
+          reason: "Verfügbar - Sie können auf Beifahrer*in wechseln"
+        },
+      ];
+    }
+
+    // Case 3: Current user is driver, other is passenger
+    if (currentRole === "driver" && otherRole === "passenger") {
+      const notes = `Sie sind aktuell Fahrer*in und ${otherArtist.displayName || "der andere Künstler"} ist Beifahrer*in. Sie können nicht auf Beifahrer*in wechseln, da dann niemand mehr als Fahrer*in eingetragen wäre.`;
+      setRoleNotes(notes);
+      return [
+        { 
+          value: "driver", 
+          label: "Fahrer*in", 
+          disabled: false,
+          reason: "Verfügbar - Sie bleiben Fahrer*in"
+        },
+        { 
+          value: "passenger", 
+          label: "Beifahrer*in", 
+          disabled: true,
+          reason: "Nicht verfügbar - es muss mindestens ein Fahrer*in vorhanden sein"
+        },
+      ];
+    }
+
+    // Case 4: Current user is passenger
+    if (currentRole === "passenger") {
+      const notes = `Sie sind aktuell Beifahrer*in. Sie können auf Fahrer*in wechseln, dann würde ${otherArtist.displayName || "der andere Künstler"} Beifahrer*in bleiben.`;
+      setRoleNotes(notes);
+      return [
+        { 
+          value: "driver", 
+          label: "Fahrer*in", 
+          disabled: false,
+          reason: "Verfügbar - Sie können auf Fahrer*in wechseln"
+        },
+        { 
+          value: "passenger", 
+          label: "Beifahrer*in", 
+          disabled: false,
+          reason: "Verfügbar - Sie bleiben Beifahrer*in"
+        },
+      ];
+    }
+
+    // Case 5: Current user has no role, other has a role
+    if (!currentRole && otherRole) {
+      const otherRoleText = otherRole === "driver" ? "Fahrer*in" : "Beifahrer*in";
+      const availableRole = otherRole === "driver" ? "passenger" : "driver";
+      const notes = `${otherArtist.displayName || "Der andere Künstler"} ist bereits als ${otherRoleText} eingetragen. Sie können als ${availableRole === "driver" ? "Fahrer*in" : "Beifahrer*in"} beitreten.`;
+      setRoleNotes(notes);
+      
+      if (otherRole === "driver") {
+        return [
+          { 
+            value: "driver", 
+            label: "Fahrer*in", 
+            disabled: false,
+            reason: "Verfügbar - Sie können zusätzlicher Fahrer*in sein"
+          },
+          { 
+            value: "passenger", 
+            label: "Beifahrer*in", 
+            disabled: false,
+            reason: "Verfügbar - Sie können Beifahrer*in sein"
+          },
+        ];
+      } else if (otherRole === "passenger") {
+        return [
+          { 
+            value: "driver", 
+            label: "Fahrer*in", 
+            disabled: false,
+            reason: "Verfügbar - Sie müssen Fahrer*in sein, da bereits ein Beifahrer*in existiert"
+          },
+          { 
+            value: "passenger", 
+            label: "Beifahrer*in", 
+            disabled: true,
+            reason: "Nicht verfügbar - es kann nur einen Beifahrer*in pro Fahrer*in geben"
+          },
+        ];
+      }
+    }
+
+    // Default case: No roles assigned yet
+    const notes = "Keine Reiserollen wurden bisher zugewiesen. Sie können entweder als Fahrer*in oder Beifahrer*in eingetragen werden.";
+    setRoleNotes(notes);
+    return [
+      { 
+        value: "driver", 
+        label: "Fahrer*in", 
+        disabled: false,
+        reason: "Verfügbar - noch keine Reiserollen vergeben"
+      },
+      { 
+        value: "passenger", 
+        label: "Beifahrer*in", 
+        disabled: false,
+        reason: "Verfügbar - noch keine Reiserollen vergeben"
+      },
+    ];
+  };
+
+  const handleTooltipShow = (key, target) => {
+    setTooltipShow((prev) => ({ ...prev, [key]: true }));
+    setTooltipTargets((prev) => ({ ...prev, [key]: target }));
+  };
+
+  const handleTooltipHide = (key) => {
+    setTooltipShow((prev) => ({ ...prev, [key]: false }));
+  };
+
+  const clearMessages = () => {
+    setError(null);
+    setWarning(null);
+    setSuccess(null);
+  };
+
+  // Data Fetching
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setLoadingMessage("Benutzerdaten werden geladen...");
+      clearMessages();
+
+      const res = await authApi.getMe();
+      const currentUser = res.data.user;
+      const userData = await axios.get(`${USER_API_URL}/?id=${currentUser._id}`);
+      setUser(userData.data);
+
+      const joinedCalendars = userData.data.joinedCalendars || [];
+      const calendarNames = joinedCalendars.map((c) => c.Calendar);
+
+      setLoadingMessage("Veranstaltungen werden geladen...");
+      const eventsRes = await axios.get(`${API_URL}/assigned`, {
+        params: {
+          email: userData.data["E-Mail"],
+          calendars: calendarNames.join(","),
+          categorize: true,
+        },
+      });
+
+      const responseData = eventsRes.data;
+
+      const sortedCategorizedEvents = {};
+      Object.keys(responseData.categorizedEvents || {}).forEach((calendar) => {
+        sortedCategorizedEvents[calendar] = sortEventsByDate(
+          responseData.categorizedEvents[calendar]
+        );
+      });
+
+      setEvents(sortedCategorizedEvents);
+
+      setLoadingMessage("Abgeschlossene Veranstaltungen werden geladen...");
+      const completedRes = await axios.get(`${API_URL}/completed`, {
+        params: {
+          email: userData.data["E-Mail"],
+          calendars: calendarNames.join(","),
+          categorize: true,
+        },
+      });
+
+      const sortedCompletedEvents = {};
+      Object.keys(completedRes.data.categorizedEvents || {}).forEach(
+        (calendar) => {
+          sortedCompletedEvents[calendar] = sortEventsByDate(
+            completedRes.data.categorizedEvents[calendar]
+          );
+        }
+      );
+
+      setCompletedEvents(sortedCompletedEvents);
+      setPaidEvents(generateDummyEvents(sortedCategorizedEvents, "paid"));
+
+      const initialExpandState = {};
+      Object.keys(sortedCategorizedEvents || {}).forEach((cal) => {
+        initialExpandState[cal] = true;
+      });
+      setExpandedCalendars(initialExpandState);
+
+      setLoading(false);
+    } catch (err) {
+      setError("Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Event Handlers
+  const toggleCalendarExpand = useCallback((calendar) => {
+    setExpandedCalendars((prev) => ({
+      ...prev,
+      [calendar]: !prev[calendar],
+    }));
+  }, []);
+
+  const handleEventClick = useCallback((event) => {
+    setSelectedEvent(event);
+    setShowEventModal(true);
+  }, []);
+
+  const handleLeaveClick = useCallback((event) => {
+    setEventToLeave(event);
+    setShowLeaveConfirmModal(true);
+  }, []);
+
+  const handleLeaveConfirm = useCallback(async () => {
+    if (!eventToLeave || isLeaving) return;
+
+    setIsLeaving(true);
+    setLoadingMessage("Artist wird von der Veranstaltung entfernt...");
+    clearMessages();
+
+    try {
+      const calendarName = eventToLeave.calendarName?.trim().toLowerCase();
+      let calendarId = null;
+
+      for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
+        if (name.trim().toLowerCase() === calendarName) {
+          calendarId = id;
+          break;
+        }
+      }
+
+      if (!calendarId) {
+        setWarning("Kalender-ID konnte nicht gefunden werden");
+        setIsLeaving(false);
+        return;
+      }
+
+      const requestData = {
+        calendarId,
+        eventId: eventToLeave.id,
+        artistEmail: user["E-Mail"],
+      };
+
+      const response = await axios.post(
+        `${API_URL}/remove-artist`,
+        requestData
+      );
+
+      if (response.data.success) {
+        await new Promise((resolve) => setTimeout(resolve, 20000));
+        setSuccess("Artist erfolgreich von der Veranstaltung entfernt!");
+        await fetchData();
+        setShowLeaveConfirmModal(false);
+        setEventToLeave(null);
+      } else {
+        setWarning(
+          response.data.message || "Fehler beim Entfernen des Artists"
+        );
+      }
+    } catch (error) {
+      setError("Fehler beim Entfernen des Artists");
+    } finally {
+      setIsLeaving(false);
+    }
+  }, [eventToLeave, user]);
+
+  const handleViewReceipt = useCallback((event) => {
+    setSelectedReceipt({
+      eventName: event.summary,
+      receiptId:
+        event.receiptId ||
+        `RCPT-${Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, "0")}`,
+      amount: event.totalCost,
+      date: event.paymentDate || new Date().toLocaleDateString("de-DE"),
+      status: "Paid",
+    });
+    setShowReceiptModal(true);
+  }, []);
+
   const handleOpenTravelRoleModal = (event, user) => {
     setEditingEvent(event);
     setEditingUser(user);
+    setRoleNotes("");
+    setOtherAttendees([]);
 
     const roles = determineAvailableRoles(event, user);
     setAvailableRoles(roles);
@@ -154,9 +503,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     setShowTravelRoleModal(true);
   };
 
-  // ---------------------------
-  // Updated: handleSaveTravelRole (with guard for disabled option)
-  // ---------------------------
   const handleSaveTravelRole = async () => {
     if (!editingEvent || !editingUser || !selectedRole) return;
 
@@ -164,7 +510,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       editingUser?.artistTravelRole || editingUser?.travelRole || "";
 
     if (selectedRole === currentRole) {
-      console.log("No change in role, skipping API request");
       setSuccess("Keine Änderung erforderlich.");
       setTimeout(() => {
         setSuccess(null);
@@ -183,15 +528,14 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     const roleMeta = availableRoles.find((r) => r.value === selectedRole);
     if (roleMeta?.disabled) {
       setWarning(
-        "Diese Reiserolle kann nicht ausgewählt werden, da bereits ein anderer Teilnehmer diese Rolle hat."
+        "Diese Reiserolle kann nicht ausgewählt werden, da bereits ein anderer Teilnehmer diese Rolle hat oder die Rolle nicht verfügbar ist."
       );
       return;
     }
 
     setIsUpdatingTravelRole(true);
     setLoadingMessage("Reiserolle wird aktualisiert...");
-    setSuccess(null);
-    setWarning(null);
+    clearMessages();
 
     try {
       const calendarName = editingEvent.calendarName?.trim().toLowerCase();
@@ -217,19 +561,15 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
         travelRole: selectedRole,
       };
 
-      console.log("Request Data for updating travel role:", requestData);
-
       const response = await axios.post(
         `${API_URL}/update-travel-role`,
         requestData
       );
 
       if (response?.data?.success) {
-        // ✅ Wait 20 seconds before showing success
         await new Promise((res) => setTimeout(res, 20000));
         setSuccess("Reiserolle erfolgreich aktualisiert!");
 
-        // ✅ Wait 1 second before closing modal and fetching data
         setTimeout(async () => {
           setShowTravelRoleModal(false);
           await fetchData();
@@ -241,7 +581,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
         );
       }
     } catch (err) {
-      console.error("Error updating travel role", err);
       setError("Fehler beim Aktualisieren der Reiserolle");
     } finally {
       setIsUpdatingTravelRole(false);
@@ -249,346 +588,17 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     }
   };
 
-  // Generate dummy data for completed and paid events
-  const generateDummyEvents = useCallback((eventsData, type) => {
-    const dummyEvents = JSON.parse(JSON.stringify(eventsData));
-
-    Object.keys(dummyEvents).forEach((calendar) => {
-      dummyEvents[calendar] = dummyEvents[calendar].map((event) => {
-        // Add dummy data based on type
-        if (type === "completed") {
-          event.status = "abgeschlossen";
-          event.totalCost = `€${(Math.random() * 500 + 100).toFixed(2)}`;
-        } else if (type === "paid") {
-          event.status = "bezahlt";
-          event.totalCost = `€${(Math.random() * 500 + 100).toFixed(2)}`;
-          event.paymentDate = new Date(
-            Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
-          ).toLocaleDateString("de-DE");
-          event.receiptId = `RCPT-${Math.floor(Math.random() * 10000)
-            .toString()
-            .padStart(4, "0")}`;
-        }
-        return event;
-      });
-    });
-
-    return dummyEvents;
-  }, []);
-
-  const [completedEvents, setCompletedEvents] = useState({});
-  const [paidEvents, setPaidEvents] = useState({});
-
-  const calendarWithTheRequiredRoles = [
-    {
-      calendar: "Geigen Mitmachkonzert",
-      requiredRoles: ["Geiger*in", "Moderator*in"],
-    },
-    {
-      calendar: "Klavier Mitmachkonzert",
-      requiredRoles: ["Pianist*in", "Moderator*in"],
-    },
-    {
-      calendar: "Laternenumzug mit Musik",
-      requiredRoles: ["Instrumentalist*in", "Sängerin*in"],
-    },
-    { calendar: "Nikolaus Besuch", requiredRoles: ["Nikolaus", "Sängerin*in"] },
-    { calendar: "Puppentheater", requiredRoles: ["Puppenspieler*in"] },
-    {
-      calendar: "Weihnachts Mitmachkonzert",
-      requiredRoles: ["Detlef", "Sängerin*in"],
-    },
-  ];
-
-  const determineAvailableRoles = (event, user) => {
-    const attendees = event?.attendees || [];
-    console.log("Event Attendees:", attendees);
-    console.log("Current User:", user);
-    const currentUser = attendees.find((a) => a.email === user.email);
-    console.log("Current User in attendees:", currentUser);
-    const currentRole = (
-      currentUser?.artistTravelRole ||
-      currentUser?.travelRole ||
-      ""
-    ).toLowerCase();
-    const calendarName = event.calendarName;
-
-    console.log(
-      "Determining roles for event:",
-      calendarName,
-      "user:",
-      user.email,
-      "currentRole:",
-      currentRole
-    );
-
-    if (calendarName === "Puppentheater") {
-      return [
-        {
-          value: currentRole || "none",
-          label:
-            currentRole === "driver"
-              ? "Fahrer*in"
-              : currentRole === "passenger"
-              ? "Beifahrer*in"
-              : "Keine Reiserolle",
-          disabled: true,
-        },
-      ];
-    }
-
-    const calendarConfig = calendarWithTheRequiredRoles.find(
-      (c) => c.calendar === calendarName
-    );
-    const requiredRoles = calendarConfig?.requiredRoles || [];
-
-    // Filter only valid artists (having a role in requiredRoles)
-    const validArtists = attendees.filter((a) =>
-      requiredRoles.includes(a.role)
-    );
-
-    const otherArtists = validArtists.filter((a) => a.email !== user.email);
-    const otherArtist = otherArtists[0]; // There should be max 1 other valid artist
-
-    if (!otherArtist) {
-      // Only one valid artist (current user)
-      console.log("Single artist scenario");
-      return [
-        {
-          value: "driver",
-          label: "Fahrer*in",
-          disabled: currentRole === "driver",
-        },
-        {
-          value: "passenger",
-          label: "Beifahrer*in",
-          disabled: currentRole === "passenger",
-        },
-      ];
-    }
-
-    const otherRole = (
-      otherArtist?.artistTravelRole ||
-      otherArtist?.travelRole ||
-      ""
-    ).toLowerCase();
-    console.log("Other artist role:", otherRole);
-
-    // Apply business rules
-    if (currentRole === "driver") {
-      if (otherRole === "driver") {
-        return [
-          { value: "driver", label: "Fahrer*in", disabled: false },
-          { value: "passenger", label: "Beifahrer*in", disabled: false },
-        ];
-      } else if (otherRole === "passenger") {
-        return [
-          { value: "driver", label: "Fahrer*in", disabled: false },
-          { value: "passenger", label: "Beifahrer*in", disabled: true },
-        ];
-      }
-    } else if (currentRole === "passenger") {
-      // if other is driver or passenger, both options allowed
-      return [
-        { value: "driver", label: "Fahrer*in", disabled: false },
-        { value: "passenger", label: "Beifahrer*in", disabled: false },
-      ];
-    }
-
-    // Fallback
-    return [
-      { value: "driver", label: "Fahrer*in", disabled: false },
-      { value: "passenger", label: "Beifahrer*in", disabled: false },
-    ];
-  };
-
-  // Fetch user data and events
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setLoadingMessage("Benutzerdaten werden geladen...");
-
-      // Get authenticated user
-      const res = await authApi.getMe();
-      const currentUser = res.data.user;
-      // Get complete user data including joined calendars
-      const userData = await axios.get(
-        `${USER_API_URL}/?id=${currentUser._id}`
-      );
-      console.log("User Data:", userData.data);
-      setUser(userData.data);
-
-      const joinedCalendars = userData.data.joinedCalendars || [];
-      const calendarNames = joinedCalendars.map((c) => c.Calendar);
-
-      // Fetch assigned events for these calendars
-      setLoadingMessage("Veranstaltungen werden geladen...");
-      const eventsRes = await axios.get(`${API_URL}/assigned`, {
-        params: {
-          email: userData.data["E-Mail"],
-          calendars: calendarNames.join(","),
-          categorize: true,
-        },
-      });
-
-      const responseData = eventsRes.data;
-      console.log("response Data:", JSON.stringify(responseData, null, 2));
-
-      // Sort events for each calendar by date
-      const sortedCategorizedEvents = {};
-      Object.keys(responseData.categorizedEvents || {}).forEach((calendar) => {
-        sortedCategorizedEvents[calendar] = sortEventsByDate(
-          responseData.categorizedEvents[calendar]
-        );
-      });
-
-      setEvents(sortedCategorizedEvents);
-
-      // Fetch completed events using the real API
-      setLoadingMessage("Abgeschlossene Veranstaltungen werden geladen...");
-      const completedRes = await axios.get(`${API_URL}/completed`, {
-        params: {
-          email: userData.data["E-Mail"],
-          calendars: calendarNames.join(","),
-          categorize: true,
-        },
-      });
-
-      // Sort completed events for each calendar by date
-      const sortedCompletedEvents = {};
-      Object.keys(completedRes.data.categorizedEvents || {}).forEach(
-        (calendar) => {
-          sortedCompletedEvents[calendar] = sortEventsByDate(
-            completedRes.data.categorizedEvents[calendar]
-          );
-        }
-      );
-
-      setCompletedEvents(sortedCompletedEvents);
-
-      // Keep paid events as dummy data for now (or update if you have a paid API)
-      setPaidEvents(generateDummyEvents(sortedCategorizedEvents, "paid"));
-
-      // Initialize expanded state for calendars
-      const initialExpandState = {};
-      Object.keys(sortedCategorizedEvents || {}).forEach((cal) => {
-        initialExpandState[cal] = true;
-      });
-      setExpandedCalendars(initialExpandState);
-
-      setLoading(false);
-    } catch (err) {
-      console.error("Error loading data:", err);
-      setError(
-        "Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut."
-      );
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
+  const handleRefresh = useCallback(() => {
+    setEvents({});
+    clearMessages();
     fetchData();
   }, []);
 
-  const toggleCalendarExpand = useCallback((calendar) => {
-    setExpandedCalendars((prev) => ({
-      ...prev,
-      [calendar]: !prev[calendar],
-    }));
+  const handleSearchChange = useCallback((e) => {
+    setSearchTerm(e.target.value);
   }, []);
 
-  // Handle event details click
-  const handleEventClick = useCallback((event) => {
-    setSelectedEvent(event);
-    setShowEventModal(true);
-  }, []);
-
-  const handleLeaveClick = useCallback((event) => {
-    setEventToLeave(event);
-    setShowLeaveConfirmModal(true);
-  }, []);
-
-  const handleLeaveConfirm = useCallback(async () => {
-    if (!eventToLeave || isLeaving) return;
-
-    setIsLeaving(true);
-    setLoadingMessage("Artist wird von der Veranstaltung entfernt...");
-    setSuccess(null);
-
-    try {
-      // Find the calendar ID by matching the calendar name
-      const calendarName = eventToLeave.calendarName?.trim().toLowerCase();
-      let calendarId = null;
-
-      for (const [name, id] of Object.entries(CALENDAR_MAPPING)) {
-        if (name.trim().toLowerCase() === calendarName) {
-          calendarId = id;
-          break;
-        }
-      }
-
-      if (!calendarId) {
-        console.error("Calendar ID not found for:", eventToLeave.calendarName);
-        setWarning("Kalender-ID konnte nicht gefunden werden");
-        setIsLeaving(false);
-        return;
-      }
-
-      // Prepare request data
-      const requestData = {
-        calendarId,
-        eventId: eventToLeave.id,
-        artistEmail: user["E-Mail"],
-      };
-
-      // API call
-      const response = await axios.post(
-        `${API_URL}/remove-artist`,
-        requestData
-      );
-
-      if (response.data.success) {
-        // Wait before refreshing
-        await new Promise((resolve) => setTimeout(resolve, 20000));
-
-        setSuccess("Artist erfolgreich von der Veranstaltung entfernt!");
-        setTimeout(() => {
-          setSuccess(null);
-        }, 5000);
-
-        await fetchData();
-        setShowLeaveConfirmModal(false);
-        setEventToLeave(null);
-      } else {
-        setWarning(
-          response.data.message || "Fehler beim Entfernen des Artists"
-        );
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setError("Fehler beim Entfernen des Artists");
-    } finally {
-      setIsLeaving(false);
-    }
-  }, [eventToLeave, user, fetchData]);
-
-  // Handle receipt view
-  const handleViewReceipt = useCallback((event) => {
-    setSelectedReceipt({
-      eventName: event.summary,
-      receiptId:
-        event.receiptId ||
-        `RCPT-${Math.floor(Math.random() * 10000)
-          .toString()
-          .padStart(4, "0")}`,
-      amount: event.totalCost,
-      date: event.paymentDate || new Date().toLocaleDateString("de-DE"),
-      status: "Paid",
-    });
-    setShowReceiptModal(true);
-  }, []);
-
-  // Filter events based on search term
+  // Memoized Computations
   const filterEvents = useCallback(
     (eventsObj) => {
       const filtered = {};
@@ -638,12 +648,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       default:
         return filteredEventsByCalendar;
     }
-  }, [
-    activeTab,
-    filteredEventsByCalendar,
-    filteredCompletedEvents,
-    filteredPaidEvents,
-  ]);
+  }, [activeTab, filteredEventsByCalendar, filteredCompletedEvents, filteredPaidEvents]);
 
   const calendars = useMemo(
     () => Object.keys(getEventsForActiveTab()).sort(),
@@ -663,37 +668,288 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     [getEventsForActiveTab]
   );
 
-  // Force refresh button handler
-  const handleRefresh = useCallback(() => {
-    setEvents({});
-    setError(null);
-    setWarning(null);
-    fetchData();
-  }, []);
-
-  const handleSearchChange = useCallback((e) => {
-    setSearchTerm(e.target.value);
-  }, []);
-
-  // Tooltip handlers
-  const handleTooltipShow = (key, target) => {
-    setTooltipShow((prev) => ({ ...prev, [key]: true }));
-    setTooltipTargets((prev) => ({ ...prev, [key]: target }));
-  };
-
-  const handleTooltipHide = (key) => {
-    setTooltipShow((prev) => ({ ...prev, [key]: false }));
-  };
-
-  if (loading) {
-    return (
-      <DashboardLayout handleLogout={handleLogout} setAuth={setAuth}>
-        <DashboardLoader message={loadingMessage} />
-      </DashboardLayout>
+  // Render Helper Functions
+  const renderTravelRole = (event) => {
+    const currentUser = event.attendees?.find(
+      (a) => a.email === user["E-Mail"]
     );
-  }
+    const travelRole =
+      currentUser?.artistTravelRole || currentUser?.travelRole;
 
-  // Render events table for a specific tab
+    if (!travelRole) return "Keine Reiserolle";
+
+    return (
+      <div className="travelRole-display d-flex align-items-center">
+        <span className="me-2">
+          {travelRole === "driver"
+            ? "Fahrer*in"
+            : travelRole === "passenger"
+            ? "Beifahrer*in"
+            : travelRole}
+        </span>
+        {event.calendarName !== "Puppentheater" && (
+          <Button
+            variant="link"
+            size="sm"
+            className="p-0 travelRole-edit-btn"
+            onClick={() => handleOpenTravelRoleModal(event, currentUser)}
+          >
+            <Pencil className="text-primary" size={16} />
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  const renderMobileTravelRole = (event) => {
+    const currentUser = event.attendees?.find(
+      (a) => a.email === user["E-Mail"]
+    );
+    const travelRole =
+      currentUser?.artistTravelRole || currentUser?.travelRole;
+
+    if (!travelRole) return <span>Keine Reiserolle</span>;
+
+    const translatedRole =
+      travelRole === "driver"
+        ? "Fahrer*in"
+        : travelRole === "passenger"
+        ? "Beifahrer*in"
+        : travelRole;
+
+    return (
+      <div className="d-flex align-items-center">
+        <CarFront className="text-primary me-2" />
+        <span>{translatedRole}</span>
+        {event.calendarName !== "Puppentheater" && (
+          <Button
+            variant="link"
+            size="sm"
+            className="travelRole-edit-btn ms-2 d-flex align-items-center"
+            onClick={() => handleOpenTravelRoleModal(event, currentUser)}
+          >
+            <Pencil className="text-primary me-1" />
+            Bearbeiten
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  const renderEventRow = (event, calendar, index) => {
+    const detailKey = `detail-${calendar}-${index}`;
+    const leaveKey = `leave-${calendar}-${index}`;
+    const receiptKey = `receipt-${calendar}-${index}`;
+
+    return (
+      <tr key={index} className="event-row">
+        <td className="event-details">
+          <div className="event-title">{event.summary}</div>
+          <div className="event-location">{event.location || "Nicht angegeben"}</div>
+        </td>
+        <td className="event-time date-time-column">
+          {event?.start?.dateTime ? (
+            <div className="date-time">
+              <div className="date">
+                {new Date(event.start.dateTime).toLocaleDateString("de-DE", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  timeZone: event.start.timeZone,
+                })}
+              </div>
+              <div className="time">
+                {new Date(event.start.dateTime).toLocaleTimeString("de-DE", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  timeZone: event.start.timeZone,
+                })}
+              </div>
+            </div>
+          ) : (
+            <span>Datum unbekannt</span>
+          )}
+        </td>
+        {activeTab === "myEvents" && (
+          <td className="event-travelRole">
+            {renderTravelRole(event)}
+          </td>
+        )}
+        <td className="event-status">
+          {activeTab === "myEvents" && <Badge bg="primary">bevorstehend</Badge>}
+          {activeTab === "completedEvents" && <Badge bg="success">Abgeschlossen</Badge>}
+          {activeTab === "paidEvents" && <Badge bg="info">Bezahlt</Badge>}
+        </td>
+        <td className="event-cost">
+          {event?.eventExpense?.eventPay || "0"} €
+        </td>
+        <td className="event-actions actions-column">
+          <Button
+            ref={(el) => {
+              if (el && !tooltipTargets[detailKey]) {
+                setTooltipTargets((prev) => ({ ...prev, [detailKey]: el }));
+              }
+            }}
+            variant="outline-primary"
+            size="sm"
+            onClick={() => handleEventClick(event)}
+            onMouseEnter={(e) => handleTooltipShow(detailKey, e.currentTarget)}
+            onMouseLeave={() => handleTooltipHide(detailKey)}
+            className="open-calendar-button me-1"
+          >
+            <InfoCircle className="button-icon" />
+          </Button>
+          <CustomTooltip
+            show={tooltipShow[detailKey]}
+            target={tooltipTargets[detailKey]}
+            variant="primary"
+          >
+            Details
+          </CustomTooltip>
+        </td>
+        <td className="leave-event-column leave-column">
+          {activeTab === "myEvents" && (
+            <>
+              <Button
+                ref={(el) => {
+                  if (el && !tooltipTargets[leaveKey]) {
+                    setTooltipTargets((prev) => ({ ...prev, [leaveKey]: el }));
+                  }
+                }}
+                variant="danger"
+                size="sm"
+                onClick={() => handleLeaveClick(event)}
+                onMouseEnter={(e) => handleTooltipShow(leaveKey, e.currentTarget)}
+                onMouseLeave={() => handleTooltipHide(leaveKey)}
+                className="leave-event-button"
+              >
+                <DashCircle className="button-icon" />
+              </Button>
+              <CustomTooltip
+                show={tooltipShow[leaveKey]}
+                target={tooltipTargets[leaveKey]}
+                variant="danger"
+              >
+                Job verlassen
+              </CustomTooltip>
+            </>
+          )}
+          {activeTab === "paidEvents" && (
+            <>
+              <Button
+                ref={(el) => {
+                  if (el && !tooltipTargets[receiptKey]) {
+                    setTooltipTargets((prev) => ({ ...prev, [receiptKey]: el }));
+                  }
+                }}
+                variant="outline-info"
+                size="sm"
+                onClick={() => handleViewReceipt(event)}
+                onMouseEnter={(e) => handleTooltipShow(receiptKey, e.currentTarget)}
+                onMouseLeave={() => handleTooltipHide(receiptKey)}
+                className="view-receipt-button"
+              >
+                <Receipt className="button-icon" />
+              </Button>
+              <CustomTooltip
+                show={tooltipShow[receiptKey]}
+                target={tooltipTargets[receiptKey]}
+                variant="info"
+              >
+                Beleg anzeigen
+              </CustomTooltip>
+            </>
+          )}
+        </td>
+      </tr>
+    );
+  };
+
+  const renderMobileEventCard = (event, calendar, index) => {
+    const detailKey = `mobile-detail-${calendar}-${index}`;
+    const leaveKey = `mobile-leave-${calendar}-${index}`;
+    const receiptKey = `mobile-receipt-${calendar}-${index}`;
+
+    return (
+      <div key={index} className="event-mobile-card">
+        <div className="event-mobile-header">
+          <div className="event-mobile-title">{event.summary}</div>
+          <div className="event-mobile-status">
+            {activeTab === "myEvents" && <Badge bg="primary">bevorstehend</Badge>}
+            {activeTab === "completedEvents" && <Badge bg="success">Abgeschlossen</Badge>}
+            {activeTab === "paidEvents" && <Badge bg="info">Bezahlt</Badge>}
+          </div>
+        </div>
+        <div className="event-mobile-content">
+          <div className="event-mobile-details">
+            {event.location && (
+              <div className="event-mobile-location">
+                <i className="bi bi-geo-alt"></i> {event.location}
+              </div>
+            )}
+            {event.start?.dateTime && (
+              <div className="event-mobile-datetime">
+                <i className="bi bi-calendar-event"></i>{" "}
+                {new Date(event.start.dateTime).toLocaleDateString("de-DE")}
+                <span className="mobile-time">
+                  {" "}
+                  {new Date(event.start.dateTime).toLocaleTimeString("de-DE", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            )}
+            {event?.eventExpense?.eventPay && (
+              <div className="event-mobile-cost">
+                <i className="bi bi-currency-euro"></i> Event Bezahlung{" "}
+                {event.eventExpense.eventPay} €
+              </div>
+            )}
+            {event.attendees && activeTab === "myEvents" && (
+              <div className="event-mobile-travelRole d-flex align-items-center">
+                {renderMobileTravelRole(event)}
+              </div>
+            )}
+          </div>
+          <div className="event-mobile-actions">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => handleEventClick(event)}
+              className="me-2"
+            >
+              <InfoCircle className="me-1" />
+              Details
+            </Button>
+            {activeTab === "paidEvents" && (
+              <Button
+                variant="outline-info"
+                size="sm"
+                onClick={() => handleViewReceipt(event)}
+                className="me-2"
+              >
+                <Receipt className="me-1" />
+                Beleg
+              </Button>
+            )}
+            {activeTab === "myEvents" && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleLeaveClick(event)}
+                className="leave-event-button"
+              >
+                <DashCircle className="me-1" />
+                Verlassen
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderEventsTable = (eventsData) => {
     return (
       <>
@@ -704,9 +960,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           return (
             <div
               key={calendar}
-              className={`event-calendar-card ${
-                isFilteredOut ? "filtered-out" : ""
-              }`}
+              className={`event-calendar-card ${isFilteredOut ? "filtered-out" : ""}`}
             >
               <div
                 className="calendar-header"
@@ -742,525 +996,30 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                 <div className="calendar-content">
                   {hasEvents ? (
                     <>
-                      {/* Regular table for desktop */}
                       <div className="table-responsive d-none d-md-block">
-                        <Table
-                          className={`events-table ${
-                            activeTab === "myEvents" || "paidEvents"
-                              ? "six-columns"
-                              : "five-columns"
-                          }`}
-                        >
-                          {/* Table headers for My Events (6 columns) */}
-                          {/* Table headers for My Events (6 columns) */}
+                        <Table className={`events-table ${activeTab === "myEvents" ? "six-columns" : "five-columns"}`}>
                           <thead>
                             <tr>
                               <th>Veranstaltung</th>
-                              <th>Meine Rolle(n)</th>
                               <th>Datum/Uhrzeit</th>
-                              {activeTab === "myEvents" && (
-                                <th>Reiserolle</th>
-                              )}{" "}
-                              {/* NEW COLUMN - ONLY for myEvents */}
+                              {activeTab === "myEvents" && <th>Reiserolle</th>}
                               <th>Status</th>
                               <th>Gesamtkosten</th>
-                              {activeTab === "myEvents" && <th>Aktion</th>}
+                              <th>Aktion</th>
+                              <th>{activeTab === "myEvents" ? "Aktion" : "Beleg"}</th>
                             </tr>
                           </thead>
-
-                          {/* Table headers for Completed/Paid Events (5 columns) */}
-                          {(activeTab === "completedEvents" ||
-                            activeTab === "paidEvents") && (
-                            <thead>
-                              <tr>
-                                <th>Veranstaltung</th>
-                                <th>Meine Rolle(n)</th>
-                                <th>Datum/Uhrzeit</th>
-                                <th>Status</th>
-                                <th>Gesamtkosten</th>
-                              </tr>
-                            </thead>
-                          )}
                           <tbody>
-                            {eventsData[calendar].map((event, index) => {
-                              const detailKey = `detail-${calendar}-${index}`;
-                              const leaveKey = `leave-${calendar}-${index}`;
-                              const receiptKey = `receipt-${calendar}-${index}`;
-
-                              return (
-                                <tr key={index} className="event-row">
-                                  <td className="event-details">
-                                    <div className="event-title">
-                                      {event.summary}
-                                    </div>
-                                    <div className="event-location">
-                                      {event.location}
-                                    </div>
-                                  </td>
-                                  <td className="event-time date-time-column">
-                                    {event?.start?.dateTime ? (
-                                      <div className="date-time">
-                                        <div className="date">
-                                          {new Date(
-                                            event.start.dateTime
-                                          ).toLocaleDateString("de-DE", {
-                                            day: "2-digit",
-                                            month: "2-digit",
-                                            year: "numeric",
-                                            timeZone: event.start.timeZone,
-                                          })}
-                                        </div>
-                                        <div className="time">
-                                          {new Date(
-                                            event.start.dateTime
-                                          ).toLocaleTimeString("de-DE", {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                            timeZone: event.start.timeZone,
-                                          })}
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <span>Datum unbekannt</span>
-                                    )}
-                                  </td>
-
-                                  {/* Travel Role Column - ONLY for upcoming events */}
-                                  {activeTab === "myEvents" && (
-                                    <td className="event-travelRole">
-                                      {(() => {
-                                        const currentUser =
-                                          event.attendees?.find(
-                                            (a) => a.email === user["E-Mail"]
-                                          );
-                                        const travelRole =
-                                          currentUser?.artistTravelRole ||
-                                          currentUser?.travelRole;
-
-                                        if (!travelRole)
-                                          return "Keine Reiserolle";
-
-                                        return (
-                                          <div className="travelRole-display d-flex align-items-center">
-                                            <span className="me-2">
-                                              {travelRole === "driver"
-                                                ? "Fahrer*in"
-                                                : travelRole === "passenger"
-                                                ? "Beifahrer*in"
-                                                : travelRole}
-                                            </span>
-
-                                            {/* Edit button - check if event is not Puppentheater */}
-                                            {event.calendarName !==
-                                              "Puppentheater" && (
-                                              <Button
-                                                variant="link"
-                                                size="sm"
-                                                className="p-0 travelRole-edit-btn"
-                                                onClick={() =>
-                                                  handleOpenTravelRoleModal(
-                                                    event,
-                                                    currentUser
-                                                  )
-                                                }
-                                              >
-                                                <Pencil
-                                                  className="text-primary"
-                                                  size={16}
-                                                />
-                                              </Button>
-                                            )}
-                                          </div>
-                                        );
-                                      })()}
-                                    </td>
-                                  )}
-
-                                  <td className="event-status">
-                                    {activeTab === "myEvents" && (
-                                      <Badge bg="primary">bevorstehend</Badge>
-                                    )}
-                                    {activeTab === "completedEvents" && (
-                                      <Badge bg="success">Abgeschlossen</Badge>
-                                    )}
-                                    {activeTab === "paidEvents" && (
-                                      <Badge bg="info">Bezahlt</Badge>
-                                    )}
-                                  </td>
-                                  <td className="event-cost">
-                                    {event?.eventExpense.eventPay}
-                                    <i className="bi bi-currency-euro"></i>
-                                  </td>
-
-                                  <td className="event-actions actions-column">
-                                    <Button
-                                      ref={(el) => {
-                                        if (el && !tooltipTargets[detailKey]) {
-                                          setTooltipTargets((prev) => ({
-                                            ...prev,
-                                            [detailKey]: el,
-                                          }));
-                                        }
-                                      }}
-                                      variant="outline-primary"
-                                      size="sm"
-                                      onClick={() => handleEventClick(event)}
-                                      onMouseEnter={(e) =>
-                                        handleTooltipShow(
-                                          detailKey,
-                                          e.currentTarget
-                                        )
-                                      }
-                                      onMouseLeave={() =>
-                                        handleTooltipHide(detailKey)
-                                      }
-                                      className="open-calendar-button me-1"
-                                    >
-                                      <InfoCircle className="button-icon" />
-                                    </Button>
-                                    <CustomTooltip
-                                      show={tooltipShow[detailKey]}
-                                      target={tooltipTargets[detailKey]}
-                                      variant="primary"
-                                    >
-                                      Details
-                                    </CustomTooltip>
-                                  </td>
-                                  <td className="leave-event-column leave-column">
-                                    {activeTab === "myEvents" && (
-                                      <>
-                                        <Button
-                                          ref={(el) => {
-                                            if (
-                                              el &&
-                                              !tooltipTargets[leaveKey]
-                                            ) {
-                                              setTooltipTargets((prev) => ({
-                                                ...prev,
-                                                [leaveKey]: el,
-                                              }));
-                                            }
-                                          }}
-                                          variant="danger"
-                                          size="sm"
-                                          onClick={() =>
-                                            handleLeaveClick(event)
-                                          }
-                                          onMouseEnter={(e) =>
-                                            handleTooltipShow(
-                                              leaveKey,
-                                              e.currentTarget
-                                            )
-                                          }
-                                          onMouseLeave={() =>
-                                            handleTooltipHide(leaveKey)
-                                          }
-                                          className="leave-event-button"
-                                        >
-                                          <DashCircle className="button-icon" />
-                                        </Button>
-                                        <CustomTooltip
-                                          show={tooltipShow[leaveKey]}
-                                          target={tooltipTargets[leaveKey]}
-                                          variant="danger"
-                                        >
-                                          Job verlassen
-                                        </CustomTooltip>
-                                      </>
-                                    )}
-                                    {activeTab === "paidEvents" && (
-                                      <>
-                                        <Button
-                                          ref={(el) => {
-                                            if (
-                                              el &&
-                                              !tooltipTargets[receiptKey]
-                                            ) {
-                                              setTooltipTargets((prev) => ({
-                                                ...prev,
-                                                [receiptKey]: el,
-                                              }));
-                                            }
-                                          }}
-                                          variant="outline-info"
-                                          size="sm"
-                                          onClick={() =>
-                                            handleViewReceipt(event)
-                                          }
-                                          onMouseEnter={(e) =>
-                                            handleTooltipShow(
-                                              receiptKey,
-                                              e.currentTarget
-                                            )
-                                          }
-                                          onMouseLeave={() =>
-                                            handleTooltipHide(receiptKey)
-                                          }
-                                          className="view-receipt-button"
-                                        >
-                                          <Receipt className="button-icon" />
-                                        </Button>
-                                        <CustomTooltip
-                                          show={tooltipShow[receiptKey]}
-                                          target={tooltipTargets[receiptKey]}
-                                          variant="info"
-                                        >
-                                          Beleg anzeigen
-                                        </CustomTooltip>
-                                      </>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
+                            {eventsData[calendar].map((event, index) =>
+                              renderEventRow(event, calendar, index)
+                            )}
                           </tbody>
                         </Table>
                       </div>
-
-                      {/* Mobile-friendly cards for small screens */}
                       <div className="event-cards-container d-md-none">
-                        {eventsData[calendar].map((event, index) => {
-                          const detailKey = `mobile-detail-${calendar}-${index}`;
-                          const leaveKey = `mobile-leave-${calendar}-${index}`;
-                          const receiptKey = `mobile-receipt-${calendar}-${index}`;
-
-                          return (
-                            <div key={index} className="event-mobile-card">
-                              <div className="event-mobile-header">
-                                <div className="event-mobile-title">
-                                  {event.summary}
-                                </div>
-                                <div className="event-mobile-status">
-                                  {activeTab === "myEvents" && (
-                                    <Badge bg="primary">bevorstehend</Badge>
-                                  )}
-                                  {activeTab === "completedEvents" && (
-                                    <Badge bg="success">Abgeschlossen</Badge>
-                                  )}
-                                  {activeTab === "paidEvents" && (
-                                    <Badge bg="info">Bezahlt</Badge>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="event-mobile-content">
-                                <div className="event-mobile-roles">
-                                  {event.role?.split(", ").map((role, i) => (
-                                    <Badge
-                                      key={i}
-                                      className="role-badge"
-                                      bg="success"
-                                    >
-                                      {role.trim()}
-                                    </Badge>
-                                  ))}
-                                </div>
-
-                                <div className="event-mobile-details">
-                                  {event.location && (
-                                    <div className="event-mobile-location">
-                                      <i className="bi bi-geo-alt"></i>{" "}
-                                      {event.location}
-                                    </div>
-                                  )}
-                                  {/* Add this to event-mobile-details */}
-                                  {event.start?.dateTime && (
-                                    <div className="event-mobile-datetime">
-                                      <i className="bi bi-calendar-event"></i>{" "}
-                                      {new Date(
-                                        event.start.dateTime
-                                      ).toLocaleDateString("de-DE")}
-                                      <span className="mobile-time">
-                                        {" "}
-                                        {new Date(
-                                          event.start.dateTime
-                                        ).toLocaleTimeString("de-DE", {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {event?.eventExpense?.totalExpense && (
-                                    <div className="event-mobile-cost">
-                                      <i className="bi bi-currency-euro"></i>{" "}
-                                      Event Bezahlung{" "}
-                                      {event?.eventExpense?.eventPay}
-                                    </div>
-                                  )}
-                                  {event.attendees &&
-                                    activeTab === "myEvents" && (
-                                      <div className="event-mobile-travelRole d-flex align-items-center">
-                                        <CarFront className="text-primary me-2" />
-
-                                        {(() => {
-                                          const currentUser =
-                                            event.attendees.find(
-                                              (a) => a.email === user["E-Mail"]
-                                            );
-                                          const travelRole =
-                                            currentUser?.artistTravelRole ||
-                                            currentUser?.travelRole;
-
-                                          if (!travelRole)
-                                            return (
-                                              <span>Keine Reiserolle</span>
-                                            );
-
-                                          const translatedRole =
-                                            travelRole === "driver"
-                                              ? "Fahrer*in"
-                                              : travelRole === "passenger"
-                                              ? "Beifahrer*in"
-                                              : travelRole;
-
-                                          return (
-                                            <div className="d-flex align-items-center">
-                                              <span>{translatedRole}</span>
-
-                                              {/* Edit button (hide for Puppentheater) */}
-                                              {event.calendarName !==
-                                                "Puppentheater" && (
-                                                <Button
-                                                  variant="link"
-                                                  size="sm"
-                                                  className="travelRole-edit-btn ms-2 d-flex align-items-center"
-                                                  onClick={() =>
-                                                    handleOpenTravelRoleModal(
-                                                      event,
-                                                      currentUser
-                                                    )
-                                                  }
-                                                >
-                                                  <Pencil className="text-primary me-1" />
-                                                  Bearbeiten
-                                                </Button>
-                                              )}
-                                            </div>
-                                          );
-                                        })()}
-                                      </div>
-                                    )}
-                                </div>
-
-                                <div className="event-mobile-actions">
-                                  <Button
-                                    ref={(el) => {
-                                      if (el && !tooltipTargets[detailKey]) {
-                                        setTooltipTargets((prev) => ({
-                                          ...prev,
-                                          [detailKey]: el,
-                                        }));
-                                      }
-                                    }}
-                                    variant="outline-primary"
-                                    size="sm"
-                                    onClick={() => handleEventClick(event)}
-                                    onMouseEnter={(e) =>
-                                      handleTooltipShow(
-                                        detailKey,
-                                        e.currentTarget
-                                      )
-                                    }
-                                    onMouseLeave={() =>
-                                      handleTooltipHide(detailKey)
-                                    }
-                                    className="me-2"
-                                  >
-                                    <InfoCircle className="me-1" />
-                                    Details
-                                  </Button>
-                                  <CustomTooltip
-                                    show={tooltipShow[detailKey]}
-                                    target={tooltipTargets[detailKey]}
-                                    variant="primary"
-                                  >
-                                    Details
-                                  </CustomTooltip>
-
-                                  {activeTab === "paidEvents" && (
-                                    <>
-                                      <Button
-                                        ref={(el) => {
-                                          if (
-                                            el &&
-                                            !tooltipTargets[receiptKey]
-                                          ) {
-                                            setTooltipTargets((prev) => ({
-                                              ...prev,
-                                              [receiptKey]: el,
-                                            }));
-                                          }
-                                        }}
-                                        variant="outline-info"
-                                        size="sm"
-                                        onClick={() => handleViewReceipt(event)}
-                                        onMouseEnter={(e) =>
-                                          handleTooltipShow(
-                                            receiptKey,
-                                            e.currentTarget
-                                          )
-                                        }
-                                        onMouseLeave={() =>
-                                          handleTooltipHide(receiptKey)
-                                        }
-                                        className="me-2"
-                                      >
-                                        <Receipt className="me-1" />
-                                        Beleg
-                                      </Button>
-                                      <CustomTooltip
-                                        show={tooltipShow[receiptKey]}
-                                        target={tooltipTargets[receiptKey]}
-                                        variant="info"
-                                      >
-                                        Beleg anzeigen
-                                      </CustomTooltip>
-                                    </>
-                                  )}
-                                  {activeTab === "myEvents" && (
-                                    <>
-                                      <Button
-                                        ref={(el) => {
-                                          if (el && !tooltipTargets[leaveKey]) {
-                                            setTooltipTargets((prev) => ({
-                                              ...prev,
-                                              [leaveKey]: el,
-                                            }));
-                                          }
-                                        }}
-                                        variant="danger"
-                                        size="sm"
-                                        onClick={() => handleLeaveClick(event)}
-                                        onMouseEnter={(e) =>
-                                          handleTooltipShow(
-                                            leaveKey,
-                                            e.currentTarget
-                                          )
-                                        }
-                                        onMouseLeave={() =>
-                                          handleTooltipHide(leaveKey)
-                                        }
-                                        className="leave-event-button"
-                                      >
-                                        <DashCircle className="me-1" />
-                                        Verlassen
-                                      </Button>
-                                      <CustomTooltip
-                                        show={tooltipShow[leaveKey]}
-                                        target={tooltipTargets[leaveKey]}
-                                        variant="danger"
-                                      >
-                                        Job verlassen
-                                      </CustomTooltip>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        {eventsData[calendar].map((event, index) =>
+                          renderMobileEventCard(event, calendar, index)
+                        )}
                       </div>
                     </>
                   ) : (
@@ -1277,6 +1036,158 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
     );
   };
 
+  const renderRoleSelectionModal = () => {
+    const calendarName = editingEvent?.calendarName;
+    const currentUser = editingEvent?.attendees?.find(
+      (a) => a.email === user?.["E-Mail"]
+    );
+    const currentRole = currentUser?.artistTravelRole || currentUser?.travelRole || "Keine";
+
+    return (
+      <div>
+        <div className="mb-4 p-3 bg-light border rounded">
+          <h6>Zusammenfassung der Reiserollenlogik:</h6>
+          <p className="mb-0 small">{roleNotes}</p>
+        </div>
+
+        <div className="mb-4">
+          <h6>Aktuelle Teilnehmer und ihre Rollen:</h6>
+          <div className="table-responsive">
+            <table className="table table-sm">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>E-Mail</th>
+                  <th>Künstler-Rolle</th>
+                  <th>Reiserolle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Current user */}
+                <tr className="table-primary">
+                  <td>
+                    <strong>{user?.Name || "Sie"}</strong>
+                    <Badge bg="info" className="ms-2">Aktueller Benutzer</Badge>
+                  </td>
+                  <td>{user?.["E-Mail"]}</td>
+                  <td>{currentUser?.role || "Unbekannt"}</td>
+                  <td>
+                    <Badge bg={currentRole === "driver" ? "primary" : currentRole === "passenger" ? "secondary" : "light"}>
+                      {currentRole === "driver" ? "Fahrer*in" : 
+                       currentRole === "passenger" ? "Beifahrer*in" : "Keine"}
+                    </Badge>
+                  </td>
+                </tr>
+                {/* Other attendees */}
+                {otherAttendees.map((attendee, index) => (
+                  <tr key={index}>
+                    <td>{attendee.name}</td>
+                    <td>{attendee.email}</td>
+                    <td>{attendee.role}</td>
+                    <td>
+                      <Badge bg={attendee.travelRole === "driver" ? "primary" : 
+                                 attendee.travelRole === "passenger" ? "secondary" : "light"}>
+                        {attendee.travelRole === "driver" ? "Fahrer*in" : 
+                         attendee.travelRole === "passenger" ? "Beifahrer*in" : attendee.travelRole}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+                {otherAttendees.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="text-center text-muted">
+                      Keine anderen Teilnehmer in dieser Veranstaltung
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <Form>
+          <Form.Group>
+            <Form.Label>
+              {calendarName === "Puppentheater"
+                ? "Aktuelle Reiserolle (fest zugewiesen)"
+                : "Neue Reiserolle auswählen"}
+            </Form.Label>
+
+            <Form.Select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              disabled={
+                isUpdatingTravelRole ||
+                calendarName === "Puppentheater"
+              }
+            >
+              {availableRoles.map((r) => (
+                <option key={r.value} value={r.value} disabled={r.disabled}>
+                  {r.label}
+                  {r.disabled ? " (nicht auswählbar)" : ""}
+                </option>
+              ))}
+            </Form.Select>
+
+            {/* Detailed role information */}
+            <div className="mt-3">
+              <h6>Rollen-Verfügbarkeit:</h6>
+              <div className="row">
+                {availableRoles.map((role) => (
+                  <div key={role.value} className="col-12 mb-2">
+                    <div className="d-flex align-items-center">
+                      <Badge 
+                        bg={role.disabled ? "danger" : "success"} 
+                        className="me-2"
+                      >
+                        {role.disabled ? "Nicht verfügbar" : "Verfügbar"}
+                      </Badge>
+                      <span className="fw-bold me-2">
+                        {role.label}:
+                      </span>
+                      <span className="text-muted small">
+                        {role.reason}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {calendarName === "Puppentheater" && (
+              <Form.Text className="text-muted d-block mt-2">
+                <strong>Hinweis:</strong> Für Puppentheater Veranstaltungen kann die Reiserolle nicht geändert werden. Diese werden automatisch zugewiesen.
+              </Form.Text>
+            )}
+
+            {availableRoles.some(
+              (r) => r.disabled && r.value === "passenger"
+            ) && (
+              <Form.Text className="text-warning d-block mt-2">
+                <strong>Wichtiger Hinweis:</strong> Die Rolle "Beifahrer*in" ist nicht auswählbar, da bereits ein anderer Teilnehmer diese Rolle hat oder es keinen Fahrer*in gäbe, wenn Sie diese Rolle wählen würden.
+              </Form.Text>
+            )}
+
+            {availableRoles.filter(r => !r.disabled).length === 0 && (
+              <Alert variant="warning" className="mt-3">
+                <strong>Keine Rollen verfügbar:</strong> Alle möglichen Reiserollen sind bereits besetzt oder nicht verfügbar.
+              </Alert>
+            )}
+          </Form.Group>
+        </Form>
+      </div>
+    );
+  };
+
+  // Main Render
+  if (loading) {
+    return (
+      <DashboardLayout handleLogout={handleLogout} setAuth={setAuth}>
+        <DashboardLoader message={loadingMessage} />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout
       handleLogout={handleLogout}
@@ -1284,7 +1195,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
       onRefresh={handleRefresh}
     >
       <div className="user-assigned-dashboard">
-        {/* Header section with welcome message and search box */}
+        {/* Header */}
         {!loading && (
           <div className="transparent-header-container">
             <div className="header-welcome-content">
@@ -1292,10 +1203,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                 Willkommen, {user?.Name || "Benutzer"}!
               </h1>
               {user?.joinedCalendars?.length > 0 && (
-                <div
-                  style={{ margin: "15px 0px" }}
-                  className="joined-calendars-badges"
-                >
+                <div style={{ margin: "15px 0px" }} className="joined-calendars-badges">
                   Deine beigetretenen Kalender:
                   {user.joinedCalendars.map((calendar, index) => (
                     <Badge
@@ -1310,30 +1218,29 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
                 </div>
               )}
             </div>
-
             <div className="header-search-box">
               <SearchBox
                 value={searchTerm}
                 onChange={handleSearchChange}
                 placeholder="Veranstaltungen suchen..."
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
               />
             </div>
           </div>
         )}
+
+        {/* Messages */}
         {warning && (
-          <Alert variant="warning" className="dashboard-alert">
+          <Alert variant="warning" className="dashboard-alert" onClose={() => setWarning(null)} dismissible>
             {warning}
           </Alert>
         )}
         {success && (
-          <Alert variant="success" className="dashboard-alert">
+          <Alert variant="success" className="dashboard-alert" onClose={() => setSuccess(null)} dismissible>
             {success}
           </Alert>
         )}
         {error && (
-          <Alert variant="danger" className="dashboard-alert">
+          <Alert variant="danger" className="dashboard-alert" onClose={() => setError(null)} dismissible>
             {error}
           </Alert>
         )}
@@ -1343,25 +1250,19 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           <div className="chrome-tabs-container">
             <div className="chrome-tabs">
               <button
-                className={`chrome-tab ${
-                  activeTab === "myEvents" ? "active" : ""
-                }`}
+                className={`chrome-tab ${activeTab === "myEvents" ? "active" : ""}`}
                 onClick={() => setActiveTab("myEvents")}
               >
                 Zukünftige Events
               </button>
               <button
-                className={`chrome-tab ${
-                  activeTab === "completedEvents" ? "active" : ""
-                }`}
+                className={`chrome-tab ${activeTab === "completedEvents" ? "active" : ""}`}
                 onClick={() => setActiveTab("completedEvents")}
               >
                 Abgeschlossene Events
               </button>
               <button
-                className={`chrome-tab ${
-                  activeTab === "paidEvents" ? "active" : ""
-                }`}
+                className={`chrome-tab ${activeTab === "paidEvents" ? "active" : ""}`}
                 onClick={() => setActiveTab("paidEvents")}
               >
                 Bezahlte Events
@@ -1370,7 +1271,6 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           </div>
 
           <div className="tab-content">
-            {/* Summary Box */}
             <div className="summary-box mb-4">
               <h4>
                 {activeTab === "myEvents" && "Meine Events"}
@@ -1413,22 +1313,19 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
           </div>
         </div>
 
-        {/* Event Modal */}
+        {/* Modals */}
         {showEventModal && (
           <EventModal
             mode="assigned"
             user={user}
-            modalFor={"assigned"}
+            modalFor="assigned"
             event={selectedEvent}
             onClose={() => setShowEventModal(false)}
           />
         )}
 
         {/* Receipt Modal */}
-        <Modal
-          show={showReceiptModal}
-          onHide={() => setShowReceiptModal(false)}
-        >
+        <Modal show={showReceiptModal} onHide={() => setShowReceiptModal(false)}>
           <Modal.Header closeButton>
             <Modal.Title>Zahlungsbeleg</Modal.Title>
           </Modal.Header>
@@ -1459,10 +1356,7 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
             )}
           </Modal.Body>
           <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setShowReceiptModal(false)}
-            >
+            <Button variant="secondary" onClick={() => setShowReceiptModal(false)}>
               Schließen
             </Button>
             <Button variant="primary" onClick={() => window.print()}>
@@ -1470,166 +1364,106 @@ function UserAssignedDashboard({ setAuth, handleLogout }) {
             </Button>
           </Modal.Footer>
         </Modal>
-      </div>
 
-      {/* 🔹 Travel Role Modal */}
-      <Modal
-        show={showTravelRoleModal}
-        onHide={() => !isUpdatingTravelRole && setShowTravelRoleModal(false)}
-        backdrop={isUpdatingTravelRole ? "static" : true}
-        keyboard={!isUpdatingTravelRole}
-      >
-        <Modal.Header closeButton={!isUpdatingTravelRole}>
-          <Modal.Title>
-            {editingEvent?.calendarName === "Puppentheater"
-              ? "Reiserolle anzeigen"
-              : "Reiserolle ändern"}
-          </Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <Form>
-            <Form.Group>
-              <Form.Label>
-                {editingEvent?.calendarName === "Puppentheater"
-                  ? "Aktuelle Reiserolle"
-                  : "Neue Rolle wählen"}
-              </Form.Label>
-
-              <Form.Select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                disabled={
-                  isUpdatingTravelRole ||
-                  editingEvent?.calendarName === "Puppentheater"
-                }
-              >
-                {availableRoles.map((r) => (
-                  <option key={r.value} value={r.value} disabled={r.disabled}>
-                    {r.label === "Fahrer*in"
-                      ? "Fahrer*in"
-                      : r.label === "Beifahrer*in"
-                      ? "Beifahrer*in"
-                      : r.label === "none"
-                      ? "Keine Reiserolle"
-                      : r.label}
-                    {r.disabled ? " (nicht auswählbar)" : ""}
-                  </option>
-                ))}
-              </Form.Select>
-
-              {editingEvent?.calendarName === "Puppentheater" && (
-                <Form.Text className="text-muted">
-                  Für Puppentheater Veranstaltungen kann die Reiserolle nicht
-                  geändert werden.
-                </Form.Text>
-              )}
-
-              {availableRoles.some(
-                (r) => r.disabled && r.value === "passenger"
-              ) && (
-                <Form.Text className="text-warning">
-                  Die Rolle "Beifahrer*in" ist nicht auswählbar, da bereits ein
-                  anderer Teilnehmer diese Rolle hat.
-                </Form.Text>
-              )}
-            </Form.Group>
-
+        {/* Travel Role Modal */}
+        <Modal
+          show={showTravelRoleModal}
+          onHide={() => !isUpdatingTravelRole && setShowTravelRoleModal(false)}
+          backdrop={isUpdatingTravelRole ? "static" : true}
+          keyboard={!isUpdatingTravelRole}
+          size="lg"
+        >
+          <Modal.Header closeButton={!isUpdatingTravelRole}>
+            <Modal.Title>
+              {editingEvent?.calendarName === "Puppentheater"
+                ? "Reiserolle anzeigen"
+                : "Reiserolle ändern"}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {renderRoleSelectionModal()}
             {warning && (
-              <Alert variant="warning" className="mt-3">
+              <Alert variant="warning" className="mt-3" onClose={() => setWarning(null)} dismissible>
                 {warning}
               </Alert>
             )}
             {error && (
-              <Alert variant="danger" className="mt-3">
+              <Alert variant="danger" className="mt-3" onClose={() => setError(null)} dismissible>
                 {error}
               </Alert>
             )}
             {success && (
-              <Alert variant="success" className="mt-3">
+              <Alert variant="success" className="mt-3" onClose={() => setSuccess(null)} dismissible>
                 {success}
               </Alert>
             )}
-          </Form>
-        </Modal.Body>
-
-        <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => setShowTravelRoleModal(false)}
-            disabled={isUpdatingTravelRole}
-          >
-            Schließen
-          </Button>
-
-          {editingEvent?.calendarName !== "Puppentheater" && (
+          </Modal.Body>
+          <Modal.Footer>
             <Button
-              variant="primary"
-              onClick={handleSaveTravelRole}
+              variant="secondary"
+              onClick={() => setShowTravelRoleModal(false)}
               disabled={isUpdatingTravelRole}
             >
-              {isUpdatingTravelRole ? (
+              Schließen
+            </Button>
+            {editingEvent?.calendarName !== "Puppentheater" && (
+              <Button
+                variant="primary"
+                onClick={handleSaveTravelRole}
+                disabled={isUpdatingTravelRole || availableRoles.filter(r => !r.disabled).length === 0}
+              >
+                {isUpdatingTravelRole ? (
+                  <>
+                    <Spinner as="span" animation="border" size="sm" aria-hidden="true" />
+                    <span className="ms-2">Wird aktualisiert...</span>
+                  </>
+                ) : (
+                  "Speichern"
+                )}
+              </Button>
+            )}
+          </Modal.Footer>
+        </Modal>
+
+        {/* Leave Event Confirmation Modal */}
+        <Modal
+          show={showLeaveConfirmModal}
+          onHide={() => !isLeaving && setShowLeaveConfirmModal(false)}
+          backdrop={isLeaving ? "static" : true}
+          keyboard={!isLeaving}
+        >
+          <Modal.Header closeButton={!isLeaving}>
+            <Modal.Title>Verlassen bestätigen</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Sind Sie sicher, dass Sie die Veranstaltung "{eventToLeave?.summary}"
+            verlassen möchten?
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => setShowLeaveConfirmModal(false)}
+              disabled={isLeaving}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleLeaveConfirm}
+              disabled={isLeaving}
+            >
+              {isLeaving ? (
                 <>
-                  <Spinner
-                    as="span"
-                    animation="border"
-                    size="sm"
-                    aria-hidden="true"
-                  />
-                  <span className="ms-2">Wird aktualisiert...</span>
+                  <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                  <span className="ms-2">Wird entfernt...</span>
                 </>
               ) : (
-                "Speichern"
+                "Verlassen"
               )}
             </Button>
-          )}
-        </Modal.Footer>
-      </Modal>
-
-      {/* Leave Event Confirmation Modal */}
-      <Modal
-        show={showLeaveConfirmModal}
-        onHide={() => !isLeaving && setShowLeaveConfirmModal(false)}
-        backdrop={isLeaving ? "static" : true}
-        keyboard={!isLeaving}
-      >
-        <Modal.Header closeButton={!isLeaving}>
-          <Modal.Title>Verlassen bestätigen</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Sind Sie sicher, dass Sie die Veranstaltung "{eventToLeave?.summary}"
-          verlassen möchten?
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => setShowLeaveConfirmModal(false)}
-            disabled={isLeaving}
-          >
-            Abbrechen
-          </Button>
-          <Button
-            variant="danger"
-            onClick={handleLeaveConfirm}
-            disabled={isLeaving}
-          >
-            {isLeaving ? (
-              <>
-                <Spinner
-                  as="span"
-                  animation="border"
-                  size="sm"
-                  role="status"
-                  aria-hidden="true"
-                />
-                <span className="ms-2">Wird entfernt...</span>
-              </>
-            ) : (
-              "Verlassen"
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+          </Modal.Footer>
+        </Modal>
+      </div>
     </DashboardLayout>
   );
 }
