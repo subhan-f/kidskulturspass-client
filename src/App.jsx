@@ -26,6 +26,7 @@ import { LoadingSpinner } from './components/common';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { ARTIST_ROLES, ARTIST_DASHBOARD_ROUTES, ADMIN_DASHBOARD_ROUTES } from './constants/app.contants'
+import LoggerDashboard from './pages/LoggerDashboard';
 
 
 // Init debug
@@ -228,6 +229,7 @@ function App() {
         {/* Admin-only routes */}
         <Route path="/artists" element={<ProtectedRoute allowedRoles={['Admin']}><ArtistsDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         <Route path="/emails" element={<ProtectedRoute allowedRoles={['Admin']}><EmailListDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
+        <Route path="/logs" element={<ProtectedRoute allowedRoles={['Admin']}><LoggerDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         {/* <Route path="/whatsapp" element={<ProtectedRoute allowedRoles={['Admin']}><WhatsAppListDashboard handleLogout={handleLogout} /></ProtectedRoute>} /> */}
         <Route path="/unassigned-events" element={<ProtectedRoute allowedRoles={['Admin']}><UnassignedEventsDashboard handleLogout={handleLogout} /></ProtectedRoute>} />
         <Route path="/emails/:id" element={<ProtectedRoute allowedRoles={['Admin']}><EmailModal /></ProtectedRoute>} />

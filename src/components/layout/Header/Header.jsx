@@ -99,11 +99,19 @@ function Header({ handleLogout }) {
                 </Nav.Link>
                 <Nav.Link
                   as={Link}
-                  to="/whatsapp"
-                  active={location.pathname === '/whatsapp'}
+                  to="/emails"
+                  active={location.pathname === '/emails'}
                   onClick={() => setExpanded(false)}
                 >
-                  Whatsapp Versand
+                  Email Versand
+                </Nav.Link>
+                <Nav.Link
+                  as={Link}
+                  to="/logs"
+                  active={location.pathname === '/logs'}
+                  onClick={() => setExpanded(false)}
+                >
+                  logs
                 </Nav.Link>
               </>
             ) : (
