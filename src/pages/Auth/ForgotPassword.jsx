@@ -65,7 +65,7 @@ function ForgotPassword() {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page bb">
       <div className={`login-container ${mounted ? "login-mounted" : ""}`}>
         <div className="login-content">
           <div className="login-header">
