@@ -6,7 +6,7 @@ import React, {
   useMemo,
 } from "react";
 import { toast } from "react-toastify";
-import { Table, Button, Modal, Form, Spinner, Badge } from "react-bootstrap";
+import { Table, Button, Modal, Spinner, Badge } from "react-bootstrap";
 import {
   ChevronDown,
   ChevronUp,
@@ -18,11 +18,7 @@ import {
   Pencil,
 } from "react-bootstrap-icons";
 import { DashboardLayout } from "../components/layout";
-import {
-  PullToRefresh,
-  SearchBox,
-  DashboardLoader,
-} from "../components/common";
+import { PullToRefresh, SearchBox, DashboardLoader } from "../components/common";
 import AddArtistModal from "../components/AddArtistModal";
 
 import { useMediaQuery } from "react-responsive";
@@ -55,8 +51,11 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const [modalMode, setModalMode] = useState("add"); // "add" or "edit"
   const [artistToEdit, setArtistToEdit] = useState(null);
 
-  const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
+  // ✅ NEW: Details popup states
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsArtist, setDetailsArtist] = useState(null);
 
+  const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
   const navigate = useNavigate();
 
   const fetchCalendars = useCallback(async () => {
@@ -78,6 +77,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       setRoleOptions([]);
     }
   }, []);
+
   const fetchArtists = useCallback(async (refresh = false) => {
     setLoading(true);
     setError(null);
@@ -98,7 +98,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         if (!combinedAddress && (street || city || postalCode || state)) {
           combinedAddress =
             `${street} ${houseNumber}, ${postalCode} ${city}, ${state}`.trim();
-          // Clean up any trailing commas or empty parts
           combinedAddress = combinedAddress
             .replace(/\s*,\s*$/g, "")
             .replace(/,\s*,/g, ",");
@@ -196,6 +195,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       [calendar]: !prev[calendar],
     }));
   }, []);
+
   const toggleTooltip = (email, event) => {
     if (event) {
       event.stopPropagation();
@@ -283,16 +283,26 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     }));
   };
 
-  const artistsByCalendar = useMemo(() => {
-    console.log("Rendering ArtistsDashboard with artists:", artists);
+  // ✅ NEW: open/close details modal
+  const openDetails = (artist, e) => {
+    if (e) e.stopPropagation();
+    setDetailsArtist(artist);
+    setShowDetailsModal(true);
+    closeAllTooltips();
+  };
 
+  const closeDetails = () => {
+    setShowDetailsModal(false);
+    setDetailsArtist(null);
+  };
+
+  const artistsByCalendar = useMemo(() => {
     const filtered =
       searchTerm.trim() === ""
         ? artists
         : artists.filter((artist) => {
             const searchLower = searchTerm.toLowerCase();
 
-            // Check all searchable fields
             return (
               (artist.name || "").toLowerCase().includes(searchLower) ||
               (artist.email || "").toLowerCase().includes(searchLower) ||
@@ -302,16 +312,12 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
               (artist.firstName || "").toLowerCase().includes(searchLower) ||
               (artist.lastName || "").toLowerCase().includes(searchLower) ||
               (artist.phone || "").toLowerCase().includes(searchLower) ||
-              // Combined address field (for backward compatibility)
               (artist.address || "").toLowerCase().includes(searchLower) ||
-              // Individual address fields (if they exist on the artist object)
               (artist.street || "").toLowerCase().includes(searchLower) ||
               (artist.houseNumber || "").toLowerCase().includes(searchLower) ||
               (artist.city || "").toLowerCase().includes(searchLower) ||
               (artist.postalCode || "").toLowerCase().includes(searchLower) ||
               (artist.state || "").toLowerCase().includes(searchLower) ||
-              // Also search in the combined format of address fields
-              // This helps when individual fields might not be stored separately
               `${artist.street || ""} ${artist.houseNumber || ""} ${
                 artist.city || ""
               } ${artist.postalCode || ""} ${artist.state || ""}`
@@ -319,8 +325,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                 .includes(searchLower)
             );
           });
-
-    console.log("Filtered artists:", filtered);
 
     return filtered.reduce((acc, artist) => {
       const calendar = artist.calendar || "Unbekannt";
@@ -336,14 +340,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     () => Object.keys(artistsByCalendar).sort(),
     [artistsByCalendar]
   );
-
-  const getRoleCounts = useMemo(() => {
-    return artists.reduce((acc, artist) => {
-      if (!artist.role) return acc;
-      acc[artist.role] = (acc[artist.role] || 0) + 1;
-      return acc;
-    }, {});
-  }, [artists]);
 
   const getRoleCountsByCalendar = useMemo(() => {
     return artists.reduce((acc, artist) => {
@@ -388,7 +384,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
   const handleEditClick = useCallback((artist, e) => {
     if (e) e.stopPropagation();
-    console.log("Editing artist:", artistToEdit);
     setModalMode("edit");
     setArtistToEdit(artist);
     setSelectedCalendarForModal(artist.calendar);
@@ -398,7 +393,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
   const handleAddArtistFromModal = async (artistData) => {
     try {
-      // Validation check - all required fields
       if (
         !artistData.calendar ||
         !artistData.firstName ||
@@ -416,7 +410,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         return;
       }
 
-      // Capitalize name helper function
       const capitalizeName = (name) => {
         return name
           .trim()
@@ -426,7 +419,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           .join(" ");
       };
 
-      // Capitalize city and street names
       const capitalizeAddressPart = (text) => {
         return text
           .trim()
@@ -436,10 +428,8 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           .join(" ");
       };
 
-      // Build the combined address string
       const combinedAddress = `${artistData.street.trim()} ${artistData.houseNumber.trim()}, ${artistData.postalCode.trim()} ${artistData.city.trim()}, ${artistData.state.trim()}`;
 
-      // Trim and process fields
       const processedData = {
         Calendar: artistData.calendar.trim(),
         Name: `${capitalizeName(artistData.firstName)} ${capitalizeName(
@@ -448,10 +438,9 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         FirstName: capitalizeName(artistData.firstName),
         LastName: capitalizeName(artistData.lastName),
         Role: artistData.role.trim(),
-        email: artistData.email.trim().toLowerCase(), // Email should be lowercase
-        Phone: artistData.phone.trim().replace(/\s/g, ""), // Remove spaces from phone
+        email: artistData.email.trim().toLowerCase(),
+        Phone: artistData.phone.trim().replace(/\s/g, ""),
         Address: combinedAddress,
-        // Add individual address fields if your API supports them
         Street: capitalizeAddressPart(artistData.street),
         HouseNumber: artistData.houseNumber.trim(),
         City: capitalizeAddressPart(artistData.city),
@@ -481,7 +470,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
   const handleUpdateArtistFromModal = async (updatedData) => {
     try {
-      // Validation check - all required fields
       if (
         !updatedData.calendar ||
         !updatedData.firstName ||
@@ -499,7 +487,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         return;
       }
 
-      // Capitalize name helper function
       const capitalizeName = (name) => {
         return name
           .trim()
@@ -509,7 +496,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           .join(" ");
       };
 
-      // Capitalize city and street names
       const capitalizeAddressPart = (text) => {
         return text
           .trim()
@@ -519,10 +505,8 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           .join(" ");
       };
 
-      // Build the combined address string
       const combinedAddress = `${updatedData.street.trim()} ${updatedData.houseNumber.trim()}, ${updatedData.postalCode.trim()} ${updatedData.city.trim()}, ${updatedData.state.trim()}`;
 
-      // Trim and process fields
       const updatePayload = {
         Calendar: updatedData.calendar.trim(),
         Name: `${capitalizeName(updatedData.firstName)} ${capitalizeName(
@@ -531,16 +515,15 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         FirstName: capitalizeName(updatedData.firstName),
         LastName: capitalizeName(updatedData.lastName),
         Role: updatedData.role.trim(),
-        email: updatedData.email.trim().toLowerCase(), // Email should be lowercase
-        Phone: updatedData.phone.trim().replace(/\s/g, ""), // Remove spaces from phone
+        email: updatedData.email.trim().toLowerCase(),
+        Phone: updatedData.phone.trim().replace(/\s/g, ""),
         Address: combinedAddress,
-        // Add individual address fields if your API supports them
         Street: capitalizeAddressPart(updatedData.street),
         HouseNumber: updatedData.houseNumber.trim(),
         City: capitalizeAddressPart(updatedData.city),
         PostalCode: updatedData.postalCode.trim(),
         State: updatedData.state.trim(),
-        originalEmail: artistToEdit.email.trim().toLowerCase(), // Lowercase for consistency
+        originalEmail: artistToEdit?.email?.trim()?.toLowerCase(),
       };
 
       const response = await api.put("/artist", updatePayload);
@@ -564,7 +547,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   };
 
   const handleAdminLoginAsArtist = async (artist) => {
-    if (loggingIn[artist.email]) return; // prevent duplicate clicks
+    if (loggingIn[artist.email]) return;
 
     setLoggingIn((prev) => ({ ...prev, [artist.email]: true }));
 
@@ -581,13 +564,13 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         toast.warning("You just logged in again as Admin.");
         navigate("/artists");
       } else {
-        toast.success(`Eingeloggt als ${user.Name || user.email}`);
+        toast.success(`Logged in as ${user.Name || user.email}`);
         navigate("/user-assigned-dashboard");
       }
     } catch (err) {
       toast.error(
         err.response?.data?.message ||
-          "Login fehlgeschlagen. Bitte überprüfen Sie die Zugangsdaten."
+          "Login failed. Please check the credentials."
       );
     } finally {
       setLoggingIn((prev) => ({ ...prev, [artist.email]: false }));
@@ -597,13 +580,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const handleDeleteClick = (artist) => {
     setSelectedArtist(artist);
     setShowDeleteModal(true);
-    closeAllTooltips(); // Close tooltips when opening modal
+    closeAllTooltips();
   };
 
   const handleLoginClick = (artist) => {
-    closeAllTooltips(); // Close tooltips when logging in
+    closeAllTooltips();
     handleAdminLoginAsArtist(artist);
   };
+
   const handleDeleteConfirm = async () => {
     try {
       if (!selectedArtist || isDeleting) return;
@@ -619,17 +603,18 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       fetchArtists(true);
       setShowDeleteModal(false);
       setSelectedArtist(null);
+
       if (response.data.status === "success") {
-        console.success("Künstler erfolgreich gelöscht");
+        console.log("Artist deleted successfully");
       } else {
         console.error(
-          response.data.message || "Fehler beim Löschen des Künstlers"
+          response.data.message || "Error deleting the artist"
         );
       }
     } catch (error) {
       console.error("Error deleting artist:", error);
       console.error(
-        "Fehler beim Löschen des Künstlers: " +
+        "Error deleting artist: " +
           (error.response?.data?.message || error.message)
       );
     } finally {
@@ -648,15 +633,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       handleLogout={handleLogout}
     >
       <div className="artists-dashboard">
-        {/* Only show header when not loading */}
         {!loading && (
           <div className="transparent-header-container">
-            <h1 className="dashboard-main-title">Künstler Management</h1>
+            <h1 className="dashboard-main-title">Artist Management</h1>
             <div className="header-search-box">
               <SearchBox
                 value={searchTerm}
                 onChange={handleSearchChange}
-                placeholder="Name, E-Mail, Rolle, Passwort oder Kalender suchen..."
+                placeholder="Search name, city, state, zip, role..."
               />
             </div>
           </div>
@@ -666,21 +650,17 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
         <div className="artists-container">
           {loading ? (
-            <DashboardLoader message="Künstler werden geladen..." />
+            <DashboardLoader message="Loading artists..." />
           ) : totalFilteredArtists === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">
                 <i className="bi bi-person-x"></i>
               </div>
-              <h4>
-                {searchTerm
-                  ? "Keine Ergebnisse gefunden."
-                  : "Keine Künstler gefunden."}
-              </h4>
+              <h4>{searchTerm ? "No results found." : "No artists found."}</h4>
               <p>
                 {searchTerm
-                  ? "Versuchen Sie einen anderen Suchbegriff."
-                  : 'Klicken Sie auf "Künstler hinzufügen", um einen neuen Künstler hinzuzufügen.'}
+                  ? "Try a different search term."
+                  : 'Click "Add Artist" to create a new artist.'}
               </p>
               {!searchTerm && (
                 <Button
@@ -690,7 +670,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                     setShowAddModal(true);
                   }}
                 >
-                  Künstler hinzufügen
+                  Add Artist
                 </Button>
               )}
             </div>
@@ -703,9 +683,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                 <div
                   key={calendar}
                   className={`artist-calendar-card ${
-                    !calendarHasMatch(calendar) && searchTerm
-                      ? "filtered-out"
-                      : ""
+                    !calendarHasMatch(calendar) && searchTerm ? "filtered-out" : ""
                   }`}
                 >
                   <div
@@ -725,8 +703,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                         </div>
 
                         {getRoleCountsByCalendar[calendar] &&
-                          Object.entries(getRoleCountsByCalendar[calendar])
-                            .length > 0 && (
+                          Object.entries(getRoleCountsByCalendar[calendar]).length > 0 && (
                             <div className="calendar-role-badges d-none d-md-flex">
                               {Object.entries(getRoleCountsByCalendar[calendar])
                                 .sort((a, b) => b[1] - a[1])
@@ -747,16 +724,13 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                     <span className="badge-count">{count}</span>
                                   </Badge>
                                 ))}
-                              {Object.keys(getRoleCountsByCalendar[calendar])
-                                .length > 3 && (
+                              {Object.keys(getRoleCountsByCalendar[calendar]).length > 3 && (
                                 <Badge
                                   bg="secondary"
                                   className="enhanced-badge capsule-badge"
                                 >
                                   +
-                                  {Object.keys(
-                                    getRoleCountsByCalendar[calendar]
-                                  ).length - 3}
+                                  {Object.keys(getRoleCountsByCalendar[calendar]).length - 3}
                                 </Badge>
                               )}
                             </div>
@@ -767,11 +741,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                         <span className="count-number">
                           {artistsByCalendar[calendar].length}
                         </span>
-                        <span className="count-label">
-                          {artistsByCalendar[calendar].length === 1
-                            ? " Künstler"
-                            : " Künstler"}
-                        </span>
+                        <span className="count-label"> Artists</span>
                       </span>
                     </div>
 
@@ -782,14 +752,12 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                       onClick={(e) => {
                         setSelectedRoles([
                           ...new Set(
-                            artistsByCalendar[calendar].map(
-                              (artist) => artist.role
-                            )
+                            artistsByCalendar[calendar].map((artist) => artist.role)
                           ),
                         ]);
                         toggleAddForm(calendar, e);
                       }}
-                      title="Künstler hinzufügen"
+                      title="Add artist"
                     >
                       <PersonPlus size={16} />
                     </Button>
@@ -797,155 +765,104 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
                   {expandedCalendars[calendar] && (
                     <div className="calendar-content">
+                      {/* ✅ Desktop table: only Name, City, State, Zip, Role + More icon */}
                       <div className="table-responsive d-none d-md-block">
                         <Table className="artists-table">
                           <thead>
                             <tr>
                               <th>Name</th>
-                              <th>E-Mail</th>
-                              <th>Rolle</th>
-                              <th>Passwort</th>
-                              <th>Aktion</th>
+                              <th>City</th>
+                              <th>State</th>
+                              <th>Zip</th>
+                              <th>Role</th>
+                              <th>More</th>
+                              <th>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {artistsByCalendar[calendar].map(
-                              (artist, index) => (
-                                <tr key={index} className="artist-row">
-                                  <td className="artist-name">{artist.name}</td>
-                                  <td className="artist-email">
-                                    {artist.email}
-                                  </td>
-                                  <td className="artist-role">
-                                    <Badge
-                                      bg="light"
-                                      text="dark"
-                                      className="role-badge"
-                                    >
-                                      {artist.role}
-                                    </Badge>
-                                  </td>
+                            {artistsByCalendar[calendar].map((artist, index) => (
+                              <tr key={index} className="artist-row">
+                                <td className="artist-name">{artist.name}</td>
+                                <td>{artist.city || "-"}</td>
+                                <td>{artist.state || "-"}</td>
+                                <td>{artist.postalCode || "-"}</td>
+                                <td className="artist-role">
+                                  <Badge bg="light" text="dark" className="role-badge">
+                                    {artist.role || "-"}
+                                  </Badge>
+                                </td>
 
-                                  <td className="artist-password">
-                                    <div className="password-display">
-                                      {showPasswords[artist.email]
-                                        ? artist.password
-                                        : "••••••••"}
-                                      <Button
-                                        variant="link"
-                                        size="sm"
-                                        className="password-toggle"
-                                        onClick={() =>
-                                          togglePasswordVisibility(artist.email)
-                                        }
-                                        title={
-                                          showPasswords[artist.email]
-                                            ? "Passwort verbergen"
-                                            : "Passwort anzeigen"
-                                        }
-                                      >
-                                        {showPasswords[artist.email] ? (
-                                          <EyeSlash size={14} />
-                                        ) : (
-                                          <Eye size={14} />
-                                        )}
-                                      </Button>
-                                    </div>
-                                  </td>
-                                  <td className="artist-visits">
-                                    <div className="visits-container">
-                                      <Button
-                                        variant="link"
-                                        className="visits-icon"
-                                        onClick={(e) =>
-                                          toggleTooltip(artist.email, e)
-                                        }
-                                        title="Dashboard-Besuche anzeigen"
-                                      >
-                                        <i className="bi bi-bar-chart-fill"></i>
-                                        {artist.dashboardVisits.length > 0 && (
-                                          <span className="visits-count">
-                                            {artist.dashboardVisits.length}
-                                          </span>
-                                        )}
-                                      </Button>
-                                      {openTooltips[artist.email] && (
-                                        <TooltipComponent
-                                          artist={artist}
-                                          onClose={toggleTooltip}
-                                        />
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="artist-actions d-flex gap-1">
-                                    <Button
-                                      variant="outline-primary"
-                                      size="sm"
-                                      onClick={(e) =>
-                                        handleEditClick(artist, e)
-                                      }
-                                      className="edit-btn"
-                                      title="Künstler bearbeiten"
-                                    >
-                                      <Pencil size={16} />
-                                    </Button>
+                                <td>
+                                  <Button
+                                    variant="outline-secondary"
+                                    size="sm"
+                                    onClick={(e) => openDetails(artist, e)}
+                                    title="Show details"
+                                  >
+                                    <Eye size={16} />
+                                  </Button>
+                                </td>
 
-                                    <Button
-                                      variant="outline-danger"
-                                      size="sm"
-                                      onClick={() => handleDeleteClick(artist)}
-                                      className="delete-btn"
-                                      title="Künstler löschen"
-                                    >
-                                      <Trash size={16} />
-                                    </Button>
+                                <td className="artist-actions d-flex gap-1">
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={(e) => handleEditClick(artist, e)}
+                                    className="edit-btn"
+                                    title="Edit artist"
+                                  >
+                                    <Pencil size={16} />
+                                  </Button>
 
-                                    <Button
-                                      variant="outline-success"
-                                      size="sm"
-                                      onClick={() => handleLoginClick(artist)}
-                                      className="login-btn"
-                                      disabled={loggingIn[artist.email]}
-                                      title="Als Künstler einloggen"
-                                    >
-                                      {loggingIn[artist.email] ? (
-                                        <Spinner animation="border" size="sm" />
-                                      ) : (
-                                        <i className="bi bi-box-arrow-in-right"></i>
-                                      )}
-                                    </Button>
-                                  </td>
-                                </tr>
-                              )
-                            )}
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => handleDeleteClick(artist)}
+                                    className="delete-btn"
+                                    title="Delete artist"
+                                  >
+                                    <Trash size={16} />
+                                  </Button>
+
+                                  <Button
+                                    variant="outline-success"
+                                    size="sm"
+                                    onClick={() => handleLoginClick(artist)}
+                                    className="login-btn"
+                                    disabled={loggingIn[artist.email]}
+                                    title="Login as artist"
+                                  >
+                                    {loggingIn[artist.email] ? (
+                                      <Spinner animation="border" size="sm" />
+                                    ) : (
+                                      <i className="bi bi-box-arrow-in-right"></i>
+                                    )}
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
                           </tbody>
                         </Table>
                       </div>
 
+                      {/* Mobile cards (unchanged) */}
                       <div className="artist-cards-container d-md-none">
                         {artistsByCalendar[calendar].map((artist, index) => (
                           <div key={index} className="artist-mobile-card">
                             <div className="artist-mobile-header">
-                              <div className="artist-mobile-title">
-                                {artist.name}
-                              </div>
+                              <div className="artist-mobile-title">{artist.name}</div>
                             </div>
 
                             <div className="artist-mobile-content">
                               <div className="artist-mobile-role">
-                                <Badge
-                                  bg="light"
-                                  text="dark"
-                                  className="role-badge"
-                                >
+                                <Badge bg="light" text="dark" className="role-badge">
                                   {artist.role}
                                 </Badge>
                               </div>
 
                               <div className="artist-mobile-details">
                                 <div className="artist-mobile-email">
-                                  <i className="bi bi-envelope"></i>{" "}
-                                  {artist.email}
+                                  <i className="bi bi-envelope"></i> {artist.email}
                                 </div>
                                 <div className="artist-mobile-password">
                                   <i className="bi bi-key"></i>{" "}
@@ -956,13 +873,11 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                     variant="link"
                                     size="sm"
                                     className="password-toggle"
-                                    onClick={() =>
-                                      togglePasswordVisibility(artist.email)
-                                    }
+                                    onClick={() => togglePasswordVisibility(artist.email)}
                                     title={
                                       showPasswords[artist.email]
-                                        ? "Passwort verbergen"
-                                        : "Passwort anzeigen"
+                                        ? "Hide password"
+                                        : "Show password"
                                     }
                                   >
                                     {showPasswords[artist.email] ? (
@@ -973,14 +888,13 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   </Button>
                                 </div>
                               </div>
+
                               <div className="artist-mobile-visits">
                                 <Button
                                   variant="link"
                                   className="visits-icon p-1"
-                                  onClick={(e) =>
-                                    toggleTooltip(artist.email, e)
-                                  }
-                                  title="Dashboard-Besuche anzeigen"
+                                  onClick={(e) => toggleTooltip(artist.email, e)}
+                                  title="Show dashboard visits"
                                 >
                                   <i
                                     className="bi bi-bar-chart-fill"
@@ -1007,13 +921,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   onClose={toggleTooltip}
                                 />
                               )}
+
                               <div className="artist-mobile-actions">
                                 <Button
                                   variant="outline-primary"
                                   size="sm"
                                   onClick={(e) => handleEditClick(artist, e)}
                                   className="w-auto"
-                                  title="Künstler bearbeiten"
+                                  title="Edit artist"
                                 >
                                   <Pencil size={16} />
                                 </Button>
@@ -1023,23 +938,35 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   size="sm"
                                   onClick={() => handleDeleteClick(artist)}
                                   className="w-auto"
-                                  title="Künstler löschen"
+                                  title="Delete artist"
                                 >
                                   <Trash size={16} />
                                 </Button>
+
                                 <Button
                                   variant="outline-success"
                                   size="sm"
                                   className="w-auto"
                                   onClick={() => handleLoginClick(artist)}
                                   disabled={loggingIn[artist.email]}
-                                  title="Als Künstler einloggen"
+                                  title="Login as artist"
                                 >
                                   {loggingIn[artist.email] ? (
                                     <Spinner animation="border" size="sm" />
                                   ) : (
                                     <i className="bi bi-box-arrow-in-right"></i>
                                   )}
+                                </Button>
+
+                                {/* Optional: open details on mobile too */}
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  className="w-auto"
+                                  onClick={(e) => openDetails(artist, e)}
+                                  title="Show details"
+                                >
+                                  <Eye size={16} />
                                 </Button>
                               </div>
                             </div>
@@ -1069,16 +996,92 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         artistToEdit={artistToEdit}
       />
 
+      {/* ✅ NEW: Details Modal */}
+      <Modal show={showDetailsModal} onHide={closeDetails} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Artist Details</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          {!detailsArtist ? (
+            <div className="text-muted">No details</div>
+          ) : (
+            <div className="d-flex flex-column gap-2">
+              <div>
+                <strong>Name:</strong> {detailsArtist.name || "-"}
+              </div>
+              <div>
+                <strong>Email:</strong> {detailsArtist.email || "-"}
+              </div>
+              <div>
+                <strong>Phone:</strong> {detailsArtist.phone || "-"}
+              </div>
+              <div>
+                <strong>Calendar:</strong> {detailsArtist.calendar || "-"}
+              </div>
+              <div>
+                <strong>Role:</strong> {detailsArtist.role || "-"}
+              </div>
+
+              <hr />
+
+              <div>
+                <strong>Street:</strong> {detailsArtist.street || "-"}
+              </div>
+              <div>
+                <strong>House Number:</strong> {detailsArtist.houseNumber || "-"}
+              </div>
+              <div>
+                <strong>City:</strong> {detailsArtist.city || "-"}
+              </div>
+              <div>
+                <strong>Zip:</strong> {detailsArtist.postalCode || "-"}
+              </div>
+              <div>
+                <strong>State:</strong> {detailsArtist.state || "-"}
+              </div>
+
+              <hr />
+
+              <div>
+                <strong>Password:</strong>{" "}
+                {showPasswords[detailsArtist.email]
+                  ? detailsArtist.password
+                  : "••••••••"}
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="ms-2"
+                  onClick={() => togglePasswordVisibility(detailsArtist.email)}
+                >
+                  {showPasswords[detailsArtist.email] ? (
+                    <EyeSlash size={14} />
+                  ) : (
+                    <Eye size={14} />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeDetails}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Delete Modal (existing) */}
       <Modal
         show={showDeleteModal}
         onHide={() => !isDeleting && setShowDeleteModal(false)}
       >
         <Modal.Header closeButton>
-          <Modal.Title>Löschen bestätigen</Modal.Title>
+          <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Sind Sie sicher, dass Sie den Künstler "{selectedArtist?.name}"
-          löschen möchten?
+          Are you sure you want to delete "{selectedArtist?.name}"?
         </Modal.Body>
         <Modal.Footer>
           <Button
@@ -1086,7 +1089,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
             onClick={() => setShowDeleteModal(false)}
             disabled={isDeleting}
           >
-            Abbrechen
+            Cancel
           </Button>
           <Button
             variant="danger"
@@ -1102,10 +1105,10 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                   role="status"
                   aria-hidden="true"
                 />
-                <span className="ms-2">Löschen...</span>
+                <span className="ms-2">Deleting...</span>
               </>
             ) : (
-              "Löschen"
+              "Delete"
             )}
           </Button>
         </Modal.Footer>
