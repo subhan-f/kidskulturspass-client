@@ -279,7 +279,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     }));
   };
 
-  // ✅ Details modal open/close
   const openDetails = (artist, e) => {
     if (e) e.stopPropagation();
     setDetailsArtist(artist);
@@ -625,7 +624,9 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                 <i className="bi bi-person-x"></i>
               </div>
               <h4>
-                {searchTerm ? "Keine Ergebnisse gefunden." : "Keine Künstler gefunden."}
+                {searchTerm
+                  ? "Keine Ergebnisse gefunden."
+                  : "Keine Künstler gefunden."}
               </h4>
               <p>
                 {searchTerm
@@ -673,8 +674,8 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                         </div>
 
                         {getRoleCountsByCalendar[calendar] &&
-                          Object.entries(getRoleCountsByCalendar[calendar]).length >
-                            0 && (
+                          Object.entries(getRoleCountsByCalendar[calendar])
+                            .length > 0 && (
                             <div className="calendar-role-badges d-none d-md-flex">
                               {Object.entries(getRoleCountsByCalendar[calendar])
                                 .sort((a, b) => b[1] - a[1])
@@ -738,7 +739,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
                   {expandedCalendars[calendar] && (
                     <div className="calendar-content">
-                      {/* ✅ Desktop table */}
+                      {/* ✅ Desktop table (unchanged) */}
                       <div className="table-responsive d-none d-md-block">
                         <Table className="artists-table">
                           <thead>
@@ -762,18 +763,23 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                 <td>{artist.postalCode || "-"}</td>
 
                                 <td className="artist-role">
-                                  <Badge bg="light" text="dark" className="role-badge">
+                                  <Badge
+                                    bg="light"
+                                    text="dark"
+                                    className="role-badge"
+                                  >
                                     {artist.role || "-"}
                                   </Badge>
                                 </td>
 
-                                {/* ✅ Dashboard-Besuche on Desktop */}
                                 <td className="artist-visits">
                                   <div className="visits-container">
                                     <Button
                                       variant="link"
                                       className="visits-icon"
-                                      onClick={(e) => toggleTooltip(artist.email, e)}
+                                      onClick={(e) =>
+                                        toggleTooltip(artist.email, e)
+                                      }
                                       title="Dashboard-Besuche anzeigen"
                                     >
                                       <i className="bi bi-bar-chart-fill"></i>
@@ -793,7 +799,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   </div>
                                 </td>
 
-                                {/* More */}
                                 <td>
                                   <Button
                                     variant="outline-secondary"
@@ -805,7 +810,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   </Button>
                                 </td>
 
-                                {/* Actions */}
                                 <td className="artist-actions d-flex gap-1">
                                   <Button
                                     variant="outline-primary"
@@ -848,12 +852,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                         </Table>
                       </div>
 
-                      {/* ✅ Mobile cards */}
+                      {/* ✅ Mobile cards (ADDED city/state/zip + address lines, everything else unchanged) */}
                       <div className="artist-cards-container d-md-none">
                         {artistsByCalendar[calendar].map((artist, index) => (
                           <div key={index} className="artist-mobile-card">
                             <div className="artist-mobile-header">
-                              <div className="artist-mobile-title">{artist.name}</div>
+                              <div className="artist-mobile-title">
+                                {artist.name}
+                              </div>
                             </div>
 
                             <div className="artist-mobile-content">
@@ -863,11 +869,29 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                 </Badge>
                               </div>
 
+                              {/* ✅ NEW: Location block on mobile */}
+                              <div className="artist-mobile-location">
+                                <div className="artist-mobile-city-state-zip">
+                                  <i className="bi bi-geo-alt"></i>{" "}
+                                  {artist.city || "-"}, {artist.state || "-"}{" "}
+                                  {artist.postalCode || "-"}
+                                </div>
+
+                                <div className="artist-mobile-street">
+                                  <i className="bi bi-house"></i>{" "}
+                                  {(artist.street || "-") +
+                                    (artist.houseNumber
+                                      ? ` ${artist.houseNumber}`
+                                      : "")}
+                                </div>
+                              </div>
+
                               <div className="artist-mobile-details">
                                 <div className="artist-mobile-email">
                                   <i className="bi bi-envelope"></i>{" "}
                                   {artist.email || "-"}
                                 </div>
+
                                 <div className="artist-mobile-password">
                                   <i className="bi bi-key"></i>{" "}
                                   {showPasswords[artist.email]
