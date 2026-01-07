@@ -51,7 +51,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const [modalMode, setModalMode] = useState("add"); // "add" or "edit"
   const [artistToEdit, setArtistToEdit] = useState(null);
 
-  // ✅ NEW: Details popup states
+  // ✅ Details popup states
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [detailsArtist, setDetailsArtist] = useState(null);
 
@@ -78,14 +78,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     }
   }, []);
 
-  const fetchArtists = useCallback(async (refresh = false) => {
+  const fetchArtists = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       const response = await api.get("/artists");
-      response.data = response.data.map((artist) => {
-        // If individual address fields exist but combined doesn't, create it
+
+      response.data = (response.data || []).map((artist) => {
         const street = artist.Street || artist.street || "";
         const houseNumber = artist.HouseNumber || artist.houseNumber || "";
         const city = artist.City || artist.city || "";
@@ -93,8 +93,6 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         const state = artist.State || artist.state || "";
 
         let combinedAddress = artist.Address || "";
-
-        // Create combined address if we have individual fields but no combined address
         if (!combinedAddress && (street || city || postalCode || state)) {
           combinedAddress =
             `${street} ${houseNumber}, ${postalCode} ${city}, ${state}`.trim();
@@ -106,7 +104,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         return {
           name: artist.Name,
           calendar: artist.Calendar,
-          email: artist["E-Mail"],
+          email: artist["E-Mail"] || artist.email,
           role: artist.Role,
           password: artist.password,
           dashboardVisits: artist.dashboardVisits || [],
@@ -114,16 +112,15 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           lastName: artist.LastName || "",
           phone: artist.Phone || "",
           address: combinedAddress,
-          // Individual address fields
-          street: street,
-          houseNumber: houseNumber,
-          city: city,
-          postalCode: postalCode,
-          state: state,
+          street,
+          houseNumber,
+          city,
+          postalCode,
+          state,
         };
       });
 
-      if (response.data.error) {
+      if (response.data?.error) {
         setError(response.data.error);
         toast.error(`Error: ${response.data.error}`);
         setArtists([]);
@@ -137,6 +134,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
           const uniqueCalendars = [
             ...new Set(artistData.map((artist) => artist.calendar)),
           ];
+
           const initialExpandState = {};
           uniqueCalendars.forEach((cal) => {
             initialExpandState[cal] = true;
@@ -158,8 +156,8 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       }
     } catch (err) {
       console.error("Error fetching artists:", err);
-      setError("Failed to load artists. Please try again later.");
-      toast.error("Failed to load artists");
+      setError("Konnte Künstler nicht laden. Bitte später erneut versuchen.");
+      toast.error("Konnte Künstler nicht laden.");
       setArtists([]);
       setFilteredArtists([]);
     } finally {
@@ -197,9 +195,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   }, []);
 
   const toggleTooltip = (email, event) => {
-    if (event) {
-      event.stopPropagation();
-    }
+    if (event) event.stopPropagation();
     setOpenTooltips((prev) => ({
       ...prev,
       [email]: !prev[email],
@@ -283,7 +279,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     }));
   };
 
-  // ✅ NEW: open/close details modal
+  // ✅ Details modal open/close
   const openDetails = (artist, e) => {
     if (e) e.stopPropagation();
     setDetailsArtist(artist);
@@ -302,35 +298,24 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         ? artists
         : artists.filter((artist) => {
             const searchLower = searchTerm.toLowerCase();
-
             return (
               (artist.name || "").toLowerCase().includes(searchLower) ||
               (artist.email || "").toLowerCase().includes(searchLower) ||
               (artist.calendar || "").toLowerCase().includes(searchLower) ||
               (artist.role || "").toLowerCase().includes(searchLower) ||
-              (artist.password || "").toLowerCase().includes(searchLower) ||
-              (artist.firstName || "").toLowerCase().includes(searchLower) ||
-              (artist.lastName || "").toLowerCase().includes(searchLower) ||
-              (artist.phone || "").toLowerCase().includes(searchLower) ||
-              (artist.address || "").toLowerCase().includes(searchLower) ||
-              (artist.street || "").toLowerCase().includes(searchLower) ||
-              (artist.houseNumber || "").toLowerCase().includes(searchLower) ||
               (artist.city || "").toLowerCase().includes(searchLower) ||
               (artist.postalCode || "").toLowerCase().includes(searchLower) ||
               (artist.state || "").toLowerCase().includes(searchLower) ||
-              `${artist.street || ""} ${artist.houseNumber || ""} ${
-                artist.city || ""
-              } ${artist.postalCode || ""} ${artist.state || ""}`
-                .toLowerCase()
-                .includes(searchLower)
+              (artist.street || "").toLowerCase().includes(searchLower) ||
+              (artist.houseNumber || "").toLowerCase().includes(searchLower) ||
+              (artist.phone || "").toLowerCase().includes(searchLower) ||
+              (artist.address || "").toLowerCase().includes(searchLower)
             );
           });
 
     return filtered.reduce((acc, artist) => {
       const calendar = artist.calendar || "Unbekannt";
-      if (!acc[calendar]) {
-        acc[calendar] = [];
-      }
+      if (!acc[calendar]) acc[calendar] = [];
       acc[calendar].push(artist);
       return acc;
     }, {});
@@ -344,11 +329,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   const getRoleCountsByCalendar = useMemo(() => {
     return artists.reduce((acc, artist) => {
       if (!artist.calendar || !artist.role) return acc;
-
-      if (!acc[artist.calendar]) {
-        acc[artist.calendar] = {};
-      }
-
+      if (!acc[artist.calendar]) acc[artist.calendar] = {};
       acc[artist.calendar][artist.role] =
         (acc[artist.calendar][artist.role] || 0) + 1;
       return acc;
@@ -356,11 +337,8 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
   }, [artists]);
 
   const calendarHasMatch = useCallback(
-    (calendar) => {
-      return (
-        artistsByCalendar[calendar] && artistsByCalendar[calendar].length > 0
-      );
-    },
+    (calendar) =>
+      artistsByCalendar[calendar] && artistsByCalendar[calendar].length > 0,
     [artistsByCalendar]
   );
 
@@ -406,27 +384,25 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         !artistData.role ||
         !artistData.email
       ) {
-        toast.error("Bitte füllen Sie alle Pflichtfelder aus");
+        toast.error("Bitte fülle alle Pflichtfelder aus.");
         return;
       }
 
-      const capitalizeName = (name) => {
-        return name
+      const capitalizeName = (name) =>
+        name
           .trim()
           .toLowerCase()
           .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(" ");
-      };
 
-      const capitalizeAddressPart = (text) => {
-        return text
+      const capitalizeAddressPart = (text) =>
+        text
           .trim()
           .toLowerCase()
           .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(" ");
-      };
 
       const combinedAddress = `${artistData.street.trim()} ${artistData.houseNumber.trim()}, ${artistData.postalCode.trim()} ${artistData.city.trim()}, ${artistData.state.trim()}`;
 
@@ -451,18 +427,16 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       const response = await api.post("/artist", processedData);
 
       if (response.data.status === "success") {
-        toast.success("Künstler erfolgreich hinzugefügt");
+        toast.success("Künstler erfolgreich hinzugefügt.");
         setShowAddModal(false);
         fetchArtists(true);
       } else {
-        toast.error(
-          response.data.message || "Fehler beim Hinzufügen des Künstlers"
-        );
+        toast.error(response.data.message || "Fehler beim Hinzufügen.");
       }
     } catch (error) {
       console.error("Error adding artist:", error);
       toast.error(
-        "Fehler beim Hinzufügen des Künstlers: " +
+        "Fehler beim Hinzufügen: " +
           (error.response?.data?.message || error.message)
       );
     }
@@ -483,27 +457,25 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         !updatedData.role ||
         !updatedData.email
       ) {
-        toast.error("Bitte füllen Sie alle Pflichtfelder aus");
+        toast.error("Bitte fülle alle Pflichtfelder aus.");
         return;
       }
 
-      const capitalizeName = (name) => {
-        return name
+      const capitalizeName = (name) =>
+        name
           .trim()
           .toLowerCase()
           .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(" ");
-      };
 
-      const capitalizeAddressPart = (text) => {
-        return text
+      const capitalizeAddressPart = (text) =>
+        text
           .trim()
           .toLowerCase()
           .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(" ");
-      };
 
       const combinedAddress = `${updatedData.street.trim()} ${updatedData.houseNumber.trim()}, ${updatedData.postalCode.trim()} ${updatedData.city.trim()}, ${updatedData.state.trim()}`;
 
@@ -529,18 +501,16 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       const response = await api.put("/artist", updatePayload);
 
       if (response.data.status === "success") {
-        toast.success("Künstler erfolgreich aktualisiert");
+        toast.success("Künstler erfolgreich aktualisiert.");
         setShowAddModal(false);
         fetchArtists(true);
       } else {
-        toast.error(
-          response.data.message || "Fehler beim Aktualisieren des Künstlers"
-        );
+        toast.error(response.data.message || "Fehler beim Aktualisieren.");
       }
     } catch (error) {
       console.error("Error updating artist:", error);
       toast.error(
-        "Fehler beim Aktualisieren des Künstlers: " +
+        "Fehler beim Aktualisieren: " +
           (error.response?.data?.message || error.message)
       );
     }
@@ -552,7 +522,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     setLoggingIn((prev) => ({ ...prev, [artist.email]: true }));
 
     try {
-      const res = await authApi.login({
+      await authApi.login({
         username: artist.email,
         password: artist.password,
       });
@@ -561,16 +531,16 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       const user = userRes.data.user;
 
       if (user.Role === "Admin") {
-        toast.warning("You just logged in again as Admin.");
+        toast.warning("Du bist wieder als Admin eingeloggt.");
         navigate("/artists");
       } else {
-        toast.success(`Logged in as ${user.Name || user.email}`);
+        toast.success(`Eingeloggt als ${user.Name || user.email}`);
         navigate("/user-assigned-dashboard");
       }
     } catch (err) {
       toast.error(
         err.response?.data?.message ||
-          "Login failed. Please check the credentials."
+          "Login fehlgeschlagen. Bitte Zugangsdaten prüfen."
       );
     } finally {
       setLoggingIn((prev) => ({ ...prev, [artist.email]: false }));
@@ -605,16 +575,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       setSelectedArtist(null);
 
       if (response.data.status === "success") {
-        console.log("Artist deleted successfully");
+        console.log("Künstler erfolgreich gelöscht");
       } else {
-        console.error(
-          response.data.message || "Error deleting the artist"
-        );
+        console.error(response.data.message || "Fehler beim Löschen");
       }
     } catch (error) {
       console.error("Error deleting artist:", error);
       console.error(
-        "Error deleting artist: " +
+        "Fehler beim Löschen: " +
           (error.response?.data?.message || error.message)
       );
     } finally {
@@ -635,12 +603,12 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
       <div className="artists-dashboard">
         {!loading && (
           <div className="transparent-header-container">
-            <h1 className="dashboard-main-title">Artist Management</h1>
+            <h1 className="dashboard-main-title">Künstler Management</h1>
             <div className="header-search-box">
               <SearchBox
                 value={searchTerm}
                 onChange={handleSearchChange}
-                placeholder="Search name, city, state, zip, role..."
+                placeholder="Name, Stadt, Bundesland, PLZ, Rolle suchen..."
               />
             </div>
           </div>
@@ -650,17 +618,19 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
         <div className="artists-container">
           {loading ? (
-            <DashboardLoader message="Loading artists..." />
+            <DashboardLoader message="Künstler werden geladen..." />
           ) : totalFilteredArtists === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">
                 <i className="bi bi-person-x"></i>
               </div>
-              <h4>{searchTerm ? "No results found." : "No artists found."}</h4>
+              <h4>
+                {searchTerm ? "Keine Ergebnisse gefunden." : "Keine Künstler gefunden."}
+              </h4>
               <p>
                 {searchTerm
-                  ? "Try a different search term."
-                  : 'Click "Add Artist" to create a new artist.'}
+                  ? "Bitte einen anderen Suchbegriff versuchen."
+                  : 'Klicke auf "Künstler hinzufügen", um einen neuen Künstler anzulegen.'}
               </p>
               {!searchTerm && (
                 <Button
@@ -670,7 +640,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                     setShowAddModal(true);
                   }}
                 >
-                  Add Artist
+                  Künstler hinzufügen
                 </Button>
               )}
             </div>
@@ -703,7 +673,8 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                         </div>
 
                         {getRoleCountsByCalendar[calendar] &&
-                          Object.entries(getRoleCountsByCalendar[calendar]).length > 0 && (
+                          Object.entries(getRoleCountsByCalendar[calendar]).length >
+                            0 && (
                             <div className="calendar-role-badges d-none d-md-flex">
                               {Object.entries(getRoleCountsByCalendar[calendar])
                                 .sort((a, b) => b[1] - a[1])
@@ -724,13 +695,15 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                     <span className="badge-count">{count}</span>
                                   </Badge>
                                 ))}
-                              {Object.keys(getRoleCountsByCalendar[calendar]).length > 3 && (
+                              {Object.keys(getRoleCountsByCalendar[calendar])
+                                .length > 3 && (
                                 <Badge
                                   bg="secondary"
                                   className="enhanced-badge capsule-badge"
                                 >
                                   +
-                                  {Object.keys(getRoleCountsByCalendar[calendar]).length - 3}
+                                  {Object.keys(getRoleCountsByCalendar[calendar])
+                                    .length - 3}
                                 </Badge>
                               )}
                             </div>
@@ -741,7 +714,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                         <span className="count-number">
                           {artistsByCalendar[calendar].length}
                         </span>
-                        <span className="count-label"> Artists</span>
+                        <span className="count-label"> Künstler</span>
                       </span>
                     </div>
 
@@ -757,7 +730,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                         ]);
                         toggleAddForm(calendar, e);
                       }}
-                      title="Add artist"
+                      title="Künstler hinzufügen"
                     >
                       <PersonPlus size={16} />
                     </Button>
@@ -765,18 +738,19 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
                   {expandedCalendars[calendar] && (
                     <div className="calendar-content">
-                      {/* ✅ Desktop table: only Name, City, State, Zip, Role + More icon */}
+                      {/* ✅ Desktop table */}
                       <div className="table-responsive d-none d-md-block">
                         <Table className="artists-table">
                           <thead>
                             <tr>
                               <th>Name</th>
-                              <th>City</th>
-                              <th>State</th>
-                              <th>Zip</th>
-                              <th>Role</th>
-                              <th>More</th>
-                              <th>Actions</th>
+                              <th>Stadt</th>
+                              <th>Bundesland</th>
+                              <th>PLZ</th>
+                              <th>Rolle</th>
+                              <th>Dashboard-Besuche</th>
+                              <th>Mehr</th>
+                              <th>Aktionen</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -786,30 +760,59 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                 <td>{artist.city || "-"}</td>
                                 <td>{artist.state || "-"}</td>
                                 <td>{artist.postalCode || "-"}</td>
+
                                 <td className="artist-role">
                                   <Badge bg="light" text="dark" className="role-badge">
                                     {artist.role || "-"}
                                   </Badge>
                                 </td>
 
+                                {/* ✅ Dashboard-Besuche on Desktop */}
+                                <td className="artist-visits">
+                                  <div className="visits-container">
+                                    <Button
+                                      variant="link"
+                                      className="visits-icon"
+                                      onClick={(e) => toggleTooltip(artist.email, e)}
+                                      title="Dashboard-Besuche anzeigen"
+                                    >
+                                      <i className="bi bi-bar-chart-fill"></i>
+                                      {artist.dashboardVisits.length > 0 && (
+                                        <span className="visits-count">
+                                          {artist.dashboardVisits.length}
+                                        </span>
+                                      )}
+                                    </Button>
+
+                                    {openTooltips[artist.email] && (
+                                      <TooltipComponent
+                                        artist={artist}
+                                        onClose={toggleTooltip}
+                                      />
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* More */}
                                 <td>
                                   <Button
                                     variant="outline-secondary"
                                     size="sm"
                                     onClick={(e) => openDetails(artist, e)}
-                                    title="Show details"
+                                    title="Details anzeigen"
                                   >
                                     <Eye size={16} />
                                   </Button>
                                 </td>
 
+                                {/* Actions */}
                                 <td className="artist-actions d-flex gap-1">
                                   <Button
                                     variant="outline-primary"
                                     size="sm"
                                     onClick={(e) => handleEditClick(artist, e)}
                                     className="edit-btn"
-                                    title="Edit artist"
+                                    title="Künstler bearbeiten"
                                   >
                                     <Pencil size={16} />
                                   </Button>
@@ -819,7 +822,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                     size="sm"
                                     onClick={() => handleDeleteClick(artist)}
                                     className="delete-btn"
-                                    title="Delete artist"
+                                    title="Künstler löschen"
                                   >
                                     <Trash size={16} />
                                   </Button>
@@ -830,7 +833,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                     onClick={() => handleLoginClick(artist)}
                                     className="login-btn"
                                     disabled={loggingIn[artist.email]}
-                                    title="Login as artist"
+                                    title="Als Künstler einloggen"
                                   >
                                     {loggingIn[artist.email] ? (
                                       <Spinner animation="border" size="sm" />
@@ -845,7 +848,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                         </Table>
                       </div>
 
-                      {/* Mobile cards (unchanged) */}
+                      {/* ✅ Mobile cards */}
                       <div className="artist-cards-container d-md-none">
                         {artistsByCalendar[calendar].map((artist, index) => (
                           <div key={index} className="artist-mobile-card">
@@ -856,13 +859,14 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                             <div className="artist-mobile-content">
                               <div className="artist-mobile-role">
                                 <Badge bg="light" text="dark" className="role-badge">
-                                  {artist.role}
+                                  {artist.role || "-"}
                                 </Badge>
                               </div>
 
                               <div className="artist-mobile-details">
                                 <div className="artist-mobile-email">
-                                  <i className="bi bi-envelope"></i> {artist.email}
+                                  <i className="bi bi-envelope"></i>{" "}
+                                  {artist.email || "-"}
                                 </div>
                                 <div className="artist-mobile-password">
                                   <i className="bi bi-key"></i>{" "}
@@ -873,11 +877,13 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                     variant="link"
                                     size="sm"
                                     className="password-toggle"
-                                    onClick={() => togglePasswordVisibility(artist.email)}
+                                    onClick={() =>
+                                      togglePasswordVisibility(artist.email)
+                                    }
                                     title={
                                       showPasswords[artist.email]
-                                        ? "Hide password"
-                                        : "Show password"
+                                        ? "Passwort verbergen"
+                                        : "Passwort anzeigen"
                                     }
                                   >
                                     {showPasswords[artist.email] ? (
@@ -894,7 +900,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   variant="link"
                                   className="visits-icon p-1"
                                   onClick={(e) => toggleTooltip(artist.email, e)}
-                                  title="Show dashboard visits"
+                                  title="Dashboard-Besuche anzeigen"
                                 >
                                   <i
                                     className="bi bi-bar-chart-fill"
@@ -928,7 +934,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   size="sm"
                                   onClick={(e) => handleEditClick(artist, e)}
                                   className="w-auto"
-                                  title="Edit artist"
+                                  title="Künstler bearbeiten"
                                 >
                                   <Pencil size={16} />
                                 </Button>
@@ -938,7 +944,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   size="sm"
                                   onClick={() => handleDeleteClick(artist)}
                                   className="w-auto"
-                                  title="Delete artist"
+                                  title="Künstler löschen"
                                 >
                                   <Trash size={16} />
                                 </Button>
@@ -949,7 +955,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   className="w-auto"
                                   onClick={() => handleLoginClick(artist)}
                                   disabled={loggingIn[artist.email]}
-                                  title="Login as artist"
+                                  title="Als Künstler einloggen"
                                 >
                                   {loggingIn[artist.email] ? (
                                     <Spinner animation="border" size="sm" />
@@ -958,13 +964,12 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                                   )}
                                 </Button>
 
-                                {/* Optional: open details on mobile too */}
                                 <Button
                                   variant="outline-secondary"
                                   size="sm"
                                   className="w-auto"
                                   onClick={(e) => openDetails(artist, e)}
-                                  title="Show details"
+                                  title="Details anzeigen"
                                 >
                                   <Eye size={16} />
                                 </Button>
@@ -996,55 +1001,55 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
         artistToEdit={artistToEdit}
       />
 
-      {/* ✅ NEW: Details Modal */}
+      {/* ✅ Details Modal (German) */}
       <Modal show={showDetailsModal} onHide={closeDetails} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Artist Details</Modal.Title>
+          <Modal.Title>Künstler-Details</Modal.Title>
         </Modal.Header>
 
         <Modal.Body>
           {!detailsArtist ? (
-            <div className="text-muted">No details</div>
+            <div className="text-muted">Keine Details vorhanden</div>
           ) : (
             <div className="d-flex flex-column gap-2">
               <div>
                 <strong>Name:</strong> {detailsArtist.name || "-"}
               </div>
               <div>
-                <strong>Email:</strong> {detailsArtist.email || "-"}
+                <strong>E-Mail:</strong> {detailsArtist.email || "-"}
               </div>
               <div>
-                <strong>Phone:</strong> {detailsArtist.phone || "-"}
+                <strong>Telefon:</strong> {detailsArtist.phone || "-"}
               </div>
               <div>
-                <strong>Calendar:</strong> {detailsArtist.calendar || "-"}
+                <strong>Kalender:</strong> {detailsArtist.calendar || "-"}
               </div>
               <div>
-                <strong>Role:</strong> {detailsArtist.role || "-"}
-              </div>
-
-              <hr />
-
-              <div>
-                <strong>Street:</strong> {detailsArtist.street || "-"}
-              </div>
-              <div>
-                <strong>House Number:</strong> {detailsArtist.houseNumber || "-"}
-              </div>
-              <div>
-                <strong>City:</strong> {detailsArtist.city || "-"}
-              </div>
-              <div>
-                <strong>Zip:</strong> {detailsArtist.postalCode || "-"}
-              </div>
-              <div>
-                <strong>State:</strong> {detailsArtist.state || "-"}
+                <strong>Rolle:</strong> {detailsArtist.role || "-"}
               </div>
 
               <hr />
 
               <div>
-                <strong>Password:</strong>{" "}
+                <strong>Straße:</strong> {detailsArtist.street || "-"}
+              </div>
+              <div>
+                <strong>Hausnummer:</strong> {detailsArtist.houseNumber || "-"}
+              </div>
+              <div>
+                <strong>Stadt:</strong> {detailsArtist.city || "-"}
+              </div>
+              <div>
+                <strong>PLZ:</strong> {detailsArtist.postalCode || "-"}
+              </div>
+              <div>
+                <strong>Bundesland:</strong> {detailsArtist.state || "-"}
+              </div>
+
+              <hr />
+
+              <div>
+                <strong>Passwort:</strong>{" "}
                 {showPasswords[detailsArtist.email]
                   ? detailsArtist.password
                   : "••••••••"}
@@ -1053,6 +1058,11 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                   size="sm"
                   className="ms-2"
                   onClick={() => togglePasswordVisibility(detailsArtist.email)}
+                  title={
+                    showPasswords[detailsArtist.email]
+                      ? "Passwort verbergen"
+                      : "Passwort anzeigen"
+                  }
                 >
                   {showPasswords[detailsArtist.email] ? (
                     <EyeSlash size={14} />
@@ -1067,21 +1077,21 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
 
         <Modal.Footer>
           <Button variant="secondary" onClick={closeDetails}>
-            Close
+            Schließen
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Delete Modal (existing) */}
+      {/* ✅ Delete Modal (German) */}
       <Modal
         show={showDeleteModal}
         onHide={() => !isDeleting && setShowDeleteModal(false)}
       >
         <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
+          <Modal.Title>Löschen bestätigen</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Are you sure you want to delete "{selectedArtist?.name}"?
+          Möchtest du den Künstler "{selectedArtist?.name}" wirklich löschen?
         </Modal.Body>
         <Modal.Footer>
           <Button
@@ -1089,7 +1099,7 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
             onClick={() => setShowDeleteModal(false)}
             disabled={isDeleting}
           >
-            Cancel
+            Abbrechen
           </Button>
           <Button
             variant="danger"
@@ -1105,10 +1115,10 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
                   role="status"
                   aria-hidden="true"
                 />
-                <span className="ms-2">Deleting...</span>
+                <span className="ms-2">Löschen...</span>
               </>
             ) : (
-              "Delete"
+              "Löschen"
             )}
           </Button>
         </Modal.Footer>
