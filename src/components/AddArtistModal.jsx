@@ -491,14 +491,13 @@ function AddArtistModal({
             <div className="col-md-6">
               {/* Email */}
               <Form.Group className="mb-4">
-                <Form.Label>Email *</Form.Label>
+                <Form.Label>Email</Form.Label>
                 <Form.Control
                   type="email"
                   placeholder="E-Mail-Adresse eingeben"
                   value={artistData.email}
                   onChange={(e) => handleFieldChange("email", e.target.value)}
                   onBlur={(e) => handleFieldBlur("email", e.target.value)}
-                  required
                   isInvalid={!!fieldErrors.email}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -510,14 +509,13 @@ function AddArtistModal({
             <div className="col-md-6">
               {/* Phone */}
               <Form.Group className="mb-3">
-                <Form.Label>Telefon *</Form.Label>
+                <Form.Label>Telefon</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="+49xxxxxxxxxx"
                   value={artistData.phone}
                   onChange={(e) => handleFieldChange("phone", e.target.value)}
                   onBlur={(e) => handleFieldBlur("phone", e.target.value)}
-                  required
                   isInvalid={!!fieldErrors.phone}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -544,7 +542,6 @@ function AddArtistModal({
                       handleFieldChange("street", e.target.value)
                     }
                     onBlur={(e) => handleFieldBlur("street", e.target.value)}
-                    required
                     isInvalid={!!fieldErrors.street}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -567,7 +564,6 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("houseNumber", e.target.value)
                     }
-                    required
                     isInvalid={!!fieldErrors.houseNumber}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -581,7 +577,7 @@ function AddArtistModal({
             <div className="row">
               <div className="col-md-4">
                 <Form.Group className="mb-3">
-                  <Form.Label>PLZ *</Form.Label>
+                  <Form.Label>PLZ </Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="12345"
@@ -592,7 +588,6 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("postalCode", e.target.value)
                     }
-                    required
                     isInvalid={!!fieldErrors.postalCode}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -602,14 +597,13 @@ function AddArtistModal({
               </div>
               <div className="col-md-4">
                 <Form.Group className="mb-3">
-                  <Form.Label>Ort *</Form.Label>
+                  <Form.Label>Ort</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Stadt eingeben"
                     value={artistData.city}
                     onChange={(e) => handleFieldChange("city", e.target.value)}
                     onBlur={(e) => handleFieldBlur("city", e.target.value)}
-                    required
                     isInvalid={!!fieldErrors.city}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -620,12 +614,11 @@ function AddArtistModal({
               <div className="col-md-4">
                 {/* State */}
                 <Form.Group className="mb-3">
-                  <Form.Label>Bundesland *</Form.Label>
+                  <Form.Label>Bundesland</Form.Label>
                   <Form.Select
                     value={artistData.state}
                     onChange={(e) => handleFieldChange("state", e.target.value)}
                     onBlur={(e) => handleFieldBlur("state", e.target.value)}
-                    required
                     isInvalid={!!fieldErrors.state}
                   >
                     {germanStates.map((state) => (
