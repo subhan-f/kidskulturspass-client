@@ -99,14 +99,6 @@ function Header({ handleLogout }) {
                 </Nav.Link>
                 <Nav.Link
                   as={Link}
-                  to="/emails"
-                  active={location.pathname === '/emails'}
-                  onClick={() => setExpanded(false)}
-                >
-                  Email Versand
-                </Nav.Link>
-                <Nav.Link
-                  as={Link}
                   to="/logs"
                   active={location.pathname === '/logs'}
                   onClick={() => setExpanded(false)}
