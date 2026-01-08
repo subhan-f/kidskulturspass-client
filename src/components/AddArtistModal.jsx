@@ -72,18 +72,18 @@ function AddArtistModal({
   const [isLoading, setIsLoading] = useState(false);
   const [availableRoles, setAvailableRoles] = useState([]);
 
-  // Validation patterns - Only validate if field has content
+  // Validation patterns
   const validationPatterns = {
     phone: /^(\+49|0)(\s?\d){7,14}$/,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    name: /^[a-zA-ZäöüÄÖÜß\s\-']*$/, // Allow empty
-    street: /^[a-zA-Z0-9äöüÄÖÜß\s\-.,#'/]*$/,
-    houseNumber: /^[a-zA-Z0-9\s\-/]*$/,
-    city: /^[a-zA-ZäöüÄÖÜß\s\-'.]*$/,
-    postalCode: /^(\d{0,5})?$/,
+    name: /^[a-zA-ZäöüÄÖÜß\s\-']+$/,
+    street: /^[a-zA-Z0-9äöüÄÖÜß\s\-.,#'/]+$/,
+    houseNumber: /^[a-zA-Z0-9\s\-/]+$/,
+    city: /^[a-zA-ZäöüÄÖÜß\s\-'.]+$/,
+    postalCode: /^\d{5}$/,
   };
 
-  // Validation messages - Only show if field has invalid content
+  // Validation messages
   const validationMessages = {
     calendar: "Bitte wählen Sie einen Kalender aus.",
     firstName:
@@ -197,64 +197,64 @@ function AddArtistModal({
   }, [mode, artistToEdit, selectedCalendar, showModal, getRolesForCalendar]);
 
   const validateField = (field, value) => {
-    // If field is empty, it's valid (optional field)
-    if (!value.trim()) {
-      return { isValid: true, message: "" };
-    }
-
     let isValid = true;
     let message = "";
 
     switch (field) {
       case "calendar":
-        isValid = true; // Optional
+        isValid = !!value.trim();
+        message = !isValid ? validationMessages.calendar : "";
         break;
 
       case "firstName":
-        isValid = validationPatterns.name.test(value);
+        isValid = !!value.trim() && validationPatterns.name.test(value);
         message = !isValid ? validationMessages.firstName : "";
         break;
 
       case "lastName":
-        isValid = validationPatterns.name.test(value);
+        isValid = !!value.trim() && validationPatterns.name.test(value);
         message = !isValid ? validationMessages.lastName : "";
         break;
 
       case "phone":
-        isValid = validationPatterns.phone.test(value.replace(/\s/g, ""));
+        isValid =
+          !!value.trim() &&
+          validationPatterns.phone.test(value.replace(/\s/g, ""));
         message = !isValid ? validationMessages.phone : "";
         break;
 
       case "street":
-        isValid = validationPatterns.street.test(value);
+        isValid = !!value.trim() && validationPatterns.street.test(value);
         message = !isValid ? validationMessages.street : "";
         break;
 
       case "houseNumber":
-        isValid = validationPatterns.houseNumber.test(value);
+        isValid = !!value.trim() && validationPatterns.houseNumber.test(value);
         message = !isValid ? validationMessages.houseNumber : "";
         break;
 
       case "city":
-        isValid = validationPatterns.city.test(value);
+        isValid = !!value.trim() && validationPatterns.city.test(value);
         message = !isValid ? validationMessages.city : "";
         break;
 
       case "postalCode":
-        isValid = validationPatterns.postalCode.test(value);
+        isValid = !!value.trim() && validationPatterns.postalCode.test(value);
         message = !isValid ? validationMessages.postalCode : "";
         break;
 
       case "state":
-        isValid = true; // Optional
+        isValid = !!value.trim();
+        message = !isValid ? validationMessages.state : "";
         break;
 
       case "role":
-        isValid = true; // Optional
+        isValid = !!value.trim();
+        message = !isValid ? validationMessages.role : "";
         break;
 
       case "email":
-        isValid = validationPatterns.email.test(value);
+        isValid = !!value.trim() && validationPatterns.email.test(value);
         message = !isValid ? validationMessages.email : "";
         break;
 
@@ -270,13 +270,10 @@ function AddArtistModal({
     let allValid = true;
 
     Object.keys(artistData).forEach((field) => {
-      // Only validate fields that have content
-      if (artistData[field] && artistData[field].trim()) {
-        const { isValid, message } = validateField(field, artistData[field]);
-        if (!isValid) {
-          errors[field] = message;
-          allValid = false;
-        }
+      const { isValid, message } = validateField(field, artistData[field]);
+      if (!isValid) {
+        errors[field] = message;
+        allValid = false;
       }
     });
 
@@ -297,20 +294,25 @@ function AddArtistModal({
   );
 
   const handleFieldBlur = useCallback((field, value) => {
-    // Only validate if field has content
-    if (value && value.trim()) {
-      const { isValid, message } = validateField(field, value);
-      if (!isValid) {
-        setFieldErrors((prev) => ({ ...prev, [field]: message }));
-      }
+    const { isValid, message } = validateField(field, value);
+    if (!isValid) {
+      setFieldErrors((prev) => ({ ...prev, [field]: message }));
     }
   }, []);
 
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-      
-      // Validate only fields that have content
+      const form = e.currentTarget;
+
+      if (!form.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+        setValidated(true);
+        return;
+      }
+
+      // Validate all fields
       if (!validateAllFields()) {
         toast.error("Bitte korrigieren Sie die markierten Felder.");
         return;
@@ -318,70 +320,20 @@ function AddArtistModal({
 
       setIsLoading(true);
       try {
-        // Create a clean copy of the artist data
-        const submissionData = { ...artistData };
-        
-        // Remove empty fields or keep them as empty strings based on your backend requirements
-        Object.keys(submissionData).forEach(key => {
-          if (submissionData[key] === "") {
-            // Keep as empty string or set to null/undefined based on your API
-            submissionData[key] = "";
-          }
-        });
-        
         // Combine address fields into a single string for backward compatibility
-        // Only create address string if at least one address field has content
-        const hasAddressFields = 
-          submissionData.street.trim() || 
-          submissionData.houseNumber.trim() || 
-          submissionData.postalCode.trim() || 
-          submissionData.city.trim() || 
-          submissionData.state.trim();
-        
-        if (hasAddressFields) {
-          const addressParts = [];
-          
-          // Combine street and house number if either exists
-          if (submissionData.street.trim() || submissionData.houseNumber.trim()) {
-            const streetPart = [
-              submissionData.street.trim(),
-              submissionData.houseNumber.trim()
-            ].filter(part => part).join(" ");
-            addressParts.push(streetPart);
-          }
-          
-          // Combine postal code and city if either exists
-          if (submissionData.postalCode.trim() || submissionData.city.trim()) {
-            const cityPart = [
-              submissionData.postalCode.trim(),
-              submissionData.city.trim()
-            ].filter(part => part).join(" ");
-            addressParts.push(cityPart);
-          }
-          
-          // Add state if it exists
-          if (submissionData.state.trim()) {
-            addressParts.push(submissionData.state.trim());
-          }
-          
-          submissionData.address = addressParts.join(", ");
-        } else {
-          submissionData.address = "";
-        }
-        
-        // Remove individual address fields if your API doesn't expect them
-        // Or keep them if your API needs them separately
-        const { street, houseNumber, postalCode, city, state, ...finalData } = submissionData;
-        
+        const combinedAddress = `${artistData.street} ${artistData.houseNumber}, ${artistData.postalCode} ${artistData.city}, ${artistData.state}`;
+
+        const artistDataWithCombinedAddress = {
+          ...artistData,
+          address: combinedAddress,
+        };
+
         if (mode === "add") {
-          await handleAddArtist(finalData);
+          await handleAddArtist(artistDataWithCombinedAddress);
         } else {
-          await handleUpdateArtist(finalData);
+          await handleUpdateArtist(artistDataWithCombinedAddress);
         }
-        
         resetForm();
-      } catch (error) {
-        toast.error("Fehler beim Speichern: " + error.message);
       } finally {
         setIsLoading(false);
       }
@@ -440,18 +392,20 @@ function AddArtistModal({
       </Modal.Header>
 
       <Modal.Body>
-        <Form noValidate onSubmit={handleSubmit}>
+        <Form noValidate validated={validated} onSubmit={handleSubmit}>
           <div className="row">
             <div className="col-md-6">
               {/* Calendar */}
               <Form.Group className="mb-3">
-                <Form.Label>Kalender</Form.Label>
+                <Form.Label>Kalender *</Form.Label>
                 <Form.Select
                   value={artistData.calendar}
                   onChange={(e) =>
                     handleFieldChange("calendar", e.target.value)
                   }
                   onBlur={(e) => handleFieldBlur("calendar", e.target.value)}
+                  required
+                  disabled={mode === "edit"}
                   isInvalid={!!fieldErrors.calendar}
                 >
                   <option value="">Kalender auswählen</option>
@@ -469,11 +423,12 @@ function AddArtistModal({
             <div className="col-md-6">
               {/* Role */}
               <Form.Group className="mb-3">
-                <Form.Label>Rolle</Form.Label>
+                <Form.Label>Rolle *</Form.Label>
                 <Form.Select
                   value={artistData.role}
                   onChange={(e) => handleFieldChange("role", e.target.value)}
                   onBlur={(e) => handleFieldBlur("role", e.target.value)}
+                  required
                   isInvalid={!!fieldErrors.role}
                 >
                   <option value="">Rolle auswählen</option>
@@ -494,7 +449,7 @@ function AddArtistModal({
             <div className="col-md-6">
               {/* First Name */}
               <Form.Group className="mb-3">
-                <Form.Label>Vorname</Form.Label>
+                <Form.Label>Vorname *</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="Vorname eingeben"
@@ -503,6 +458,7 @@ function AddArtistModal({
                     handleFieldChange("firstName", e.target.value)
                   }
                   onBlur={(e) => handleFieldBlur("firstName", e.target.value)}
+                  required
                   isInvalid={!!fieldErrors.firstName}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -514,7 +470,7 @@ function AddArtistModal({
             <div className="col-md-6">
               {/* Last Name */}
               <Form.Group className="mb-3">
-                <Form.Label>Nachname</Form.Label>
+                <Form.Label>Nachname *</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="Nachname eingeben"
@@ -523,6 +479,7 @@ function AddArtistModal({
                     handleFieldChange("lastName", e.target.value)
                   }
                   onBlur={(e) => handleFieldBlur("lastName", e.target.value)}
+                  required
                   isInvalid={!!fieldErrors.lastName}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -536,13 +493,14 @@ function AddArtistModal({
             <div className="col-md-6">
               {/* Email */}
               <Form.Group className="mb-4">
-                <Form.Label>Email</Form.Label>
+                <Form.Label>Email *</Form.Label>
                 <Form.Control
                   type="email"
                   placeholder="E-Mail-Adresse eingeben"
                   value={artistData.email}
                   onChange={(e) => handleFieldChange("email", e.target.value)}
                   onBlur={(e) => handleFieldBlur("email", e.target.value)}
+                  required
                   isInvalid={!!fieldErrors.email}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -554,13 +512,14 @@ function AddArtistModal({
             <div className="col-md-6">
               {/* Phone */}
               <Form.Group className="mb-3">
-                <Form.Label>Telefon</Form.Label>
+                <Form.Label>Telefon *</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="+49xxxxxxxxxx"
                   value={artistData.phone}
                   onChange={(e) => handleFieldChange("phone", e.target.value)}
                   onBlur={(e) => handleFieldBlur("phone", e.target.value)}
+                  required
                   isInvalid={!!fieldErrors.phone}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -578,7 +537,7 @@ function AddArtistModal({
               <div className="col-md-6">
                 {/* Street */}
                 <Form.Group className="mb-3">
-                  <Form.Label>Straße</Form.Label>
+                  <Form.Label>Straße *</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Straße eingeben"
@@ -587,6 +546,7 @@ function AddArtistModal({
                       handleFieldChange("street", e.target.value)
                     }
                     onBlur={(e) => handleFieldBlur("street", e.target.value)}
+                    required
                     isInvalid={!!fieldErrors.street}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -598,7 +558,7 @@ function AddArtistModal({
               <div className="col-md-6">
                 {/* House Number */}
                 <Form.Group className="mb-3">
-                  <Form.Label>Hausnummer</Form.Label>
+                  <Form.Label>Hausnummer *</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Hausnummer eingeben"
@@ -609,6 +569,7 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("houseNumber", e.target.value)
                     }
+                    required
                     isInvalid={!!fieldErrors.houseNumber}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -622,7 +583,7 @@ function AddArtistModal({
             <div className="row">
               <div className="col-md-4">
                 <Form.Group className="mb-3">
-                  <Form.Label>PLZ</Form.Label>
+                  <Form.Label>PLZ *</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="12345"
@@ -633,6 +594,7 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("postalCode", e.target.value)
                     }
+                    required
                     isInvalid={!!fieldErrors.postalCode}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -642,13 +604,14 @@ function AddArtistModal({
               </div>
               <div className="col-md-4">
                 <Form.Group className="mb-3">
-                  <Form.Label>Ort</Form.Label>
+                  <Form.Label>Ort *</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Stadt eingeben"
                     value={artistData.city}
                     onChange={(e) => handleFieldChange("city", e.target.value)}
                     onBlur={(e) => handleFieldBlur("city", e.target.value)}
+                    required
                     isInvalid={!!fieldErrors.city}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -659,14 +622,14 @@ function AddArtistModal({
               <div className="col-md-4">
                 {/* State */}
                 <Form.Group className="mb-3">
-                  <Form.Label>Bundesland</Form.Label>
+                  <Form.Label>Bundesland *</Form.Label>
                   <Form.Select
                     value={artistData.state}
                     onChange={(e) => handleFieldChange("state", e.target.value)}
                     onBlur={(e) => handleFieldBlur("state", e.target.value)}
+                    required
                     isInvalid={!!fieldErrors.state}
                   >
-                    <option value="">Bundesland auswählen</option>
                     {germanStates.map((state) => (
                       <option key={state} value={state}>
                         {state}
