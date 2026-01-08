@@ -80,7 +80,7 @@ function AddArtistModal({
     street: /^[a-zA-Z0-9äöüÄÖÜß\s\-.,#'/]*$/,
     houseNumber: /^[a-zA-Z0-9\s\-/]*$/,
     city: /^[a-zA-ZäöüÄÖÜß\s\-'.]*$/,
-    postalCode: /^\d{0,5}$/, // Allow empty or up to 5 digits
+    postalCode: /^(\d{0,5})?$/,
   };
 
   // Validation messages - Only show if field has invalid content
@@ -271,7 +271,7 @@ function AddArtistModal({
 
     Object.keys(artistData).forEach((field) => {
       // Only validate fields that have content
-      if (artistData[field].trim()) {
+      if (artistData[field] && artistData[field].trim()) {
         const { isValid, message } = validateField(field, artistData[field]);
         if (!isValid) {
           errors[field] = message;
@@ -298,7 +298,7 @@ function AddArtistModal({
 
   const handleFieldBlur = useCallback((field, value) => {
     // Only validate if field has content
-    if (value.trim()) {
+    if (value && value.trim()) {
       const { isValid, message } = validateField(field, value);
       if (!isValid) {
         setFieldErrors((prev) => ({ ...prev, [field]: message }));
@@ -318,31 +318,70 @@ function AddArtistModal({
 
       setIsLoading(true);
       try {
-        // Combine address fields into a single string for backward compatibility
-        // Only include address fields that have content
-        const addressParts = [];
-        if (artistData.street.trim()) addressParts.push(artistData.street);
-        if (artistData.houseNumber.trim()) addressParts.push(artistData.houseNumber);
+        // Create a clean copy of the artist data
+        const submissionData = { ...artistData };
         
-        if (addressParts.length > 0) {
-          const streetPart = addressParts.join(" ");
-          const cityPart = [];
-          if (artistData.postalCode.trim()) cityPart.push(artistData.postalCode);
-          if (artistData.city.trim()) cityPart.push(artistData.city);
+        // Remove empty fields or keep them as empty strings based on your backend requirements
+        Object.keys(submissionData).forEach(key => {
+          if (submissionData[key] === "") {
+            // Keep as empty string or set to null/undefined based on your API
+            submissionData[key] = "";
+          }
+        });
+        
+        // Combine address fields into a single string for backward compatibility
+        // Only create address string if at least one address field has content
+        const hasAddressFields = 
+          submissionData.street.trim() || 
+          submissionData.houseNumber.trim() || 
+          submissionData.postalCode.trim() || 
+          submissionData.city.trim() || 
+          submissionData.state.trim();
+        
+        if (hasAddressFields) {
+          const addressParts = [];
           
-          const combinedAddress = [streetPart];
-          if (cityPart.length > 0) combinedAddress.push(cityPart.join(" "));
-          if (artistData.state.trim()) combinedAddress.push(artistData.state);
+          // Combine street and house number if either exists
+          if (submissionData.street.trim() || submissionData.houseNumber.trim()) {
+            const streetPart = [
+              submissionData.street.trim(),
+              submissionData.houseNumber.trim()
+            ].filter(part => part).join(" ");
+            addressParts.push(streetPart);
+          }
           
-          artistData.address = combinedAddress.join(", ");
-        }
-
-        if (mode === "add") {
-          await handleAddArtist(artistData);
+          // Combine postal code and city if either exists
+          if (submissionData.postalCode.trim() || submissionData.city.trim()) {
+            const cityPart = [
+              submissionData.postalCode.trim(),
+              submissionData.city.trim()
+            ].filter(part => part).join(" ");
+            addressParts.push(cityPart);
+          }
+          
+          // Add state if it exists
+          if (submissionData.state.trim()) {
+            addressParts.push(submissionData.state.trim());
+          }
+          
+          submissionData.address = addressParts.join(", ");
         } else {
-          await handleUpdateArtist(artistData);
+          submissionData.address = "";
         }
+        
+        // Remove individual address fields if your API doesn't expect them
+        // Or keep them if your API needs them separately
+        const { street, houseNumber, postalCode, city, state, ...finalData } = submissionData;
+        
+        if (mode === "add") {
+          await handleAddArtist(finalData);
+        } else {
+          await handleUpdateArtist(finalData);
+        }
+        
         resetForm();
+      } catch (error) {
+        toast.error("Fehler beim Speichern: " + error.message);
       } finally {
         setIsLoading(false);
       }
@@ -401,7 +440,7 @@ function AddArtistModal({
       </Modal.Header>
 
       <Modal.Body>
-        <Form noValidate validated={validated} onSubmit={handleSubmit}>
+        <Form noValidate onSubmit={handleSubmit}>
           <div className="row">
             <div className="col-md-6">
               {/* Calendar */}
@@ -636,40 +675,40 @@ function AddArtistModal({
                   </Form.Select>
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.state}
-                </Form.Control.Feedback>
-              </Form.Group>
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Buttons */}
-        <div className="d-flex justify-content-end gap-2">
-          <Button
-            variant="outline-secondary"
-            onClick={handleClose}
-            disabled={isLoading}
-          >
-            <X className="me-1" /> Abbrechen
-          </Button>
+          {/* Buttons */}
+          <div className="d-flex justify-content-end gap-2">
+            <Button
+              variant="outline-secondary"
+              onClick={handleClose}
+              disabled={isLoading}
+            >
+              <X className="me-1" /> Abbrechen
+            </Button>
 
-          <Button variant="primary" type="submit" disabled={isSubmitDisabled}>
-            {isLoading ? (
-              <>
-                <Spinner as="span" animation="border" size="sm" />{" "}
-                Speichern...
-              </>
-            ) : (
-              <>
-                <Check2 className="me-1" />{" "}
-                {mode === "add" ? "Speichern" : "Aktualisieren"}
-              </>
-            )}
-          </Button>
-        </div>
-      </Form>
-    </Modal.Body>
-  </Modal>
-);
+            <Button variant="primary" type="submit" disabled={isSubmitDisabled}>
+              {isLoading ? (
+                <>
+                  <Spinner as="span" animation="border" size="sm" />{" "}
+                  Speichern...
+                </>
+              ) : (
+                <>
+                  <Check2 className="me-1" />{" "}
+                  {mode === "add" ? "Speichern" : "Aktualisieren"}
+                </>
+              )}
+            </Button>
+          </div>
+        </Form>
+      </Modal.Body>
+    </Modal>
+  );
 }
 
 export default React.memo(AddArtistModal);
