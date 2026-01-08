@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Modal, Form, Button, Spinner } from "react-bootstrap";
-import { PersonPlus, X, Check2, Pencil } from "react-bootstrap-icons";
+import { X, Check2 } from "react-bootstrap-icons";
 import { toast } from "react-toastify";
 
 const calendarConfig = [
@@ -38,14 +38,17 @@ const germanStates = [
   "Thüringen",
 ];
 
+// ONLY these fields are required:
+const REQUIRED_FIELDS = ["calendar", "role", "firstName", "lastName"];
+
 function AddArtistModal({
   showModal,
   setShowModal,
   selectedCalendar,
-  selectedRoles,
+  selectedRoles, // (not used here, but kept to match your props)
   handleAddArtist,
   handleUpdateArtist,
-  roleOptions,
+  roleOptions, // (not used here, but kept to match your props)
   mode = "add",
   artistToEdit = null,
 }) {
@@ -112,6 +115,8 @@ function AddArtistModal({
       if (artistData.role && !roles.includes(artistData.role)) {
         setArtistData((prev) => ({ ...prev, role: "" }));
       }
+    } else {
+      setAvailableRoles([]);
     }
   }, [artistData.calendar, getRolesForCalendar]);
 
@@ -125,10 +130,9 @@ function AddArtistModal({
       let state = "";
 
       if (artistToEdit.address) {
-        // Try to parse the old address format
         const addressParts = artistToEdit.address.split(", ");
         if (addressParts.length >= 2) {
-          // Extract street and house number
+          // street + houseNumber
           const streetAndNumber = addressParts[0].split(" ");
           if (streetAndNumber.length > 1) {
             houseNumber = streetAndNumber.pop();
@@ -137,14 +141,14 @@ function AddArtistModal({
             street = addressParts[0];
           }
 
-          // Extract postal code and city
+          // postalCode + city
           const cityPart = addressParts[1].split(" ");
           if (cityPart.length > 1) {
             postalCode = cityPart[0];
             city = cityPart.slice(1).join(" ");
           }
 
-          // Extract state if exists
+          // state
           if (addressParts.length > 2) {
             state = addressParts[2];
           }
@@ -164,6 +168,7 @@ function AddArtistModal({
         role: artistToEdit.role || "",
         email: artistToEdit.email || "",
       };
+
       setArtistData(editData);
       setOriginalData(editData);
 
@@ -188,75 +193,92 @@ function AddArtistModal({
       if (selectedCalendar) {
         const roles = getRolesForCalendar(selectedCalendar);
         setAvailableRoles(roles);
+      } else {
+        setAvailableRoles([]);
       }
     }
+
     setValidated(false);
     setFieldErrors({});
   }, [mode, artistToEdit, selectedCalendar, showModal, getRolesForCalendar]);
 
+  // Required only for REQUIRED_FIELDS; optional fields validate only if filled
   const validateField = (field, value) => {
     let isValid = true;
     let message = "";
+    const v = (value ?? "").toString().trim();
 
     switch (field) {
+      // REQUIRED
       case "calendar":
-        isValid = !!value.trim();
+        isValid = !!v;
         message = !isValid ? validationMessages.calendar : "";
         break;
 
       case "firstName":
-        isValid = !!value.trim() && validationPatterns.name.test(value);
+        isValid = !!v && validationPatterns.name.test(v);
         message = !isValid ? validationMessages.firstName : "";
         break;
 
       case "lastName":
-        isValid = !!value.trim() && validationPatterns.name.test(value);
+        isValid = !!v && validationPatterns.name.test(v);
         message = !isValid ? validationMessages.lastName : "";
         break;
 
+      case "role":
+        isValid = !!v;
+        message = !isValid ? validationMessages.role : "";
+        break;
+
+      // OPTIONAL (validate only if user entered something)
       case "phone":
-        isValid =
-          !!value.trim() &&
-          validationPatterns.phone.test(value.replace(/\s/g, ""));
+        if (!v) break;
+        isValid = validationPatterns.phone.test(v.replace(/\s/g, ""));
         message = !isValid ? validationMessages.phone : "";
         break;
 
+      case "email":
+        if (!v) break;
+        isValid = validationPatterns.email.test(v);
+        message = !isValid ? validationMessages.email : "";
+        break;
+
       case "street":
-        isValid = !!value.trim() && validationPatterns.street.test(value);
+        if (!v) break;
+        isValid = validationPatterns.street.test(v);
         message = !isValid ? validationMessages.street : "";
         break;
 
       case "houseNumber":
-        isValid = !!value.trim() && validationPatterns.houseNumber.test(value);
+        if (!v) break;
+        isValid = validationPatterns.houseNumber.test(v);
         message = !isValid ? validationMessages.houseNumber : "";
         break;
 
       case "city":
-        isValid = !!value.trim() && validationPatterns.city.test(value);
+        if (!v) break;
+        isValid = validationPatterns.city.test(v);
         message = !isValid ? validationMessages.city : "";
         break;
 
       case "postalCode":
-        isValid = !!value.trim() && validationPatterns.postalCode.test(value);
+        if (!v) break;
+        isValid = validationPatterns.postalCode.test(v);
         message = !isValid ? validationMessages.postalCode : "";
         break;
 
       case "state":
-        isValid = !!value.trim();
-        message = !isValid ? validationMessages.state : "";
-        break;
-
-      case "role":
-        isValid = !!value.trim();
-        message = !isValid ? validationMessages.role : "";
-        break;
-
-      case "email":
-        isValid = !!value.trim() && validationPatterns.email.test(value);
-        message = !isValid ? validationMessages.email : "";
+        // optional dropdown; if empty it's fine
+        isValid = true;
+        message = "";
         break;
 
       default:
+        // For any future fields:
+        if (REQUIRED_FIELDS.includes(field)) {
+          isValid = !!v;
+          message = !isValid ? "Dieses Feld ist erforderlich." : "";
+        }
         break;
     }
 
@@ -268,6 +290,12 @@ function AddArtistModal({
     let allValid = true;
 
     Object.keys(artistData).forEach((field) => {
+      const value = (artistData[field] ?? "").toString().trim();
+      const isRequired = REQUIRED_FIELDS.includes(field);
+
+      // Skip empty optional fields
+      if (!isRequired && !value) return;
+
       const { isValid, message } = validateField(field, artistData[field]);
       if (!isValid) {
         errors[field] = message;
@@ -283,7 +311,6 @@ function AddArtistModal({
     (field, value) => {
       setArtistData((prev) => ({ ...prev, [field]: value }));
 
-      // Clear field error when user starts typing
       if (fieldErrors[field]) {
         setFieldErrors((prev) => ({ ...prev, [field]: "" }));
       }
@@ -292,59 +319,17 @@ function AddArtistModal({
   );
 
   const handleFieldBlur = useCallback((field, value) => {
+    const isRequired = REQUIRED_FIELDS.includes(field);
+    const v = (value ?? "").toString().trim();
+
+    // Don't show errors for empty optional fields on blur
+    if (!isRequired && !v) return;
+
     const { isValid, message } = validateField(field, value);
     if (!isValid) {
       setFieldErrors((prev) => ({ ...prev, [field]: message }));
     }
   }, []);
-
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      const form = e.currentTarget;
-
-      if (!form.checkValidity()) {
-        e.preventDefault();
-        e.stopPropagation();
-        setValidated(true);
-        return;
-      }
-
-      // Validate all fields
-      if (!validateAllFields()) {
-        toast.error("Bitte korrigieren Sie die markierten Felder.");
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        // Combine address fields into a single string for backward compatibility
-        const combinedAddress = `${artistData.street} ${artistData.houseNumber}, ${artistData.postalCode} ${artistData.city}, ${artistData.state}`;
-
-        const artistDataWithCombinedAddress = {
-          ...artistData,
-          address: combinedAddress,
-        };
-
-        if (mode === "add") {
-          await handleAddArtist(artistDataWithCombinedAddress);
-        } else {
-          await handleUpdateArtist(artistDataWithCombinedAddress);
-        }
-        resetForm();
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [artistData, handleAddArtist, handleUpdateArtist, mode]
-  );
-
-  const handleClose = useCallback(() => {
-    if (!isLoading) {
-      setShowModal(false);
-      resetForm();
-    }
-  }, [setShowModal, isLoading]);
 
   const resetForm = () => {
     setArtistData({
@@ -373,6 +358,70 @@ function AddArtistModal({
     );
   }, [artistData, originalData, mode]);
 
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+
+      // Bootstrap required validation only applies to fields that still have "required"
+      if (!form.checkValidity()) {
+        e.stopPropagation();
+        setValidated(true);
+        return;
+      }
+
+      // Validate required + filled optionals
+      if (!validateAllFields()) {
+        toast.error("Bitte korrigieren Sie die markierten Felder.");
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        // Combine address fields (only if provided) for backward compatibility
+        const parts = [];
+        const line1 = [artistData.street, artistData.houseNumber]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        const line2 = [artistData.postalCode, artistData.city]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        const line3 = (artistData.state || "").trim();
+
+        if (line1) parts.push(line1);
+        if (line2) parts.push(line2);
+        if (line3) parts.push(line3);
+
+        const combinedAddress = parts.join(", ");
+
+        const artistDataWithCombinedAddress = {
+          ...artistData,
+          address: combinedAddress || "",
+        };
+
+        if (mode === "add") {
+          await handleAddArtist(artistDataWithCombinedAddress);
+        } else {
+          await handleUpdateArtist(artistDataWithCombinedAddress);
+        }
+
+        resetForm();
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [artistData, handleAddArtist, handleUpdateArtist, mode]
+  );
+
+  const handleClose = useCallback(() => {
+    if (!isLoading) {
+      setShowModal(false);
+      resetForm();
+    }
+  }, [setShowModal, isLoading]);
+
   const isSubmitDisabled = isLoading || (mode === "edit" && !hasChanges());
 
   return (
@@ -393,7 +442,7 @@ function AddArtistModal({
         <Form noValidate validated={validated} onSubmit={handleSubmit}>
           <div className="row">
             <div className="col-md-6">
-              {/* Calendar */}
+              {/* Calendar (REQUIRED) */}
               <Form.Group className="mb-3">
                 <Form.Label>Kalender *</Form.Label>
                 <Form.Select
@@ -418,8 +467,9 @@ function AddArtistModal({
                 </Form.Control.Feedback>
               </Form.Group>
             </div>
+
             <div className="col-md-6">
-              {/* Role */}
+              {/* Role (REQUIRED) */}
               <Form.Group className="mb-3">
                 <Form.Label>Rolle *</Form.Label>
                 <Form.Select
@@ -445,7 +495,7 @@ function AddArtistModal({
 
           <div className="row">
             <div className="col-md-6">
-              {/* First Name */}
+              {/* First Name (REQUIRED) */}
               <Form.Group className="mb-3">
                 <Form.Label>Vorname *</Form.Label>
                 <Form.Control
@@ -466,7 +516,7 @@ function AddArtistModal({
             </div>
 
             <div className="col-md-6">
-              {/* Last Name */}
+              {/* Last Name (REQUIRED) */}
               <Form.Group className="mb-3">
                 <Form.Label>Nachname *</Form.Label>
                 <Form.Control
@@ -489,7 +539,7 @@ function AddArtistModal({
 
           <div className="row">
             <div className="col-md-6">
-              {/* Email */}
+              {/* Email (OPTIONAL) */}
               <Form.Group className="mb-4">
                 <Form.Label>Email</Form.Label>
                 <Form.Control
@@ -507,7 +557,7 @@ function AddArtistModal({
             </div>
 
             <div className="col-md-6">
-              {/* Phone */}
+              {/* Phone (OPTIONAL) */}
               <Form.Group className="mb-3">
                 <Form.Label>Telefon</Form.Label>
                 <Form.Control
@@ -525,15 +575,15 @@ function AddArtistModal({
             </div>
           </div>
 
-          {/* Address Section */}
+          {/* Address Section (ALL OPTIONAL) */}
           <div className="border p-3 mb-3 rounded">
-            <h6 className="mb-3">Adresse</h6>
+            <h6 className="mb-3">Adresse (optional)</h6>
 
             <div className="row">
               <div className="col-md-6">
-                {/* Street */}
+                {/* Street (OPTIONAL) */}
                 <Form.Group className="mb-3">
-                  <Form.Label>Straße *</Form.Label>
+                  <Form.Label>Straße</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Straße eingeben"
@@ -551,9 +601,9 @@ function AddArtistModal({
               </div>
 
               <div className="col-md-6">
-                {/* House Number */}
+                {/* House Number (OPTIONAL) */}
                 <Form.Group className="mb-3">
-                  <Form.Label>Hausnummer *</Form.Label>
+                  <Form.Label>Hausnummer</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="Hausnummer eingeben"
@@ -573,11 +623,11 @@ function AddArtistModal({
               </div>
             </div>
 
-            {/* City and Postal Code in one row */}
             <div className="row">
+              {/* Postal Code (OPTIONAL) */}
               <div className="col-md-4">
                 <Form.Group className="mb-3">
-                  <Form.Label>PLZ </Form.Label>
+                  <Form.Label>PLZ</Form.Label>
                   <Form.Control
                     type="text"
                     placeholder="12345"
@@ -595,6 +645,8 @@ function AddArtistModal({
                   </Form.Control.Feedback>
                 </Form.Group>
               </div>
+
+              {/* City (OPTIONAL) */}
               <div className="col-md-4">
                 <Form.Group className="mb-3">
                   <Form.Label>Ort</Form.Label>
@@ -611,8 +663,9 @@ function AddArtistModal({
                   </Form.Control.Feedback>
                 </Form.Group>
               </div>
+
+              {/* State (OPTIONAL) */}
               <div className="col-md-4">
-                {/* State */}
                 <Form.Group className="mb-3">
                   <Form.Label>Bundesland</Form.Label>
                   <Form.Select
@@ -621,6 +674,7 @@ function AddArtistModal({
                     onBlur={(e) => handleFieldBlur("state", e.target.value)}
                     isInvalid={!!fieldErrors.state}
                   >
+                    <option value="">Bundesland auswählen</option>
                     {germanStates.map((state) => (
                       <option key={state} value={state}>
                         {state}
