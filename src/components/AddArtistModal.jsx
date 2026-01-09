@@ -55,7 +55,7 @@ function AddArtistModal({
   const [isLoading, setIsLoading] = useState(false);
   const [availableRoles, setAvailableRoles] = useState([]);
 
-  // ✅ ONLY these are required (as you asked)
+  // ✅ ONLY these are required
   const requiredFields = ["calendar", "role", "firstName", "lastName"];
   const isRequired = useCallback(
     (field) => requiredFields.includes(field),
@@ -73,10 +73,10 @@ function AddArtistModal({
     postalCode: "",
     state: "",
     role: "",
-    email: "", // optional now
+    email: "",
   });
 
-  // Validation patterns (still used when field is filled)
+  // Validation patterns (only used when field is filled)
   const validationPatterns = {
     phone: /^(\+49|0)(\s?\d){7,14}$/,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -87,7 +87,6 @@ function AddArtistModal({
     postalCode: /^\d{5}$/,
   };
 
-  // Validation messages
   const validationMessages = {
     calendar: "Bitte wählen Sie einen Kalender aus.",
     firstName:
@@ -100,7 +99,7 @@ function AddArtistModal({
     houseNumber: "Bitte geben Sie eine gültige Hausnummer ein.",
     city: "Bitte geben Sie einen gültigen Ort ein.",
     postalCode: "Bitte geben Sie eine gültige 5-stellige Postleitzahl ein.",
-    state: "Bitte wählen Sie ein Bundesland aus.",
+    state: "Bitte wählen Sie ein gültiges Bundesland aus.",
     role: "Bitte wählen Sie eine Rolle aus.",
     email: "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
   };
@@ -174,7 +173,9 @@ function AddArtistModal({
       setAvailableRoles(getRolesForCalendar(artistToEdit.calendar));
     } else {
       resetForm();
-      if (selectedCalendar) setAvailableRoles(getRolesForCalendar(selectedCalendar));
+      if (selectedCalendar) {
+        setAvailableRoles(getRolesForCalendar(selectedCalendar));
+      }
     }
 
     setValidated(false);
@@ -193,8 +194,10 @@ function AddArtistModal({
     const trimmed = value.trim();
     const required = isRequired(field);
 
+    // ✅ Optional empty is always valid
     if (!required && trimmed === "") return { isValid: true, message: "" };
 
+    // ✅ Required empty is invalid
     if (required && trimmed === "") {
       return {
         isValid: false,
@@ -252,8 +255,14 @@ function AddArtistModal({
         break;
 
       case "state":
-        isValid = germanStates.includes(value);
-        message = !isValid ? validationMessages.state : "";
+        // ✅ FIX: state is optional, but if filled must be valid
+        if (trimmed === "") {
+          isValid = true;
+          message = "";
+        } else {
+          isValid = germanStates.includes(value);
+          message = !isValid ? validationMessages.state : "";
+        }
         break;
 
       case "email":
@@ -333,7 +342,7 @@ function AddArtistModal({
       e.preventDefault();
       const form = e.currentTarget;
 
-      // ✅ Will only block missing REQUIRED JSX fields (now only 4)
+      // browser required check (only 4 required fields)
       if (!form.checkValidity()) {
         e.stopPropagation();
         setValidated(true);
@@ -348,18 +357,23 @@ function AddArtistModal({
       setIsLoading(true);
 
       try {
-        const hasAnyAddress =
-          artistData.street.trim() ||
-          artistData.houseNumber.trim() ||
-          artistData.postalCode.trim() ||
-          artistData.city.trim() ||
-          artistData.state.trim();
+        // ✅ Build address safely (no trailing commas)
+        const street = artistData.street.trim();
+        const houseNumber = artistData.houseNumber.trim();
+        const postalCode = artistData.postalCode.trim();
+        const city = artistData.city.trim();
+        const state = artistData.state.trim();
 
-        const combinedAddress = hasAnyAddress
-          ? `${artistData.street} ${artistData.houseNumber}, ${artistData.postalCode} ${artistData.city}, ${artistData.state}`
-          : "";
+        const line1 = [street, houseNumber].filter(Boolean).join(" ").trim();
+        const line2 = [postalCode, city].filter(Boolean).join(" ").trim();
+        const line3 = state;
 
-        const payload = { ...artistData, address: combinedAddress };
+        const combinedAddress = [line1, line2, line3].filter(Boolean).join(", ");
+
+        const payload = {
+          ...artistData,
+          address: combinedAddress, // empty string if nothing filled
+        };
 
         if (mode === "add") await handleAddArtist(payload);
         else await handleUpdateArtist(payload);
@@ -481,7 +495,6 @@ function AddArtistModal({
 
           <div className="row">
             <div className="col-md-6">
-              {/* Email optional */}
               <Form.Group className="mb-4">
                 <Form.Label>Email (optional)</Form.Label>
                 <Form.Control
@@ -490,7 +503,7 @@ function AddArtistModal({
                   value={artistData.email}
                   onChange={(e) => handleFieldChange("email", e.target.value)}
                   onBlur={(e) => handleFieldBlur("email", e.target.value)}
-                  required={isRequired("email")} // false
+                  required={false}
                   isInvalid={!!fieldErrors.email}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -500,7 +513,6 @@ function AddArtistModal({
             </div>
 
             <div className="col-md-6">
-              {/* Phone optional */}
               <Form.Group className="mb-3">
                 <Form.Label>Telefon (optional)</Form.Label>
                 <Form.Control
@@ -509,7 +521,7 @@ function AddArtistModal({
                   value={artistData.phone}
                   onChange={(e) => handleFieldChange("phone", e.target.value)}
                   onBlur={(e) => handleFieldBlur("phone", e.target.value)}
-                  required={isRequired("phone")} // false
+                  required={false}
                   isInvalid={!!fieldErrors.phone}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -532,7 +544,7 @@ function AddArtistModal({
                     value={artistData.street}
                     onChange={(e) => handleFieldChange("street", e.target.value)}
                     onBlur={(e) => handleFieldBlur("street", e.target.value)}
-                    required={isRequired("street")} // false
+                    required={false}
                     isInvalid={!!fieldErrors.street}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -554,7 +566,7 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("houseNumber", e.target.value)
                     }
-                    required={isRequired("houseNumber")} // false
+                    required={false}
                     isInvalid={!!fieldErrors.houseNumber}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -578,7 +590,7 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("postalCode", e.target.value)
                     }
-                    required={isRequired("postalCode")} // false
+                    required={false}
                     isInvalid={!!fieldErrors.postalCode}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -596,7 +608,7 @@ function AddArtistModal({
                     value={artistData.city}
                     onChange={(e) => handleFieldChange("city", e.target.value)}
                     onBlur={(e) => handleFieldBlur("city", e.target.value)}
-                    required={isRequired("city")} // false
+                    required={false}
                     isInvalid={!!fieldErrors.city}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -612,10 +624,11 @@ function AddArtistModal({
                     value={artistData.state}
                     onChange={(e) => handleFieldChange("state", e.target.value)}
                     onBlur={(e) => handleFieldBlur("state", e.target.value)}
-                    required={isRequired("state")} // false
+                    required={false}
                     isInvalid={!!fieldErrors.state}
                   >
-                    <option value="">Bundesland auswählen</option>
+                    {/* ✅ optional placeholder */}
+                    <option value="">Bundesland auswählen (optional)</option>
                     {germanStates.map((state) => (
                       <option key={state} value={state}>
                         {state}
