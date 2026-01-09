@@ -216,37 +216,37 @@ function AddArtistModal({
         message = !isValid ? validationMessages.lastName : "";
         break;
 
-    //  case "phone":
-      //  isValid =
-      //    !!value.trim() &&
-      //    validationPatterns.phone.test(value.replace(/\s/g, ""));
-      //  message = !isValid ? validationMessages.phone : "";
-      //  break;
+      case "phone":
+        isValid =
+          !!value.trim() &&
+          validationPatterns.phone.test(value.replace(/\s/g, ""));
+        message = !isValid ? validationMessages.phone : "";
+        break;
 
-   //   case "street":
-     //   isValid = !!value.trim() && validationPatterns.street.test(value);
-     //   message = !isValid ? validationMessages.street : "";
-      //  break;
+      case "street":
+        isValid = !!value.trim() && validationPatterns.street.test(value);
+        message = !isValid ? validationMessages.street : "";
+        break;
 
-    //  case "houseNumber":
-      //  isValid = !!value.trim() && validationPatterns.houseNumber.test(value);
-      //  message = !isValid ? validationMessages.houseNumber : "";
-      //  break;
+      case "houseNumber":
+        isValid = !!value.trim() && validationPatterns.houseNumber.test(value);
+        message = !isValid ? validationMessages.houseNumber : "";
+        break;
 
-  //    case "city":
-   //     isValid = !!value.trim() && validationPatterns.city.test(value);
-    //    message = !isValid ? validationMessages.city : "";
-      //  break;
+      case "city":
+        isValid = !!value.trim() && validationPatterns.city.test(value);
+        message = !isValid ? validationMessages.city : "";
+        break;
 
-   //   case "postalCode":
-    //    isValid = !!value.trim() && validationPatterns.postalCode.test(value);
-     //   message = !isValid ? validationMessages.postalCode : "";
-     //   break;
+      case "postalCode":
+        isValid = !!value.trim() && validationPatterns.postalCode.test(value);
+        message = !isValid ? validationMessages.postalCode : "";
+        break;
 
-      // case "state":
-      //   isValid = !!value.trim();
-      //   message = !isValid ? validationMessages.state : "";
-      //   break;
+      case "state":
+        isValid = !!value.trim();
+        message = !isValid ? validationMessages.state : "";
+        break;
 
       case "role":
         isValid = !!value.trim();
@@ -519,6 +519,8 @@ function AddArtistModal({
                   value={artistData.phone}
                   onChange={(e) => handleFieldChange("phone", e.target.value)}
                   onBlur={(e) => handleFieldBlur("phone", e.target.value)}
+                  required
+                  isInvalid={!!fieldErrors.phone}
                 />
                 <Form.Control.Feedback type="invalid">
                   {fieldErrors.phone}
@@ -544,6 +546,8 @@ function AddArtistModal({
                       handleFieldChange("street", e.target.value)
                     }
                     onBlur={(e) => handleFieldBlur("street", e.target.value)}
+                    required
+                    isInvalid={!!fieldErrors.street}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.street}
@@ -565,6 +569,8 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("houseNumber", e.target.value)
                     }
+                    required
+                    isInvalid={!!fieldErrors.houseNumber}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.houseNumber}
@@ -588,6 +594,8 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("postalCode", e.target.value)
                     }
+                    required
+                    isInvalid={!!fieldErrors.postalCode}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.postalCode}
@@ -603,6 +611,8 @@ function AddArtistModal({
                     value={artistData.city}
                     onChange={(e) => handleFieldChange("city", e.target.value)}
                     onBlur={(e) => handleFieldBlur("city", e.target.value)}
+                    required
+                    isInvalid={!!fieldErrors.city}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.city}
@@ -617,6 +627,8 @@ function AddArtistModal({
                     value={artistData.state}
                     onChange={(e) => handleFieldChange("state", e.target.value)}
                     onBlur={(e) => handleFieldBlur("state", e.target.value)}
+                    required
+                    isInvalid={!!fieldErrors.state}
                   >
                     {germanStates.map((state) => (
                       <option key={state} value={state}>
