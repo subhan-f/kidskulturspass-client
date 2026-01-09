@@ -546,7 +546,6 @@ function AddArtistModal({
                       handleFieldChange("street", e.target.value)
                     }
                     onBlur={(e) => handleFieldBlur("street", e.target.value)}
-                    required
                     isInvalid={!!fieldErrors.street}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -569,7 +568,6 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("houseNumber", e.target.value)
                     }
-                    required
                     isInvalid={!!fieldErrors.houseNumber}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -594,7 +592,6 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("postalCode", e.target.value)
                     }
-                    required
                     isInvalid={!!fieldErrors.postalCode}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -611,7 +608,6 @@ function AddArtistModal({
                     value={artistData.city}
                     onChange={(e) => handleFieldChange("city", e.target.value)}
                     onBlur={(e) => handleFieldBlur("city", e.target.value)}
-                    required
                     isInvalid={!!fieldErrors.city}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -627,7 +623,6 @@ function AddArtistModal({
                     value={artistData.state}
                     onChange={(e) => handleFieldChange("state", e.target.value)}
                     onBlur={(e) => handleFieldBlur("state", e.target.value)}
-                    required
                     isInvalid={!!fieldErrors.state}
                   >
                     {germanStates.map((state) => (
