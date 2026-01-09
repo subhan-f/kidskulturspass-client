@@ -519,8 +519,6 @@ function AddArtistModal({
                   value={artistData.phone}
                   onChange={(e) => handleFieldChange("phone", e.target.value)}
                   onBlur={(e) => handleFieldBlur("phone", e.target.value)}
-                  required
-                  isInvalid={!!fieldErrors.phone}
                 />
                 <Form.Control.Feedback type="invalid">
                   {fieldErrors.phone}
@@ -546,7 +544,6 @@ function AddArtistModal({
                       handleFieldChange("street", e.target.value)
                     }
                     onBlur={(e) => handleFieldBlur("street", e.target.value)}
-                    isInvalid={!!fieldErrors.street}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.street}
@@ -568,7 +565,6 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("houseNumber", e.target.value)
                     }
-                    isInvalid={!!fieldErrors.houseNumber}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.houseNumber}
@@ -592,7 +588,6 @@ function AddArtistModal({
                     onBlur={(e) =>
                       handleFieldBlur("postalCode", e.target.value)
                     }
-                    isInvalid={!!fieldErrors.postalCode}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.postalCode}
@@ -608,7 +603,6 @@ function AddArtistModal({
                     value={artistData.city}
                     onChange={(e) => handleFieldChange("city", e.target.value)}
                     onBlur={(e) => handleFieldBlur("city", e.target.value)}
-                    isInvalid={!!fieldErrors.city}
                   />
                   <Form.Control.Feedback type="invalid">
                     {fieldErrors.city}
@@ -623,7 +617,6 @@ function AddArtistModal({
                     value={artistData.state}
                     onChange={(e) => handleFieldChange("state", e.target.value)}
                     onBlur={(e) => handleFieldBlur("state", e.target.value)}
-                    isInvalid={!!fieldErrors.state}
                   >
                     {germanStates.map((state) => (
                       <option key={state} value={state}>
