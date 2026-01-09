@@ -18,6 +18,7 @@ const calendarConfig = [
   },
 ];
 
+// German states (Bundesländer)
 const germanStates = [
   "Baden-Württemberg",
   "Bayern",
@@ -41,8 +42,10 @@ function AddArtistModal({
   showModal,
   setShowModal,
   selectedCalendar,
+  selectedRoles, // kept for compatibility even if unused
   handleAddArtist,
   handleUpdateArtist,
+  roleOptions, // kept for compatibility even if unused
   mode = "add",
   artistToEdit = null,
 }) {
@@ -52,8 +55,12 @@ function AddArtistModal({
   const [isLoading, setIsLoading] = useState(false);
   const [availableRoles, setAvailableRoles] = useState([]);
 
-  // ✅ REQUIRED fields (only these must be filled)
-  const requiredFields = ["calendar", "role", "firstName", "lastName", "email"];
+  // ✅ ONLY these are required (as you asked)
+  const requiredFields = ["calendar", "role", "firstName", "lastName"];
+  const isRequired = useCallback(
+    (field) => requiredFields.includes(field),
+    []
+  );
 
   const [artistData, setArtistData] = useState({
     calendar: selectedCalendar || "",
@@ -66,10 +73,10 @@ function AddArtistModal({
     postalCode: "",
     state: "",
     role: "",
-    email: "",
+    email: "", // optional now
   });
 
-  // Validation patterns
+  // Validation patterns (still used when field is filled)
   const validationPatterns = {
     phone: /^(\+49|0)(\s?\d){7,14}$/,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -80,6 +87,7 @@ function AddArtistModal({
     postalCode: /^\d{5}$/,
   };
 
+  // Validation messages
   const validationMessages = {
     calendar: "Bitte wählen Sie einen Kalender aus.",
     firstName:
@@ -102,6 +110,7 @@ function AddArtistModal({
     return config ? config.roles : [];
   }, []);
 
+  // Update roles when calendar changes
   useEffect(() => {
     if (artistData.calendar) {
       const roles = getRolesForCalendar(artistData.calendar);
@@ -112,13 +121,13 @@ function AddArtistModal({
       }
     } else {
       setAvailableRoles([]);
-      setArtistData((prev) => ({ ...prev, role: "" }));
+      if (artistData.role) setArtistData((prev) => ({ ...prev, role: "" }));
     }
-  }, [artistData.calendar, getRolesForCalendar]);
+  }, [artistData.calendar, artistData.role, getRolesForCalendar]);
 
+  // Initialize for edit/add
   useEffect(() => {
     if (mode === "edit" && artistToEdit) {
-      // Parse old combined address (optional)
       let street = "";
       let houseNumber = "";
       let city = "";
@@ -142,9 +151,7 @@ function AddArtistModal({
             city = cityPart.slice(1).join(" ");
           }
 
-          if (addressParts.length > 2) {
-            state = addressParts[2];
-          }
+          if (addressParts.length > 2) state = addressParts[2];
         }
       }
 
@@ -164,14 +171,10 @@ function AddArtistModal({
 
       setArtistData(editData);
       setOriginalData(editData);
-
-      const roles = getRolesForCalendar(artistToEdit.calendar);
-      setAvailableRoles(roles);
+      setAvailableRoles(getRolesForCalendar(artistToEdit.calendar));
     } else {
       resetForm();
-      if (selectedCalendar) {
-        setAvailableRoles(getRolesForCalendar(selectedCalendar));
-      }
+      if (selectedCalendar) setAvailableRoles(getRolesForCalendar(selectedCalendar));
     }
 
     setValidated(false);
@@ -179,34 +182,26 @@ function AddArtistModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, artistToEdit, selectedCalendar, showModal, getRolesForCalendar]);
 
-  const isFieldRequired = useCallback(
-    (field) => requiredFields.includes(field),
-    [requiredFields]
-  );
-
   /**
-   * ✅ New rule:
-   * - If a field is NOT required and empty -> valid
-   * - If it has a value -> validate format
-   * - If it IS required -> must be non-empty and valid
+   * ✅ Validation behavior:
+   * - optional + empty => valid
+   * - required + empty => invalid
+   * - if filled => validate pattern
    */
   const validateField = (field, valueRaw) => {
     const value = (valueRaw ?? "").toString();
-
-    const required = isFieldRequired(field);
     const trimmed = value.trim();
+    const required = isRequired(field);
 
-    // Optional + empty => OK
-    if (!required && trimmed === "") {
-      return { isValid: true, message: "" };
-    }
+    if (!required && trimmed === "") return { isValid: true, message: "" };
 
-    // Required + empty => error
     if (required && trimmed === "") {
-      return { isValid: false, message: validationMessages[field] || "Pflichtfeld." };
+      return {
+        isValid: false,
+        message: validationMessages[field] || "Pflichtfeld.",
+      };
     }
 
-    // Now validate formats (only when not empty)
     let isValid = true;
     let message = "";
 
@@ -257,12 +252,12 @@ function AddArtistModal({
         break;
 
       case "state":
-        // state is optional in this version; if filled, accept only if it matches list
         isValid = germanStates.includes(value);
         message = !isValid ? validationMessages.state : "";
         break;
 
       case "email":
+        // optional, but if filled must be valid
         isValid = validationPatterns.email.test(value);
         message = !isValid ? validationMessages.email : "";
         break;
@@ -297,9 +292,7 @@ function AddArtistModal({
 
   const handleFieldBlur = useCallback((field, value) => {
     const { isValid, message } = validateField(field, value);
-    if (!isValid) {
-      setFieldErrors((prev) => ({ ...prev, [field]: message }));
-    }
+    if (!isValid) setFieldErrors((prev) => ({ ...prev, [field]: message }));
   }, []);
 
   const resetForm = () => {
@@ -323,22 +316,24 @@ function AddArtistModal({
 
   const hasChanges = useCallback(() => {
     if (mode !== "edit" || !originalData) return true;
-    return Object.keys(artistData).some((key) => artistData[key] !== originalData[key]);
+    return Object.keys(artistData).some((k) => artistData[k] !== originalData[k]);
   }, [artistData, originalData, mode]);
+
+  const isSubmitDisabled = isLoading || (mode === "edit" && !hasChanges());
 
   const handleClose = useCallback(() => {
     if (!isLoading) {
       setShowModal(false);
       resetForm();
     }
-  }, [isLoading, setShowModal]);
+  }, [setShowModal, isLoading]);
 
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
       const form = e.currentTarget;
 
-      // ✅ still using bootstrap validation UI feedback
+      // ✅ Will only block missing REQUIRED JSX fields (now only 4)
       if (!form.checkValidity()) {
         e.stopPropagation();
         setValidated(true);
@@ -353,7 +348,6 @@ function AddArtistModal({
       setIsLoading(true);
 
       try {
-        // ✅ only build combined address if any address part exists
         const hasAnyAddress =
           artistData.street.trim() ||
           artistData.houseNumber.trim() ||
@@ -365,16 +359,10 @@ function AddArtistModal({
           ? `${artistData.street} ${artistData.houseNumber}, ${artistData.postalCode} ${artistData.city}, ${artistData.state}`
           : "";
 
-        const payload = {
-          ...artistData,
-          address: combinedAddress,
-        };
+        const payload = { ...artistData, address: combinedAddress };
 
-        if (mode === "add") {
-          await handleAddArtist(payload);
-        } else {
-          await handleUpdateArtist(payload);
-        }
+        if (mode === "add") await handleAddArtist(payload);
+        else await handleUpdateArtist(payload);
 
         resetForm();
         setShowModal(false);
@@ -387,8 +375,6 @@ function AddArtistModal({
     },
     [artistData, handleAddArtist, handleUpdateArtist, mode, setShowModal]
   );
-
-  const isSubmitDisabled = isLoading || (mode === "edit" && !hasChanges());
 
   return (
     <Modal
@@ -414,7 +400,7 @@ function AddArtistModal({
                   value={artistData.calendar}
                   onChange={(e) => handleFieldChange("calendar", e.target.value)}
                   onBlur={(e) => handleFieldBlur("calendar", e.target.value)}
-                  required
+                  required={isRequired("calendar")}
                   disabled={mode === "edit"}
                   isInvalid={!!fieldErrors.calendar}
                 >
@@ -438,7 +424,7 @@ function AddArtistModal({
                   value={artistData.role}
                   onChange={(e) => handleFieldChange("role", e.target.value)}
                   onBlur={(e) => handleFieldBlur("role", e.target.value)}
-                  required
+                  required={isRequired("role")}
                   isInvalid={!!fieldErrors.role}
                 >
                   <option value="">Rolle auswählen</option>
@@ -465,7 +451,7 @@ function AddArtistModal({
                   value={artistData.firstName}
                   onChange={(e) => handleFieldChange("firstName", e.target.value)}
                   onBlur={(e) => handleFieldBlur("firstName", e.target.value)}
-                  required
+                  required={isRequired("firstName")}
                   isInvalid={!!fieldErrors.firstName}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -483,7 +469,7 @@ function AddArtistModal({
                   value={artistData.lastName}
                   onChange={(e) => handleFieldChange("lastName", e.target.value)}
                   onBlur={(e) => handleFieldBlur("lastName", e.target.value)}
-                  required
+                  required={isRequired("lastName")}
                   isInvalid={!!fieldErrors.lastName}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -495,15 +481,16 @@ function AddArtistModal({
 
           <div className="row">
             <div className="col-md-6">
+              {/* Email optional */}
               <Form.Group className="mb-4">
-                <Form.Label>Email *</Form.Label>
+                <Form.Label>Email (optional)</Form.Label>
                 <Form.Control
                   type="email"
                   placeholder="E-Mail-Adresse eingeben"
                   value={artistData.email}
                   onChange={(e) => handleFieldChange("email", e.target.value)}
                   onBlur={(e) => handleFieldBlur("email", e.target.value)}
-                  required
+                  required={isRequired("email")} // false
                   isInvalid={!!fieldErrors.email}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -513,6 +500,7 @@ function AddArtistModal({
             </div>
 
             <div className="col-md-6">
+              {/* Phone optional */}
               <Form.Group className="mb-3">
                 <Form.Label>Telefon (optional)</Form.Label>
                 <Form.Control
@@ -521,7 +509,7 @@ function AddArtistModal({
                   value={artistData.phone}
                   onChange={(e) => handleFieldChange("phone", e.target.value)}
                   onBlur={(e) => handleFieldBlur("phone", e.target.value)}
-                  // ✅ optional: no required
+                  required={isRequired("phone")} // false
                   isInvalid={!!fieldErrors.phone}
                 />
                 <Form.Control.Feedback type="invalid">
@@ -544,6 +532,7 @@ function AddArtistModal({
                     value={artistData.street}
                     onChange={(e) => handleFieldChange("street", e.target.value)}
                     onBlur={(e) => handleFieldBlur("street", e.target.value)}
+                    required={isRequired("street")} // false
                     isInvalid={!!fieldErrors.street}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -559,8 +548,13 @@ function AddArtistModal({
                     type="text"
                     placeholder="Hausnummer eingeben"
                     value={artistData.houseNumber}
-                    onChange={(e) => handleFieldChange("houseNumber", e.target.value)}
-                    onBlur={(e) => handleFieldBlur("houseNumber", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("houseNumber", e.target.value)
+                    }
+                    onBlur={(e) =>
+                      handleFieldBlur("houseNumber", e.target.value)
+                    }
+                    required={isRequired("houseNumber")} // false
                     isInvalid={!!fieldErrors.houseNumber}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -578,8 +572,13 @@ function AddArtistModal({
                     type="text"
                     placeholder="12345"
                     value={artistData.postalCode}
-                    onChange={(e) => handleFieldChange("postalCode", e.target.value)}
-                    onBlur={(e) => handleFieldBlur("postalCode", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange("postalCode", e.target.value)
+                    }
+                    onBlur={(e) =>
+                      handleFieldBlur("postalCode", e.target.value)
+                    }
+                    required={isRequired("postalCode")} // false
                     isInvalid={!!fieldErrors.postalCode}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -597,6 +596,7 @@ function AddArtistModal({
                     value={artistData.city}
                     onChange={(e) => handleFieldChange("city", e.target.value)}
                     onBlur={(e) => handleFieldBlur("city", e.target.value)}
+                    required={isRequired("city")} // false
                     isInvalid={!!fieldErrors.city}
                   />
                   <Form.Control.Feedback type="invalid">
@@ -612,9 +612,9 @@ function AddArtistModal({
                     value={artistData.state}
                     onChange={(e) => handleFieldChange("state", e.target.value)}
                     onBlur={(e) => handleFieldBlur("state", e.target.value)}
+                    required={isRequired("state")} // false
                     isInvalid={!!fieldErrors.state}
                   >
-                    {/* ✅ placeholder so it can stay empty */}
                     <option value="">Bundesland auswählen</option>
                     {germanStates.map((state) => (
                       <option key={state} value={state}>
@@ -646,7 +646,8 @@ function AddArtistModal({
                 </>
               ) : (
                 <>
-                  <Check2 className="me-1" /> {mode === "add" ? "Speichern" : "Aktualisieren"}
+                  <Check2 className="me-1" />{" "}
+                  {mode === "add" ? "Speichern" : "Aktualisieren"}
                 </>
               )}
             </Button>
