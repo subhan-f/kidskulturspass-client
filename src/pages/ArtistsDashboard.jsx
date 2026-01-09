@@ -368,178 +368,185 @@ const ArtistsDashboard = ({ setAuth, handleLogout }) => {
     closeAllTooltips();
   }, []);
 
-const handleAddArtistFromModal = async (artistData) => {
-  try {
-    // ✅ ONLY required fields
-    if (
-      !artistData?.calendar?.trim() ||
-      !artistData?.firstName?.trim() ||
-      !artistData?.lastName?.trim() ||
-      !artistData?.role?.trim()
-    ) {
-      toast.error("Bitte fülle Kalender, Rolle, Vorname und Nachname aus.");
-      return;
+  /**
+   * ✅ FIXED: ONLY required fields are:
+   * calendar, firstName, lastName, role
+   * Everything else optional (phone, street, houseNumber, city, postalCode, state, email)
+   */
+  const handleAddArtistFromModal = async (artistData) => {
+    try {
+      if (
+        !artistData?.calendar?.trim() ||
+        !artistData?.firstName?.trim() ||
+        !artistData?.lastName?.trim() ||
+        !artistData?.role?.trim()
+      ) {
+        toast.error("Bitte fülle Kalender, Rolle, Vorname und Nachname aus.");
+        return;
+      }
+
+      const capitalizeName = (name) =>
+        (name || "")
+          .trim()
+          .toLowerCase()
+          .split(" ")
+          .filter(Boolean)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+
+      const capitalizeAddressPart = (text) =>
+        (text || "")
+          .trim()
+          .toLowerCase()
+          .split(" ")
+          .filter(Boolean)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+
+      const street = (artistData.street || "").trim();
+      const houseNumber = (artistData.houseNumber || "").trim();
+      const postalCode = (artistData.postalCode || "").trim();
+      const city = (artistData.city || "").trim();
+      const state = (artistData.state || "").trim();
+
+      const hasAnyAddress = street || houseNumber || postalCode || city || state;
+
+      const combinedAddress = hasAnyAddress
+        ? `${street} ${houseNumber}, ${postalCode} ${city}, ${state}`
+            .trim()
+            .replace(/\s*,\s*/g, ", ")
+            .replace(/,\s*,/g, ",")
+            .replace(/,\s*$/g, "")
+        : "";
+
+      const processedData = {
+        Calendar: (artistData.calendar || "").trim(),
+        Name: `${capitalizeName(artistData.firstName)} ${capitalizeName(
+          artistData.lastName
+        )}`.trim(),
+        FirstName: capitalizeName(artistData.firstName),
+        LastName: capitalizeName(artistData.lastName),
+        Role: (artistData.role || "").trim(),
+
+        // optional fields
+        email: ((artistData.email || "").trim() || "").toLowerCase(),
+        Phone: (artistData.phone || "").trim().replace(/\s/g, ""),
+        Address: combinedAddress,
+        Street: street ? capitalizeAddressPart(street) : "",
+        HouseNumber: houseNumber,
+        City: city ? capitalizeAddressPart(city) : "",
+        PostalCode: postalCode,
+        State: state,
+      };
+
+      const response = await api.post("/artist", processedData);
+
+      if (response.data.status === "success") {
+        toast.success("Künstler erfolgreich hinzugefügt.");
+        setShowAddModal(false);
+        fetchArtists(true);
+      } else {
+        toast.error(response.data.message || "Fehler beim Hinzufügen.");
+      }
+    } catch (error) {
+      console.error("Error adding artist:", error);
+      toast.error(
+        "Fehler beim Hinzufügen: " +
+          (error.response?.data?.message || error.message)
+      );
     }
+  };
 
-    const capitalizeName = (name) =>
-      (name || "")
-        .trim()
-        .toLowerCase()
-        .split(" ")
-        .filter(Boolean)
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+  /**
+   * ✅ FIXED: ONLY required fields are:
+   * calendar, firstName, lastName, role
+   * Everything else optional
+   */
+  const handleUpdateArtistFromModal = async (updatedData) => {
+    try {
+      if (
+        !updatedData?.calendar?.trim() ||
+        !updatedData?.firstName?.trim() ||
+        !updatedData?.lastName?.trim() ||
+        !updatedData?.role?.trim()
+      ) {
+        toast.error("Bitte fülle Kalender, Rolle, Vorname und Nachname aus.");
+        return;
+      }
 
-    const capitalizeAddressPart = (text) =>
-      (text || "")
-        .trim()
-        .toLowerCase()
-        .split(" ")
-        .filter(Boolean)
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+      const capitalizeName = (name) =>
+        (name || "")
+          .trim()
+          .toLowerCase()
+          .split(" ")
+          .filter(Boolean)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
 
-    const street = (artistData.street || "").trim();
-    const houseNumber = (artistData.houseNumber || "").trim();
-    const postalCode = (artistData.postalCode || "").trim();
-    const city = (artistData.city || "").trim();
-    const state = (artistData.state || "").trim();
+      const capitalizeAddressPart = (text) =>
+        (text || "")
+          .trim()
+          .toLowerCase()
+          .split(" ")
+          .filter(Boolean)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
 
-    // ✅ Address optional
-    const hasAnyAddress = street || houseNumber || postalCode || city || state;
+      const street = (updatedData.street || "").trim();
+      const houseNumber = (updatedData.houseNumber || "").trim();
+      const postalCode = (updatedData.postalCode || "").trim();
+      const city = (updatedData.city || "").trim();
+      const state = (updatedData.state || "").trim();
 
-    const combinedAddress = hasAnyAddress
-      ? `${street} ${houseNumber}, ${postalCode} ${city}, ${state}`.trim()
-          .replace(/\s*,\s*/g, ", ")
-          .replace(/,\s*,/g, ",")
-          .replace(/,\s*$/g, "")
-      : "";
+      const hasAnyAddress = street || houseNumber || postalCode || city || state;
 
-    const processedData = {
-      Calendar: (artistData.calendar || "").trim(),
-      Name: `${capitalizeName(artistData.firstName)} ${capitalizeName(
-        artistData.lastName
-      )}`.trim(),
-      FirstName: capitalizeName(artistData.firstName),
-      LastName: capitalizeName(artistData.lastName),
-      Role: (artistData.role || "").trim(),
+      const combinedAddress = hasAnyAddress
+        ? `${street} ${houseNumber}, ${postalCode} ${city}, ${state}`
+            .trim()
+            .replace(/\s*,\s*/g, ", ")
+            .replace(/,\s*,/g, ",")
+            .replace(/,\s*$/g, "")
+        : "";
 
-      // ✅ optional fields (send empty string if missing)
-      email: ((artistData.email || "").trim() || "").toLowerCase(),
-      Phone: (artistData.phone || "").trim().replace(/\s/g, ""),
-      Address: combinedAddress,
-      Street: street ? capitalizeAddressPart(street) : "",
-      HouseNumber: houseNumber,
-      City: city ? capitalizeAddressPart(city) : "",
-      PostalCode: postalCode,
-      State: state,
-    };
+      const updatePayload = {
+        Calendar: (updatedData.calendar || "").trim(),
+        Name: `${capitalizeName(updatedData.firstName)} ${capitalizeName(
+          updatedData.lastName
+        )}`.trim(),
+        FirstName: capitalizeName(updatedData.firstName),
+        LastName: capitalizeName(updatedData.lastName),
+        Role: (updatedData.role || "").trim(),
 
-    const response = await api.post("/artist", processedData);
+        // optional fields
+        email: ((updatedData.email || "").trim() || "").toLowerCase(),
+        Phone: (updatedData.phone || "").trim().replace(/\s/g, ""),
+        Address: combinedAddress,
+        Street: street ? capitalizeAddressPart(street) : "",
+        HouseNumber: houseNumber,
+        City: city ? capitalizeAddressPart(city) : "",
+        PostalCode: postalCode,
+        State: state,
 
-    if (response.data.status === "success") {
-      toast.success("Künstler erfolgreich hinzugefügt.");
-      setShowAddModal(false);
-      fetchArtists(true);
-    } else {
-      toast.error(response.data.message || "Fehler beim Hinzufügen.");
+        originalEmail: (artistToEdit?.email || "").trim().toLowerCase(),
+      };
+
+      const response = await api.put("/artist", updatePayload);
+
+      if (response.data.status === "success") {
+        toast.success("Künstler erfolgreich aktualisiert.");
+        setShowAddModal(false);
+        fetchArtists(true);
+      } else {
+        toast.error(response.data.message || "Fehler beim Aktualisieren.");
+      }
+    } catch (error) {
+      console.error("Error updating artist:", error);
+      toast.error(
+        "Fehler beim Aktualisieren: " +
+          (error.response?.data?.message || error.message)
+      );
     }
-  } catch (error) {
-    console.error("Error adding artist:", error);
-    toast.error(
-      "Fehler beim Hinzufügen: " +
-        (error.response?.data?.message || error.message)
-    );
-  }
-};
-
-const handleUpdateArtistFromModal = async (updatedData) => {
-  try {
-    // ✅ ONLY required fields
-    if (
-      !updatedData?.calendar?.trim() ||
-      !updatedData?.firstName?.trim() ||
-      !updatedData?.lastName?.trim() ||
-      !updatedData?.role?.trim()
-    ) {
-      toast.error("Bitte fülle Kalender, Rolle, Vorname und Nachname aus.");
-      return;
-    }
-
-    const capitalizeName = (name) =>
-      (name || "")
-        .trim()
-        .toLowerCase()
-        .split(" ")
-        .filter(Boolean)
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
-
-    const capitalizeAddressPart = (text) =>
-      (text || "")
-        .trim()
-        .toLowerCase()
-        .split(" ")
-        .filter(Boolean)
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
-
-    const street = (updatedData.street || "").trim();
-    const houseNumber = (updatedData.houseNumber || "").trim();
-    const postalCode = (updatedData.postalCode || "").trim();
-    const city = (updatedData.city || "").trim();
-    const state = (updatedData.state || "").trim();
-
-    const hasAnyAddress = street || houseNumber || postalCode || city || state;
-
-    const combinedAddress = hasAnyAddress
-      ? `${street} ${houseNumber}, ${postalCode} ${city}, ${state}`.trim()
-          .replace(/\s*,\s*/g, ", ")
-          .replace(/,\s*,/g, ",")
-          .replace(/,\s*$/g, "")
-      : "";
-
-    const updatePayload = {
-      Calendar: (updatedData.calendar || "").trim(),
-      Name: `${capitalizeName(updatedData.firstName)} ${capitalizeName(
-        updatedData.lastName
-      )}`.trim(),
-      FirstName: capitalizeName(updatedData.firstName),
-      LastName: capitalizeName(updatedData.lastName),
-      Role: (updatedData.role || "").trim(),
-
-      // ✅ optional fields
-      email: ((updatedData.email || "").trim() || "").toLowerCase(),
-      Phone: (updatedData.phone || "").trim().replace(/\s/g, ""),
-      Address: combinedAddress,
-      Street: street ? capitalizeAddressPart(street) : "",
-      HouseNumber: houseNumber,
-      City: city ? capitalizeAddressPart(city) : "",
-      PostalCode: postalCode,
-      State: state,
-
-      // used to find record on backend
-      originalEmail: (artistToEdit?.email || "").trim().toLowerCase(),
-    };
-
-    const response = await api.put("/artist", updatePayload);
-
-    if (response.data.status === "success") {
-      toast.success("Künstler erfolgreich aktualisiert.");
-      setShowAddModal(false);
-      fetchArtists(true);
-    } else {
-      toast.error(response.data.message || "Fehler beim Aktualisieren.");
-    }
-  } catch (error) {
-    console.error("Error updating artist:", error);
-    toast.error(
-      "Fehler beim Aktualisieren: " +
-        (error.response?.data?.message || error.message)
-    );
-  }
-};
-
+  };
 
   const handleAdminLoginAsArtist = async (artist) => {
     if (loggingIn[artist.email]) return;
@@ -765,7 +772,6 @@ const handleUpdateArtistFromModal = async (updatedData) => {
 
                   {expandedCalendars[calendar] && (
                     <div className="calendar-content">
-                      {/* ✅ Desktop table (unchanged) */}
                       <div className="table-responsive d-none d-md-block">
                         <Table className="artists-table">
                           <thead>
@@ -878,7 +884,7 @@ const handleUpdateArtistFromModal = async (updatedData) => {
                         </Table>
                       </div>
 
-                      {/* ✅ Mobile cards (ADDED city/state/zip + address lines, everything else unchanged) */}
+                      {/* Mobile cards */}
                       <div className="artist-cards-container d-md-none">
                         {artistsByCalendar[calendar].map((artist, index) => (
                           <div key={index} className="artist-mobile-card">
@@ -895,7 +901,6 @@ const handleUpdateArtistFromModal = async (updatedData) => {
                                 </Badge>
                               </div>
 
-                              {/* ✅ NEW: Location block on mobile */}
                               <div className="artist-mobile-location">
                                 <div className="artist-mobile-city-state-zip">
                                   <i className="bi bi-geo-alt"></i>{" "}
@@ -1051,7 +1056,7 @@ const handleUpdateArtistFromModal = async (updatedData) => {
         artistToEdit={artistToEdit}
       />
 
-      {/* ✅ Details Modal (German) */}
+      {/* Details Modal */}
       <Modal show={showDetailsModal} onHide={closeDetails} centered>
         <Modal.Header closeButton>
           <Modal.Title>Künstler-Details</Modal.Title>
@@ -1132,7 +1137,7 @@ const handleUpdateArtistFromModal = async (updatedData) => {
         </Modal.Footer>
       </Modal>
 
-      {/* ✅ Delete Modal (German) */}
+      {/* Delete Modal */}
       <Modal
         show={showDeleteModal}
         onHide={() => !isDeleting && setShowDeleteModal(false)}
