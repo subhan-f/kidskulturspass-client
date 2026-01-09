@@ -216,37 +216,37 @@ function AddArtistModal({
         message = !isValid ? validationMessages.lastName : "";
         break;
 
-      case "phone":
-        isValid =
-          !!value.trim() &&
-          validationPatterns.phone.test(value.replace(/\s/g, ""));
-        message = !isValid ? validationMessages.phone : "";
-        break;
+    //  case "phone":
+      //  isValid =
+      //    !!value.trim() &&
+      //    validationPatterns.phone.test(value.replace(/\s/g, ""));
+      //  message = !isValid ? validationMessages.phone : "";
+      //  break;
 
-      case "street":
-        isValid = !!value.trim() && validationPatterns.street.test(value);
-        message = !isValid ? validationMessages.street : "";
-        break;
+   //   case "street":
+     //   isValid = !!value.trim() && validationPatterns.street.test(value);
+     //   message = !isValid ? validationMessages.street : "";
+      //  break;
 
-      case "houseNumber":
-        isValid = !!value.trim() && validationPatterns.houseNumber.test(value);
-        message = !isValid ? validationMessages.houseNumber : "";
-        break;
+    //  case "houseNumber":
+      //  isValid = !!value.trim() && validationPatterns.houseNumber.test(value);
+      //  message = !isValid ? validationMessages.houseNumber : "";
+      //  break;
 
-      case "city":
-        isValid = !!value.trim() && validationPatterns.city.test(value);
-        message = !isValid ? validationMessages.city : "";
-        break;
+  //    case "city":
+   //     isValid = !!value.trim() && validationPatterns.city.test(value);
+    //    message = !isValid ? validationMessages.city : "";
+      //  break;
 
-      case "postalCode":
-        isValid = !!value.trim() && validationPatterns.postalCode.test(value);
-        message = !isValid ? validationMessages.postalCode : "";
-        break;
+   //   case "postalCode":
+    //    isValid = !!value.trim() && validationPatterns.postalCode.test(value);
+     //   message = !isValid ? validationMessages.postalCode : "";
+     //   break;
 
-      case "state":
-        isValid = !!value.trim();
-        message = !isValid ? validationMessages.state : "";
-        break;
+      // case "state":
+      //   isValid = !!value.trim();
+      //   message = !isValid ? validationMessages.state : "";
+      //   break;
 
       case "role":
         isValid = !!value.trim();
