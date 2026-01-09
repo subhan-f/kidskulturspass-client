@@ -1,5 +1,3 @@
-//popup
-
 import React, { useState, useCallback, useEffect } from "react";
 import { Modal, Form, Button, Spinner } from "react-bootstrap";
 import { PersonPlus, X, Check2, Pencil } from "react-bootstrap-icons";
